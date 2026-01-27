@@ -10,19 +10,19 @@ For details on the theoretical foundations, see [docs/research/DKMS_Foundations.
 
 ## Visualizing the Knowledge Graph
 
-### The Semantic Bridge
-The core value of this project is the **Semantic Bridge**, which connects unstructured documentation (GraphRAG) to structured hardware implementation (RTL). Below is a visualization from the ArangoDB Graph Visualizer showing a **Documentation Entity** (center) resolved to multiple **RTL Modules** (the "Flip-Flop" logic block hierarchy).
-
-![Semantic Bridge Visualizer](docs/images/semantic_bridge_visualizer.png)
-
-*Figure 1: Visualizer showing documentation entities resolved to specific RTL modules, ports, and logic chunks.*
-
 ### Global Schema
 The knowledge graph harmonizes three disparate data silos: RTL code structure, Git history, and technical specifications.
 
 ![Knowledge Graph Schema](docs/images/schema.png)
 
-*Figure 2: The conceptual schema showing the relationships between Authors, Commits, RTL Elements, and Documentation Chunks.*
+*Figure 1: The conceptual schema showing the relationships between Authors, Commits, RTL Elements, and Documentation Chunks.*
+
+### The Semantic Bridge
+The core value of this project is the **Semantic Bridge**, which connects unstructured documentation (GraphRAG) to structured hardware implementation (RTL). Below is a visualization from the ArangoDB Graph Visualizer showing a **Documentation Entity** (center) resolved to multiple **RTL Modules** (the "Flip-Flop" logic block hierarchy).
+
+![Semantic Bridge Visualizer](docs/images/semantic_bridge_visualizer.png)
+
+*Figure 2: Visualizer showing documentation entities resolved to specific RTL modules, ports, and logic chunks.*
 
 ## Key Features
 
