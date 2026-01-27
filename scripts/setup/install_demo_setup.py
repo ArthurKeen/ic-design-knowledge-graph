@@ -4,7 +4,7 @@ Demo Setup Script: Install Saved Queries and Canvas Actions
 ============================================================
 
 This script installs the demonstration queries and canvas actions into
-the ArangoDB instance for the IC Knowledge Graph visualizer.
+the ArangoDB instance for the Integrated Circuit (IC) Design Knowledge Graph visualizer.
 
 NOTE: This script does NOT install the theme. Run install_theme.py separately.
 

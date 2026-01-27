@@ -1,4 +1,4 @@
-# Semantic Bridging and Entity Consolidation for Hardware Knowledge Graphs
+# Semantic Bridging and Entity Consolidation for Integrated Circuit (IC) Design Knowledge Graphs
 **Application: OR1200 Processor Documentation**  
 **Technology: ArangoDB Graph Database + Entity Resolution**  
 **Date:** January 2026

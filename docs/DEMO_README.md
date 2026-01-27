@@ -2,7 +2,7 @@
 
 ## Overview
 
-This directory contains everything you need for the Tuesday Cadence demonstration of the OR1200 Knowledge Graph. The demo showcases how ArangoDB's Graph Visualizer enables exploration of hardware designs through semantic bridges between RTL code, specifications, and Git history.
+This directory contains everything you need for the Tuesday Cadence demonstration of the Integrated Circuit (IC) Design Knowledge Graph. The demo showcases how ArangoDB's Graph Visualizer enables exploration of integrated circuit designs through semantic bridges between RTL code, specifications, and Git history.
 
 ## Demo Materials
 
@@ -137,7 +137,7 @@ OR1200 Knowledge Graph - Demo Setup Installer
  Total actions linked: 10
 
 [4/4] Installing Visualization Theme...
- Installed theme: IC Knowledge Graph Demo Theme
+ Installed theme: Integrated Circuit Design Knowledge Graph Demo Theme
 
 ============================================================
 VERIFICATION

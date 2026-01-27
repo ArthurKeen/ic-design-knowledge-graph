@@ -1,4 +1,4 @@
-# IC Knowledge Graph Demo Script
+# Integrated Circuit (IC) Design Knowledge Graph Demo Script
 ## Interactive Demonstration
 
 **Objective**: Demonstrate how ArangoDB's Graph Visualizer enables exploration of hardware design through semantic bridges between RTL code, specifications, and Git history. This demo uses the OR1200 RISC processor as sample data.

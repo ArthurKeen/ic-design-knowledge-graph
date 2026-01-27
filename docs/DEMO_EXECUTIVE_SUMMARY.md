@@ -1,8 +1,8 @@
-# IC Knowledge Graph Demo - Executive Summary
+# Integrated Circuit Design Knowledge Graph Demo - Executive Summary
 
 **Duration**: 30-45 minutes  
 **Audience**: Technical Stakeholders & Engineering Teams  
-**Objective**: Demonstrate ArangoDB Knowledge Graph for Hardware Design (using OR1200 RISC processor as sample data)
+**Objective**: Demonstrate ArangoDB Knowledge Graph for Integrated Circuit (IC) Design (using OR1200 RISC processor as sample data)
 
 ---
 

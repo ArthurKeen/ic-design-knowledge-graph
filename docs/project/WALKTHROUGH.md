@@ -1,6 +1,6 @@
-# Project Walkthrough: IC Knowledge Graph
+# Project Walkthrough: Integrated Circuit (IC) Design Knowledge Graph
 
-This report documents the final state of the **IC Knowledge Graph** project, encompassing structured RTL data, temporal Git history, and high-precision documentation bridges.
+This report documents the final state of the **Integrated Circuit (IC) Design Knowledge Graph** project, encompassing structured RTL data, temporal Git history, and high-precision documentation bridges.
 
 ## 1. Structured RTL Ingestion
 The ETL process transforms Verilog source code into a fine-grained graph representation.

@@ -1,6 +1,6 @@
 [
   {
-    "_comment": "Saved Queries for OR1200 Knowledge Graph Demo",
+    "_comment": "Saved Queries for Integrated Circuit Design Knowledge Graph Demo",
     "_collection": "_editor_saved_queries",
     "_note": "Import these documents into the _editor_saved_queries collection",
     "queries": [
@@ -245,7 +245,7 @@
     ]
   },
   {
-    "_comment": "Theme Configuration for OR1200 Knowledge Graph Demo",
+    "_comment": "Theme Configuration for Integrated Circuit Design Knowledge Graph Demo",
     "_collection": "_viewpointThemes",
     "_note": "Import this document into the _viewpointThemes collection",
     "theme": {

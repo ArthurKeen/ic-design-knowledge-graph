@@ -1,6 +1,6 @@
-# IC Knowledge Graph Documentation
+# Integrated Circuit (IC) Design Knowledge Graph Documentation
 
-Welcome to the IC Knowledge Graph demo documentation. This directory contains all project documentation organized by topic.
+Welcome to the Integrated Circuit (IC) Design Knowledge Graph demo documentation. This directory contains all project documentation organized by topic.
 
 ---
 

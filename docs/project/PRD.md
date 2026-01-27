@@ -1,8 +1,8 @@
-# Product Requirements Document: IC Knowledge Graph Demo
+# Product Requirements Document: Integrated Circuit (IC) Design Knowledge Graph Demo
 
 ## Context
 
-The source contains both structured and unstructured data. This PRD outlines an approach to ETL structured data into a Knowledge Graph and GraphRAG import unstructured data, harmonizing them in the same graph using Entity Resolution for cross-referencing. The source data for OR1200 is in a GitHub repository, allowing temporal analysis of design changes over time.
+The source contains both structured and unstructured data. This PRD outlines an approach to ETL structured data into a Knowledge Graph and GraphRAG import unstructured data, harmonizing them in the same graph using Entity Resolution for cross-referencing. The project realizes the functional requirements of the **Design Knowledge Management System (DKMS)** research co-authored for the Air Force Materiel Command (see [docs/research/DKMS_Foundations.md](../research/DKMS_Foundations.md)).
 
 ## Approach
 

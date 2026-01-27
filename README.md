@@ -1,10 +1,16 @@
-# IC Knowledge Graph Demo
+# Integrated Circuit Design Knowledge Graph Demo
 
-This demonstration showcases the power of **ArangoDB** in harmonizing structured hardware design (RTL), temporal version history (Git), and unstructured technical specifications (GraphRAG) into a single, queryable knowledge graph. The current implementation uses the **OR1200 RISC processor** as sample data.
+This demonstration showcases the power of **ArangoDB** in harmonizing structured integrated circuit (IC) hardware design (RTL/Verilog), temporal version history (Git), and unstructured technical specifications (GraphRAG) into a single, queryable knowledge graph. The current implementation uses the **OR1200 RISC processor** as sample data.
+
+## Research Foundations
+
+This project is a modern implementation of the principles established in the **Design Knowledge Management System (DKMS)** research program co-authored for the Air Force Materiel Command (1989-1992). It realizes the vision of a "Semantic Bridge" between design intent and implementation that was pioneered in these foundational reports.
+
+For details on the theoretical foundations, see [docs/research/DKMS_Foundations.md](docs/research/DKMS_Foundations.md).
 
 ## Key Features
 
-- **Semantic Bridge**: Automatically links Verilog modules, ports, and signals to their corresponding documentation sections using lexical analysis.
+- **Semantic Bridge**: Automatically links Verilog modules, ports, and signals to entities referenced in corresponding documentation sections using lexical analysis.
 - **High-Performance Consolidation**: Uses set-based AQL operations for near-instant (sub-second) entity resolution across thousands of documentation nodes.
 - **Temporal Insight**: Ingests full Git history to allow "Time-Travel" queries across the evolution of the hardware design.
 - **Author Expertise Mapping**: First-class contributor vertices enable knowledge transfer, collaboration analysis, and bus factor assessment.

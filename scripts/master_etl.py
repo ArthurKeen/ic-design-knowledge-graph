@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Master ETL Script for IC Knowledge Graph
+Master ETL Script for Integrated Circuit (IC) Design Knowledge Graph
 ========================================
 
 This script orchestrates the entire ETL pipeline:

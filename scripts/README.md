@@ -1,6 +1,6 @@
 # Scripts Directory
 
-Utility scripts for setup, maintenance, and debugging of the IC Knowledge Graph demo.
+Utility scripts for setup, maintenance, and debugging of the Integrated Circuit (IC) Design Knowledge Graph demo.
 
 ---
 

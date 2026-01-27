@@ -1,6 +1,6 @@
-# Knowledge Graph Schema
+# Integrated Circuit (IC) Design Knowledge Graph Schema
 
-This document defines the structure of the **IC Knowledge Graph**, including the relationships between hardware design (RTL), version history (Git), and architectural specifications (GraphRAG).
+This document defines the structure of the **Integrated Circuit (IC) Design Knowledge Graph**, including the relationships between hardware design (RTL), version history (Git), and architectural specifications (GraphRAG).
 
 ## 1. Schema Diagram
 
