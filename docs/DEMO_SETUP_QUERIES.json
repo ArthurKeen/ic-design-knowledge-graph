@@ -1,0 +1,452 @@
+[
+  {
+    "_comment": "Saved Queries for OR1200 Knowledge Graph Demo",
+    "_collection": "_editor_saved_queries",
+    "_note": "Import these documents into the _editor_saved_queries collection",
+    "queries": [
+      {
+        "title": "Architectural Traceability - High-Level Design Links",
+        "databaseName": "ic-knowledge-graph",
+        "content": "FOR component IN UNION(BusInterface, ClockDomain, FSM_StateMachine, RTL_Memory)\n  FOR entity, edge, path IN 1..1 OUTBOUND component RESOLVED_TO\n    RETURN path",
+        "bindVariables": {},
+        "description": "Show semantic bridges between high-level architectural design constructs and documentation",
+        "createdAt": "2026-01-08T12:00:00.000Z",
+        "updatedAt": "2026-01-08T12:00:00.000Z"
+      },
+      {
+        "title": "Graph Overview - Sample From All Collections",
+        "databaseName": "ic-knowledge-graph",
+        "content": "LET modules = (FOR m IN RTL_Module LIMIT 5 RETURN m)\nLET ports = (FOR p IN RTL_Port LIMIT 10 RETURN p)\nLET entities = (FOR e IN OR1200_Golden_Entities LIMIT 10 RETURN e)\nLET commits = (FOR c IN GitCommit SORT c.timestamp DESC LIMIT 3 RETURN c)\nFOR item IN UNION(modules, ports, entities, commits)\n  RETURN item",
+        "bindVariables": {},
+        "description": "Load a representative sample from each major collection type to show graph diversity",
+        "createdAt": "2026-01-02T12:00:00.000Z",
+        "updatedAt": "2026-01-02T12:00:00.000Z"
+      },
+      {
+        "title": "CPU Module Hierarchy",
+        "databaseName": "ic-knowledge-graph",
+        "content": "FOR v, e, p IN 1..3 OUTBOUND\n  \"RTL_Module/or1200_cpu\"\n  GRAPH \"OR1200_Knowledge_Graph\"\n  FILTER e.type == \"CONTAINS\"\n  RETURN p",
+        "bindVariables": {},
+        "description": "Show the hierarchical containment tree starting from the main CPU module",
+        "createdAt": "2026-01-02T12:00:00.000Z",
+        "updatedAt": "2026-01-02T12:00:00.000Z"
+      },
+      {
+        "title": "Top Scoring Semantic Links",
+        "databaseName": "ic-knowledge-graph",
+        "content": "FOR edge IN RESOLVED_TO\n  SORT edge.score DESC\n  LIMIT 20\n  RETURN {\n    vertices: [DOCUMENT(edge._from), DOCUMENT(edge._to)],\n    edges: [edge]\n  }",
+        "bindVariables": {},
+        "description": "Display the highest-confidence semantic bridges between RTL and specifications",
+        "createdAt": "2026-01-02T12:00:00.000Z",
+        "updatedAt": "2026-01-02T12:00:00.000Z"
+      },
+      {
+        "title": "Top Scoring Semantic Links (Data View)",
+        "databaseName": "ic-knowledge-graph",
+        "content": "FOR edge IN RESOLVED_TO\n  SORT edge.score DESC\n  LIMIT 20\n  RETURN {\n    rtl_element: DOCUMENT(edge._from).label,\n    doc_entity: DOCUMENT(edge._to).entity_name,\n    score: edge.score,\n    method: edge.method\n  }",
+        "bindVariables": {},
+        "description": "Analyze semantic bridge quality (returns data, not paths for visualization)",
+        "createdAt": "2026-01-02T12:00:00.000Z",
+        "updatedAt": "2026-01-02T12:00:00.000Z"
+      },
+      {
+        "title": "Recent Commits and Modified Modules",
+        "databaseName": "ic-knowledge-graph",
+        "content": "FOR commit IN GitCommit\n  SORT commit.timestamp DESC\n  LIMIT 5\n  FOR v, e, p IN 1..1 OUTBOUND commit\n    GRAPH \"IC_Knowledge_Graph\"\n    FILTER e.type == \"MODIFIED\"\n    RETURN p",
+        "bindVariables": {},
+        "description": "Show recent commits and the modules they affected",
+        "createdAt": "2026-01-02T12:00:00.000Z",
+        "updatedAt": "2026-01-02T12:00:00.000Z"
+      },
+      {
+        "title": "Find Module Ports and Signals",
+        "databaseName": "ic-knowledge-graph",
+        "content": "FOR module IN RTL_Module\n  FILTER CONTAINS(LOWER(module.label), LOWER(@moduleName))\n  LIMIT 1\n  FOR v, e, p IN 1..1 OUTBOUND module\n    GRAPH \"IC_Knowledge_Graph\"\n    FILTER e.type IN [\"HAS_PORT\", \"HAS_SIGNAL\"]\n    LIMIT 50\n    RETURN p",
+        "bindVariables": {
+          "moduleName": "alu"
+        },
+        "description": "Display the interface (ports and signals) of a specific module",
+        "createdAt": "2026-01-02T12:00:00.000Z",
+        "updatedAt": "2026-01-02T12:00:00.000Z"
+      },
+      {
+        "title": "Find Entity by Name (Specification Search)",
+        "databaseName": "ic-knowledge-graph",
+        "content": "FOR entity IN OR1200_Golden_Entities\n  FILTER CONTAINS(LOWER(entity.entity_name), LOWER(@searchTerm))\n     OR CONTAINS(LOWER(entity.description), LOWER(@searchTerm))\n  LIMIT 10\n  RETURN entity",
+        "bindVariables": {
+          "searchTerm": "exception"
+        },
+        "description": "Search for specification entities by name or description",
+        "createdAt": "2026-01-02T12:00:00.000Z",
+        "updatedAt": "2026-01-02T12:00:00.000Z"
+      },
+      {
+        "title": "ALU Semantic Network",
+        "databaseName": "ic-knowledge-graph",
+        "content": "FOR alu IN RTL_Module\n  FILTER alu.label == \"or1200_alu\"\n  FOR entity, resEdge, resPath IN 1..1 OUTBOUND alu\n    GRAPH \"IC_Knowledge_Graph\"\n    FILTER resEdge.type == \"RESOLVED_TO\"\n    FOR related, relEdge, relPath IN 1..1 ANY entity\n      OR1200_Golden_Relations\n      FILTER IS_SAME_COLLECTION(\"OR1200_Golden_Entities\", related)\n      LIMIT 10\n      RETURN relPath",
+        "bindVariables": {},
+        "description": "Show ALU module with connected specification entities and their relationships",
+        "createdAt": "2026-01-02T12:00:00.000Z",
+        "updatedAt": "2026-01-02T12:00:00.000Z"
+      },
+      {
+        "title": "Commits Affecting a Component",
+        "databaseName": "ic-knowledge-graph",
+        "content": "FOR module IN RTL_Module\n  FILTER CONTAINS(LOWER(module.label), LOWER(@componentName))\n  LIMIT 1\n  FOR commit, edge, path IN 1..1 INBOUND module\n    GRAPH \"IC_Knowledge_Graph\"\n    FILTER edge.type == \"MODIFIED\"\n    SORT commit.timestamp DESC\n    RETURN path",
+        "bindVariables": {
+          "componentName": "decode"
+        },
+        "description": "Show Git commit history for a specific hardware component",
+        "createdAt": "2026-01-02T12:00:00.000Z",
+        "updatedAt": "2026-01-02T12:00:00.000Z"
+      },
+      {
+        "title": "Port Wiring Diagram",
+        "databaseName": "ic-knowledge-graph",
+        "content": "FOR module IN RTL_Module\n  FILTER module.label == \"or1200_cpu\"\n  FOR port IN 1..1 OUTBOUND module HAS_PORT\n    FOR targetPort, wireEdge, wirePath IN 1..1 ANY port WIRED_TO\n      LIMIT 30\n      RETURN wirePath",
+        "bindVariables": {},
+        "description": "Show structural wiring connections between CPU ports",
+        "createdAt": "2026-01-02T12:00:00.000Z",
+        "updatedAt": "2026-01-02T12:00:00.000Z"
+      },
+      {
+        "title": "Entity Neighborhood (Specification Context)",
+        "databaseName": "ic-knowledge-graph",
+        "content": "FOR entity IN OR1200_Golden_Entities\n  FILTER entity.entity_name == @entityName\n  FOR related, edge, path IN 1..2 ANY entity\n    OR1200_Golden_Relations\n    LIMIT 25\n    RETURN path",
+        "bindVariables": {
+          "entityName": "Instruction Cache"
+        },
+        "description": "Show the relationship context around a specification entity",
+        "createdAt": "2026-01-02T12:00:00.000Z",
+        "updatedAt": "2026-01-02T12:00:00.000Z"
+      },
+      {
+        "title": "Impact Analysis - Commits Affecting ALU Specs",
+        "databaseName": "ic-knowledge-graph",
+        "content": "FOR commit IN GitCommit\n  FILTER commit.author == \"Julius Baxter\"\n  SORT commit.timestamp DESC\n  LIMIT 3\n  FOR module, modEdge IN 1..1 OUTBOUND commit\n    GRAPH \"IC_Knowledge_Graph\"\n    FILTER modEdge.type == \"MODIFIED\"\n    FILTER CONTAINS(LOWER(module.label), \"alu\")\n    FOR entity, resEdge IN 1..1 OUTBOUND module\n      GRAPH \"IC_Knowledge_Graph\"\n      FILTER resEdge.type == \"RESOLVED_TO\"\n      RETURN {\n        commit: commit.hash,\n        date: commit.timestamp,\n        modified_module: module.label,\n        impacted_spec: entity.entity_name,\n        confidence: resEdge.score\n      }",
+        "bindVariables": {},
+        "description": "Cross-domain query combining commits, modules, and specifications",
+        "createdAt": "2026-01-02T12:00:00.000Z",
+        "updatedAt": "2026-01-02T12:00:00.000Z"
+      },
+      {
+        "title": "Clock Domains and CDC Violations",
+        "databaseName": "ic-knowledge-graph",
+        "content": "FOR domain IN ClockDomain\n  LET crossings = (FOR sig, edge IN 1..1 INBOUND domain CROSSES_DOMAIN RETURN {sig, edge})\n  RETURN {\n    domain: domain.name,\n    crossing_count: LENGTH(crossings),\n    crossings: crossings\n  }",
+        "bindVariables": {},
+        "description": "Identify clock domains and potential Clock Domain Crossing (CDC) violations",
+        "createdAt": "2026-01-08T12:00:00.000Z",
+        "updatedAt": "2026-01-08T12:00:00.000Z"
+      },
+      {
+        "title": "Bus Interface Groups",
+        "databaseName": "ic-knowledge-graph",
+        "content": "FOR bus IN BusInterface\n  SORT bus.port_count DESC\n  LET ports = (FOR p, e IN 1..1 INBOUND bus PART_OF_BUS RETURN p)\n  RETURN {\n    bus: bus.name,\n    type: bus.interface_type,\n    ports: ports[*].label\n  }",
+        "bindVariables": {},
+        "description": "Show logical bus groupings and their associated hardware ports",
+        "createdAt": "2026-01-08T12:00:00.000Z",
+        "updatedAt": "2026-01-08T12:00:00.000Z"
+      },
+      {
+        "title": "Memory Access Analysis",
+        "databaseName": "ic-knowledge-graph",
+        "content": "FOR mem IN RTL_Memory\n  LET accessors = (FOR logic, edge IN 1..1 INBOUND mem ACCESSES RETURN {logic: logic.label, type: edge.metadata.access_type})\n  RETURN {\n    memory: mem.name,\n    width: mem.width,\n    depth: mem.depth,\n    accessors: accessors\n  }",
+        "bindVariables": {},
+        "description": "Analyze memory access patterns and identifying which logic blocks read/write to specific memories",
+        "createdAt": "2026-01-08T12:00:00.000Z",
+        "updatedAt": "2026-01-08T12:00:00.000Z"
+      },
+      {
+        "title": "Hardware Operator Usage",
+        "databaseName": "ic-knowledge-graph",
+        "content": "FOR op IN Operator\n  COLLECT type = op.operator_type WITH COUNT INTO count\n  SORT count DESC\n  RETURN { operator: type, instances: count }",
+        "bindVariables": {},
+        "description": "Summary of arithmetic and logical operators used across the design for resource estimation",
+        "createdAt": "2026-01-08T12:00:00.000Z",
+        "updatedAt": "2026-01-08T12:00:00.000Z"
+      }
+    ]
+  },
+  {
+    "_comment": "Canvas Actions for OR1200 Knowledge Graph Demo",
+    "_collection": "_canvasActions",
+    "_note": "Import these documents into the _canvasActions collection and create edges in _viewpointActions",
+    "actions": [
+      {
+        "_key": "show_entity_resolutions",
+        "title": "[RTL_*] Show Entity Resolutions",
+        "description": "Select RTL_Module/RTL_Port/RTL_Signal: show linked specification entities",
+        "query": "FOR node IN @nodes\n  FOR v, e, p IN 1..1 OUTBOUND node\n    GRAPH \"IC_Knowledge_Graph\"\n    FILTER IS_SAME_COLLECTION(\"OR1200_Golden_Entities\", v)\n    RETURN p",
+        "createdAt": "2026-01-02T12:00:00.000Z"
+      },
+      {
+        "_key": "show_module_internals",
+        "title": "[RTL_Module] Show Module Internals",
+        "description": "Select RTL_Module: show ports and signals",
+        "query": "FOR node IN @nodes\n  FOR v, e, p IN 1..1 OUTBOUND node\n    GRAPH \"IC_Knowledge_Graph\"\n    FILTER e.type IN [\"HAS_PORT\", \"HAS_SIGNAL\"]\n    LIMIT 30\n    RETURN p",
+        "createdAt": "2026-01-02T12:00:00.000Z"
+      },
+      {
+        "_key": "find_implementing_code",
+        "title": "[OR1200_Golden_Entities] Find Implementing Code",
+        "description": "Select OR1200_Golden_Entities: show implementing RTL nodes",
+        "query": "FOR node IN @nodes\n  FOR v, e, p IN 1..1 INBOUND node\n    GRAPH \"IC_Knowledge_Graph\"\n    FILTER e.type == \"RESOLVED_TO\"\n    FILTER IS_SAME_COLLECTION(\"RTL_Signal\", v) \n       OR IS_SAME_COLLECTION(\"RTL_Port\", v)\n       OR IS_SAME_COLLECTION(\"RTL_Module\", v)\n    RETURN p",
+        "createdAt": "2026-01-02T12:00:00.000Z"
+      },
+      {
+        "_key": "show_containment_tree",
+        "title": "[RTL_Module] Show Containment Tree",
+        "description": "Select RTL_Module: show containment hierarchy",
+        "query": "FOR node IN @nodes\n  FOR v, e, p IN 1..2 OUTBOUND node\n    GRAPH \"IC_Knowledge_Graph\"\n    FILTER e.type == \"CONTAINS\"\n    LIMIT 40\n    RETURN p",
+        "createdAt": "2026-01-02T12:00:00.000Z"
+      },
+      {
+        "_key": "show_docs_for_modified_modules",
+        "title": "[GitCommit] Show Documentation for Modified Modules",
+        "description": "Select GitCommit: show affected specification entities",
+        "query": "FOR commitNode IN @nodes\n  FOR module, modEdge IN 1..1 OUTBOUND commitNode\n    GRAPH \"IC_Knowledge_Graph\"\n    FILTER modEdge.type == \"MODIFIED\"\n    FOR entity, resEdge, path IN 1..1 OUTBOUND module\n      GRAPH \"IC_Knowledge_Graph\"\n      FILTER resEdge.type == \"RESOLVED_TO\"\n      RETURN path",
+        "createdAt": "2026-01-02T12:00:00.000Z"
+      },
+      {
+        "_key": "expand_entity_relationships",
+        "title": "[OR1200_Golden_Entities] Expand Entity Relationships",
+        "description": "Select OR1200_Golden_Entities: expand related entities",
+        "query": "FOR node IN @nodes\n  FOR v, e, p IN 1..1 ANY node\n    OR1200_Golden_Relations\n    FILTER IS_SAME_COLLECTION(\"OR1200_Golden_Entities\", v)\n    LIMIT 20\n    RETURN p",
+        "createdAt": "2026-01-02T12:00:00.000Z"
+      },
+      {
+        "_key": "show_wiring_connections",
+        "title": "[RTL_Port] Show Wiring Connections",
+        "description": "Select RTL_Port: show wiring connections",
+        "query": "FOR node IN @nodes\n  FOR v, e, p IN 1..1 ANY node\n    GRAPH \"IC_Knowledge_Graph\"\n    FILTER e.type == \"WIRED_TO\"\n    LIMIT 20\n    RETURN p",
+        "createdAt": "2026-01-02T12:00:00.000Z"
+      },
+      {
+        "_key": "find_parent_module",
+        "title": "[RTL_Module/Port/Signal] Find Parent Module",
+        "description": "Select RTL_Port/RTL_Signal/RTL_Module: find parent module",
+        "query": "FOR node IN @nodes\n  FOR v, e, p IN 1..1 INBOUND node\n    GRAPH \"IC_Knowledge_Graph\"\n    FILTER e.type == \"CONTAINS\" OR e.type == \"HAS_PORT\" OR e.type == \"HAS_SIGNAL\"\n    FILTER IS_SAME_COLLECTION(\"RTL_Module\", v)\n    RETURN p",
+        "createdAt": "2026-01-02T12:00:00.000Z"
+      },
+      {
+        "_key": "show_commit_history",
+        "title": "[RTL_Module] Show Commit History",
+        "description": "Select RTL_Module: show commit history",
+        "query": "FOR node IN @nodes\n  FOR v, e, p IN 1..1 INBOUND node\n    GRAPH \"IC_Knowledge_Graph\"\n    FILTER e.type == \"MODIFIED\"\n    FILTER IS_SAME_COLLECTION(\"GitCommit\", v)\n    SORT v.timestamp DESC\n    LIMIT 10\n    RETURN p",
+        "createdAt": "2026-01-02T12:00:00.000Z"
+      },
+      {
+        "_key": "full_neighborhood",
+        "title": "[Any] Full Neighborhood (2-hop)",
+        "description": "Select any node: show everything connected within 2 hops",
+        "query": "FOR node IN @nodes\n  FOR v, e, p IN 1..2 ANY node\n    GRAPH \"IC_Knowledge_Graph\"\n    LIMIT 50\n    RETURN p",
+        "createdAt": "2026-01-02T12:00:00.000Z"
+      }
+    ]
+  },
+  {
+    "_comment": "Theme Configuration for OR1200 Knowledge Graph Demo",
+    "_collection": "_viewpointThemes",
+    "_note": "Import this document into the _viewpointThemes collection",
+    "theme": {
+      "graphId": "OR1200_Knowledge_Graph",
+      "name": "Cadence Demo Theme",
+      "description": "Optimized colors and icons for hardware design visualization",
+      "nodeConfigMap": {
+        "RTL_Module": {
+          "background": {
+            "color": "#667eea",
+            "iconName": "mdi:chip"
+          },
+          "labelAttribute": "label",
+          "hoverInfoAttributes": [
+            "type",
+            "metadata.summary"
+          ],
+          "rules": []
+        },
+        "RTL_Port": {
+          "background": {
+            "color": "#319795",
+            "iconName": "mdi:electric-switch"
+          },
+          "labelAttribute": "label",
+          "hoverInfoAttributes": [
+            "metadata.direction"
+          ],
+          "rules": []
+        },
+        "RTL_Signal": {
+          "background": {
+            "color": "#805ad5",
+            "iconName": "mdi:sine-wave"
+          },
+          "labelAttribute": "label",
+          "hoverInfoAttributes": [
+            "metadata.signal_type"
+          ],
+          "rules": []
+        },
+        "RTL_LogicChunk": {
+          "background": {
+            "color": "#ecc94b",
+            "iconName": "mdi:code-braces"
+          },
+          "labelAttribute": "label",
+          "hoverInfoAttributes": [
+            "metadata.chunk_type"
+          ],
+          "rules": []
+        },
+        "OR1200_Golden_Entities": {
+          "background": {
+            "color": "#38a169",
+            "iconName": "mdi:file-document"
+          },
+          "labelAttribute": "entity_name",
+          "hoverInfoAttributes": [
+            "entity_type",
+            "description"
+          ],
+          "rules": []
+        },
+        "GitCommit": {
+          "background": {
+            "color": "#e53e3e",
+            "iconName": "mdi:source-commit"
+          },
+          "labelAttribute": "hash",
+          "hoverInfoAttributes": [
+            "author",
+            "timestamp",
+            "message"
+          ],
+          "rules": []
+        }
+      },
+      "edgeConfigMap": {
+        "RESOLVED_TO": {
+          "lineStyle": {
+            "color": "#d69e2e",
+            "thickness": 1.2
+          },
+          "labelStyle": {
+            "color": "#1d2531"
+          },
+          "arrowStyle": {
+            "sourceArrowShape": "none",
+            "targetArrowShape": "triangle"
+          },
+          "labelAttribute": "score",
+          "hoverInfoAttributes": [
+            "method",
+            "score"
+          ],
+          "rules": []
+        },
+        "CONTAINS": {
+          "lineStyle": {
+            "color": "#a0aec0",
+            "thickness": 0.7
+          },
+          "labelStyle": {
+            "color": "#1d2531"
+          },
+          "arrowStyle": {
+            "sourceArrowShape": "none",
+            "targetArrowShape": "triangle"
+          },
+          "labelAttribute": "type",
+          "hoverInfoAttributes": [],
+          "rules": []
+        },
+        "HAS_PORT": {
+          "lineStyle": {
+            "color": "#4299e1",
+            "thickness": 0.7
+          },
+          "labelStyle": {
+            "color": "#1d2531"
+          },
+          "arrowStyle": {
+            "sourceArrowShape": "none",
+            "targetArrowShape": "triangle"
+          },
+          "labelAttribute": "type",
+          "hoverInfoAttributes": [],
+          "rules": []
+        },
+        "HAS_SIGNAL": {
+          "lineStyle": {
+            "color": "#9f7aea",
+            "thickness": 0.7
+          },
+          "labelStyle": {
+            "color": "#1d2531"
+          },
+          "arrowStyle": {
+            "sourceArrowShape": "none",
+            "targetArrowShape": "triangle"
+          },
+          "labelAttribute": "type",
+          "hoverInfoAttributes": [],
+          "rules": []
+        },
+        "MODIFIED": {
+          "lineStyle": {
+            "color": "#fc8181",
+            "thickness": 0.9
+          },
+          "labelStyle": {
+            "color": "#1d2531"
+          },
+          "arrowStyle": {
+            "sourceArrowShape": "none",
+            "targetArrowShape": "triangle"
+          },
+          "labelAttribute": "type",
+          "hoverInfoAttributes": [
+            "timestamp"
+          ],
+          "rules": []
+        },
+        "WIRED_TO": {
+          "lineStyle": {
+            "color": "#2d3748",
+            "thickness": 0.5
+          },
+          "labelStyle": {
+            "color": "#1d2531"
+          },
+          "arrowStyle": {
+            "sourceArrowShape": "none",
+            "targetArrowShape": "triangle"
+          },
+          "labelAttribute": "_id",
+          "hoverInfoAttributes": [],
+          "rules": []
+        },
+        "OR1200_Golden_Relations": {
+          "lineStyle": {
+            "color": "#48bb78",
+            "thickness": 0.7
+          },
+          "labelStyle": {
+            "color": "#1d2531"
+          },
+          "arrowStyle": {
+            "sourceArrowShape": "none",
+            "targetArrowShape": "triangle"
+          },
+          "labelAttribute": "type",
+          "hoverInfoAttributes": [
+            "type"
+          ],
+          "rules": []
+        }
+      },
+      "createdAt": "2026-01-02T12:00:00.000Z",
+      "updatedAt": "2026-01-02T12:00:00.000Z"
+    }
+  }
+]

@@ -1,0 +1,1128 @@
+{
+  "graphId": "IC_Knowledge_Graph",
+  "name": "hardware-design",
+  "description": "Optimized theme for OR1200 hardware design visualization demo",
+  "nodeConfigMap": {
+    "RTL_Module": {
+      "background": {
+        "color": "#24761e",
+        "iconName": "fa6-solid:microchip"
+      },
+      "labelAttribute": "label",
+      "hoverInfoAttributes": [
+        "type",
+        "metadata",
+        "label"
+      ],
+      "rules": []
+    },
+    "RTL_Port": {
+      "background": {
+        "color": "#ed64a6",
+        "iconName": "mdi:usb-c-port"
+      },
+      "labelAttribute": "label",
+      "hoverInfoAttributes": [
+        "label",
+        "metadata",
+        "type"
+      ],
+      "rules": []
+    },
+    "RTL_Signal": {
+      "background": {
+        "color": "#48bb78",
+        "iconName": "mdi:signal-variant"
+      },
+      "labelAttribute": "label",
+      "hoverInfoAttributes": [
+        "label",
+        "metadata",
+        "type"
+      ],
+      "rules": []
+    },
+    "RTL_LogicChunk": {
+      "background": {
+        "color": "#667eea",
+        "iconName": "mdi:code-braces"
+      },
+      "labelAttribute": "label",
+      "hoverInfoAttributes": [
+        "label",
+        "metadata",
+        "type"
+      ],
+      "rules": []
+    },
+    "RTL_Parameter": {
+      "background": {
+        "color": "#f6ad55",
+        "iconName": "mdi:cog"
+      },
+      "labelAttribute": "name",
+      "hoverInfoAttributes": [
+        "name",
+        "value",
+        "evaluated_value",
+        "parent_module",
+        "metadata"
+      ],
+      "rules": []
+    },
+    "RTL_Memory": {
+      "background": {
+        "color": "#fc8181",
+        "iconName": "mdi:memory"
+      },
+      "labelAttribute": "name",
+      "hoverInfoAttributes": [
+        "name",
+        "width",
+        "depth",
+        "total_bits",
+        "parent_module",
+        "metadata"
+      ],
+      "rules": []
+    },
+    "RTL_Function": {
+      "background": {
+        "color": "#9f7aea",
+        "iconName": "mdi:function"
+      },
+      "labelAttribute": "name",
+      "hoverInfoAttributes": [
+        "name",
+        "return_width",
+        "return_type",
+        "input_count",
+        "inputs",
+        "parent_module",
+        "metadata"
+      ],
+      "rules": []
+    },
+    "RTL_Assign": {
+      "background": {
+        "color": "#48bb78",
+        "iconName": "mdi:arrow-right-bold"
+      },
+      "labelAttribute": "target",
+      "hoverInfoAttributes": [
+        "target",
+        "expression",
+        "dependency_count",
+        "parent_module",
+        "metadata"
+      ],
+      "rules": []
+    },
+    "RTL_Assertion": {
+      "background": {
+        "color": "#f56565",
+        "iconName": "mdi:alert-circle"
+      },
+      "labelAttribute": "kind",
+      "hoverInfoAttributes": [
+        "kind",
+        "severity",
+        "description",
+        "full_text",
+        "parent_module",
+        "metadata"
+      ],
+      "rules": []
+    },
+    "RTL_Always": {
+      "background": {
+        "color": "#4299e1",
+        "iconName": "mdi:clock-fast"
+      },
+      "labelAttribute": "block_type",
+      "hoverInfoAttributes": [
+        "block_type",
+        "sensitivity_list",
+        "statement_count",
+        "complexity",
+        "parent_module",
+        "metadata"
+      ],
+      "rules": []
+    },
+    "OR1200_Golden_Entities": {
+      "background": {
+        "color": "#e5ce3e",
+        "iconName": "mdi:alien"
+      },
+      "labelAttribute": "label",
+      "hoverInfoAttributes": [
+        "aliases",
+        "description",
+        "embedding",
+        "entity_name",
+        "entity_type",
+        "label"
+      ],
+      "rules": []
+    },
+    "OR1200_Entities": {
+      "background": {
+        "color": "#3182ce",
+        "iconName": "mdi:alien"
+      },
+      "labelAttribute": "entity_name",
+      "hoverInfoAttributes": [
+        "entity_name",
+        "entity_type",
+        "description"
+      ],
+      "rules": []
+    },
+    "GitCommit": {
+      "background": {
+        "color": "#9f7aea",
+        "iconName": "mdi:source-commit"
+      },
+      "labelAttribute": "label",
+      "hoverInfoAttributes": [
+        "type",
+        "metadata",
+        "label",
+        "hash",
+        "author",
+        "timestamp"
+      ],
+      "rules": []
+    },
+    "OR1200_Chunks": {
+      "background": {
+        "color": "#d53f8c",
+        "iconName": "mdi:book-open-page-variant-outline"
+      },
+      "labelAttribute": "_id",
+      "hoverInfoAttributes": [
+        "chunk_order_index",
+        "content",
+        "tokens"
+      ],
+      "rules": []
+    },
+    "OR1200_Documents": {
+      "background": {
+        "color": "#2c5282",
+        "iconName": "mdi:book"
+      },
+      "labelAttribute": "_id",
+      "hoverInfoAttributes": [
+        "content",
+        "import_number"
+      ],
+      "rules": []
+    },
+    "OR1200_Communities": {
+      "background": {
+        "color": "#7057ff",
+        "iconName": "mdi:account-group"
+      },
+      "labelAttribute": "_id",
+      "hoverInfoAttributes": [
+        "title",
+        "level"
+      ],
+      "rules": []
+    },
+    "Author": {
+      "background": {
+        "color": "#ff9f40",
+        "iconName": "fa6-solid:user"
+      },
+      "labelAttribute": "name",
+      "hoverInfoAttributes": [
+        "name",
+        "email",
+        "metadata"
+      ],
+      "rules": []
+    },
+    "FSM_StateMachine": {
+      "background": {
+        "color": "#38b2ac",
+        "iconName": "mdi:state-machine"
+      },
+      "labelAttribute": "name",
+      "hoverInfoAttributes": [
+        "name",
+        "state_register",
+        "state_count",
+        "parent_module",
+        "metadata"
+      ],
+      "rules": []
+    },
+    "FSM_State": {
+      "background": {
+        "color": "#4fd1c5",
+        "iconName": "mdi:circle-outline"
+      },
+      "labelAttribute": "name",
+      "hoverInfoAttributes": [
+        "name",
+        "encoding",
+        "metadata"
+      ],
+      "rules": []
+    },
+    "ClockDomain": {
+      "background": {
+        "color": "#3182ce",
+        "iconName": "mdi:clock-outline"
+      },
+      "labelAttribute": "name",
+      "hoverInfoAttributes": [
+        "name",
+        "clock_signal",
+        "metadata"
+      ],
+      "rules": []
+    },
+    "BusInterface": {
+      "background": {
+        "color": "#d69e2e",
+        "iconName": "mdi:serial-port"
+      },
+      "labelAttribute": "name",
+      "hoverInfoAttributes": [
+        "name",
+        "interface_type",
+        "port_count",
+        "parent_module",
+        "metadata"
+      ],
+      "rules": []
+    },
+    "MemoryPort": {
+      "background": {
+        "color": "#f56565",
+        "iconName": "mdi:door-open"
+      },
+      "labelAttribute": "name",
+      "hoverInfoAttributes": [
+        "name",
+        "parent_module",
+        "metadata"
+      ],
+      "rules": []
+    },
+    "Operator": {
+      "background": {
+        "color": "#ed8936",
+        "iconName": "mdi:plus-minus-variant"
+      },
+      "labelAttribute": "name",
+      "hoverInfoAttributes": [
+        "name",
+        "operator_type",
+        "parent_module"
+      ],
+      "rules": []
+    },
+    "GenerateBlock": {
+      "background": {
+        "color": "#667eea",
+        "iconName": "mdi:repeat"
+      },
+      "labelAttribute": "name",
+      "hoverInfoAttributes": [
+        "name",
+        "parent_module",
+        "loop_count",
+        "metadata"
+      ],
+      "rules": []
+    }
+  },
+  "edgeConfigMap": {
+    "RESOLVED_TO": {
+      "lineStyle": {
+        "color": "#d69e2e",
+        "thickness": 1.2
+      },
+      "labelStyle": {
+        "color": "#1d2531"
+      },
+      "arrowStyle": {
+        "sourceArrowShape": "none",
+        "targetArrowShape": "triangle"
+      },
+      "labelAttribute": "_id",
+      "hoverInfoAttributes": [
+        "score",
+        "method"
+      ],
+      "rules": []
+    },
+    "WIRED_TO": {
+      "lineStyle": {
+        "color": "#d53f8c",
+        "thickness": 1.2
+      },
+      "labelStyle": {
+        "color": "#1d2531"
+      },
+      "arrowStyle": {
+        "sourceArrowShape": "none",
+        "targetArrowShape": "triangle"
+      },
+      "labelAttribute": "type",
+      "hoverInfoAttributes": [
+        "type",
+        "metadata"
+      ],
+      "rules": []
+    },
+    "CONTAINS": {
+      "lineStyle": {
+        "color": "#787878",
+        "thickness": 0.7
+      },
+      "labelStyle": {
+        "color": "#1d2531"
+      },
+      "arrowStyle": {
+        "sourceArrowShape": "none",
+        "targetArrowShape": "triangle"
+      },
+      "labelAttribute": "type",
+      "hoverInfoAttributes": [
+        "type",
+        "metadata"
+      ],
+      "rules": []
+    },
+    "HAS_PORT": {
+      "lineStyle": {
+        "color": "#4299e1",
+        "thickness": 0.7
+      },
+      "labelStyle": {
+        "color": "#1d2531"
+      },
+      "arrowStyle": {
+        "sourceArrowShape": "none",
+        "targetArrowShape": "triangle"
+      },
+      "labelAttribute": "type",
+      "hoverInfoAttributes": [
+        "type"
+      ],
+      "rules": []
+    },
+    "HAS_SIGNAL": {
+      "lineStyle": {
+        "color": "#9f7aea",
+        "thickness": 0.7
+      },
+      "labelStyle": {
+        "color": "#1d2531"
+      },
+      "arrowStyle": {
+        "sourceArrowShape": "none",
+        "targetArrowShape": "triangle"
+      },
+      "labelAttribute": "type",
+      "hoverInfoAttributes": [
+        "type"
+      ],
+      "rules": []
+    },
+    "MODIFIED": {
+      "lineStyle": {
+        "color": "#fc8181",
+        "thickness": 0.9
+      },
+      "labelStyle": {
+        "color": "#1d2531"
+      },
+      "arrowStyle": {
+        "sourceArrowShape": "none",
+        "targetArrowShape": "triangle"
+      },
+      "labelAttribute": "type",
+      "hoverInfoAttributes": [
+        "metadata",
+        "type"
+      ],
+      "rules": []
+    },
+    "OR1200_Golden_Relations": {
+      "lineStyle": {
+        "color": "#06b6d4",
+        "thickness": 0.7
+      },
+      "labelStyle": {
+        "color": "#1d2531"
+      },
+      "arrowStyle": {
+        "sourceArrowShape": "none",
+        "targetArrowShape": "triangle"
+      },
+      "labelAttribute": "type",
+      "hoverInfoAttributes": [
+        "type",
+        "provenance"
+      ],
+      "rules": []
+    },
+    "OR1200_Relations": {
+      "lineStyle": {
+        "color": "#787878",
+        "thickness": 0.7
+      },
+      "labelStyle": {
+        "color": "#1d2531"
+      },
+      "arrowStyle": {
+        "sourceArrowShape": "none",
+        "targetArrowShape": "triangle"
+      },
+      "labelAttribute": "type",
+      "hoverInfoAttributes": [
+        "type"
+      ],
+      "rules": []
+    },
+    "REFERENCES": {
+      "lineStyle": {
+        "color": "#787878",
+        "thickness": 0.7
+      },
+      "labelStyle": {
+        "color": "#1d2531"
+      },
+      "arrowStyle": {
+        "sourceArrowShape": "none",
+        "targetArrowShape": "triangle"
+      },
+      "labelAttribute": "_id",
+      "hoverInfoAttributes": [
+        "score",
+        "method"
+      ],
+      "rules": []
+    },
+    "CONSOLIDATES": {
+      "lineStyle": {
+        "color": "#9752e5",
+        "thickness": 0.7
+      },
+      "labelStyle": {
+        "color": "#1d2531"
+      },
+      "arrowStyle": {
+        "sourceArrowShape": "none",
+        "targetArrowShape": "triangle"
+      },
+      "labelAttribute": "type",
+      "hoverInfoAttributes": [
+        "type",
+        "match_technique",
+        "match_score"
+      ],
+      "rules": []
+    },
+    "AUTHORED": {
+      "lineStyle": {
+        "color": "#ff9f40",
+        "thickness": 0.9
+      },
+      "labelStyle": {
+        "color": "#1d2531"
+      },
+      "arrowStyle": {
+        "sourceArrowShape": "none",
+        "targetArrowShape": "triangle"
+      },
+      "labelAttribute": "type",
+      "hoverInfoAttributes": [
+        "type"
+      ],
+      "rules": []
+    },
+    "MAINTAINS": {
+      "lineStyle": {
+        "color": "#38b2ac",
+        "thickness": 1.1
+      },
+      "labelStyle": {
+        "color": "#1d2531"
+      },
+      "arrowStyle": {
+        "sourceArrowShape": "none",
+        "targetArrowShape": "triangle"
+      },
+      "labelAttribute": "type",
+      "hoverInfoAttributes": [
+        "commit_count",
+        "maintenance_score",
+        "first_commit",
+        "last_commit"
+      ],
+      "rules": []
+    },
+    "HAS_FSM": {
+      "lineStyle": {
+        "color": "#38b2ac",
+        "thickness": 1.0
+      },
+      "labelStyle": {
+        "color": "#1d2531"
+      },
+      "arrowStyle": {
+        "sourceArrowShape": "none",
+        "targetArrowShape": "triangle"
+      },
+      "labelAttribute": "type",
+      "hoverInfoAttributes": [
+        "type"
+      ],
+      "rules": []
+    },
+    "HAS_STATE": {
+      "lineStyle": {
+        "color": "#4fd1c5",
+        "thickness": 0.7
+      },
+      "labelStyle": {
+        "color": "#1d2531"
+      },
+      "arrowStyle": {
+        "sourceArrowShape": "none",
+        "targetArrowShape": "triangle"
+      },
+      "labelAttribute": "type",
+      "hoverInfoAttributes": [
+        "type"
+      ],
+      "rules": []
+    },
+    "TRANSITIONS_TO": {
+      "lineStyle": {
+        "color": "#48bb78",
+        "thickness": 1.2
+      },
+      "labelStyle": {
+        "color": "#1d2531"
+      },
+      "arrowStyle": {
+        "sourceArrowShape": "none",
+        "targetArrowShape": "triangle"
+      },
+      "labelAttribute": "condition",
+      "hoverInfoAttributes": [
+        "condition",
+        "metadata"
+      ],
+      "rules": []
+    },
+    "STATE_REGISTER": {
+      "lineStyle": {
+        "color": "#38b2ac",
+        "thickness": 0.8
+      },
+      "labelStyle": {
+        "color": "#1d2531"
+      },
+      "arrowStyle": {
+        "sourceArrowShape": "none",
+        "targetArrowShape": "triangle"
+      },
+      "labelAttribute": "type",
+      "hoverInfoAttributes": [
+        "type"
+      ],
+      "rules": []
+    },
+    "IMPLEMENTED_BY": {
+      "lineStyle": {
+        "color": "#667eea",
+        "thickness": 0.8
+      },
+      "labelStyle": {
+        "color": "#1d2531"
+      },
+      "arrowStyle": {
+        "sourceArrowShape": "none",
+        "targetArrowShape": "triangle"
+      },
+      "labelAttribute": "type",
+      "hoverInfoAttributes": [
+        "type"
+      ],
+      "rules": []
+    },
+    "HAS_PARAMETER": {
+      "lineStyle": {
+        "color": "#f6ad55",
+        "thickness": 0.9
+      },
+      "labelStyle": {
+        "color": "#1d2531"
+      },
+      "arrowStyle": {
+        "sourceArrowShape": "none",
+        "targetArrowShape": "triangle"
+      },
+      "labelAttribute": "type",
+      "hoverInfoAttributes": [
+        "type"
+      ],
+      "rules": []
+    },
+    "USES_PARAMETER": {
+      "lineStyle": {
+        "color": "#ed8936",
+        "thickness": 0.7
+      },
+      "labelStyle": {
+        "color": "#1d2531"
+      },
+      "arrowStyle": {
+        "sourceArrowShape": "none",
+        "targetArrowShape": "triangle"
+      },
+      "labelAttribute": "type",
+      "hoverInfoAttributes": [
+        "type"
+      ],
+      "rules": []
+    },
+    "HAS_MEMORY": {
+      "lineStyle": {
+        "color": "#fc8181",
+        "thickness": 1.0
+      },
+      "labelStyle": {
+        "color": "#1d2531"
+      },
+      "arrowStyle": {
+        "sourceArrowShape": "none",
+        "targetArrowShape": "triangle"
+      },
+      "labelAttribute": "type",
+      "hoverInfoAttributes": [
+        "type"
+      ],
+      "rules": []
+    },
+    "MEMORY_PORT": {
+      "lineStyle": {
+        "color": "#f56565",
+        "thickness": 0.8
+      },
+      "labelStyle": {
+        "color": "#1d2531"
+      },
+      "arrowStyle": {
+        "sourceArrowShape": "none",
+        "targetArrowShape": "triangle"
+      },
+      "labelAttribute": "type",
+      "hoverInfoAttributes": [
+        "type"
+      ],
+      "rules": []
+    },
+    "STORED_IN": {
+      "lineStyle": {
+        "color": "#e53e3e",
+        "thickness": 0.7
+      },
+      "labelStyle": {
+        "color": "#1d2531"
+      },
+      "arrowStyle": {
+        "sourceArrowShape": "none",
+        "targetArrowShape": "triangle"
+      },
+      "labelAttribute": "type",
+      "hoverInfoAttributes": [
+        "type"
+      ],
+      "rules": []
+    },
+    "HAS_FUNCTION": {
+      "lineStyle": {
+        "color": "#9f7aea",
+        "thickness": 0.9
+      },
+      "labelStyle": {
+        "color": "#1d2531"
+      },
+      "arrowStyle": {
+        "sourceArrowShape": "none",
+        "targetArrowShape": "triangle"
+      },
+      "labelAttribute": "type",
+      "hoverInfoAttributes": [
+        "type"
+      ],
+      "rules": []
+    },
+    "CALLS_FUNCTION": {
+      "lineStyle": {
+        "color": "#805ad5",
+        "thickness": 1.0
+      },
+      "labelStyle": {
+        "color": "#1d2531"
+      },
+      "arrowStyle": {
+        "sourceArrowShape": "none",
+        "targetArrowShape": "triangle"
+      },
+      "labelAttribute": "type",
+      "hoverInfoAttributes": [
+        "type"
+      ],
+      "rules": []
+    },
+    "FUNCTION_INPUT": {
+      "lineStyle": {
+        "color": "#b794f4",
+        "thickness": 0.7
+      },
+      "labelStyle": {
+        "color": "#1d2531"
+      },
+      "arrowStyle": {
+        "sourceArrowShape": "none",
+        "targetArrowShape": "triangle"
+      },
+      "labelAttribute": "type",
+      "hoverInfoAttributes": [
+        "type"
+      ],
+      "rules": []
+    },
+    "FUNCTION_OUTPUT": {
+      "lineStyle": {
+        "color": "#d6bcfa",
+        "thickness": 0.7
+      },
+      "labelStyle": {
+        "color": "#1d2531"
+      },
+      "arrowStyle": {
+        "sourceArrowShape": "none",
+        "targetArrowShape": "triangle"
+      },
+      "labelAttribute": "type",
+      "hoverInfoAttributes": [
+        "type"
+      ],
+      "rules": []
+    },
+    "HAS_ASSIGN": {
+      "lineStyle": {
+        "color": "#48bb78",
+        "thickness": 0.7
+      },
+      "labelStyle": {
+        "color": "#1d2531"
+      },
+      "arrowStyle": {
+        "sourceArrowShape": "none",
+        "targetArrowShape": "triangle"
+      },
+      "labelAttribute": "type",
+      "hoverInfoAttributes": [
+        "type"
+      ],
+      "rules": []
+    },
+    "DRIVES": {
+      "lineStyle": {
+        "color": "#68d391",
+        "thickness": 1.0
+      },
+      "labelStyle": {
+        "color": "#1d2531"
+      },
+      "arrowStyle": {
+        "sourceArrowShape": "none",
+        "targetArrowShape": "triangle"
+      },
+      "labelAttribute": "signal_name",
+      "hoverInfoAttributes": [
+        "signal_name",
+        "type"
+      ],
+      "rules": []
+    },
+    "READS_FROM": {
+      "lineStyle": {
+        "color": "#9ae6b4",
+        "thickness": 0.7
+      },
+      "labelStyle": {
+        "color": "#1d2531"
+      },
+      "arrowStyle": {
+        "sourceArrowShape": "none",
+        "targetArrowShape": "triangle"
+      },
+      "labelAttribute": "signal_name",
+      "hoverInfoAttributes": [
+        "signal_name",
+        "type"
+      ],
+      "rules": []
+    },
+    "HAS_ASSERTION": {
+      "lineStyle": {
+        "color": "#f56565",
+        "thickness": 0.8
+      },
+      "labelStyle": {
+        "color": "#1d2531"
+      },
+      "arrowStyle": {
+        "sourceArrowShape": "none",
+        "targetArrowShape": "triangle"
+      },
+      "labelAttribute": "type",
+      "hoverInfoAttributes": [
+        "type"
+      ],
+      "rules": []
+    },
+    "CHECKS_SIGNAL": {
+      "lineStyle": {
+        "color": "#fc8181",
+        "thickness": 0.7
+      },
+      "labelStyle": {
+        "color": "#1d2531"
+      },
+      "arrowStyle": {
+        "sourceArrowShape": "none",
+        "targetArrowShape": "triangle"
+      },
+      "labelAttribute": "type",
+      "hoverInfoAttributes": [
+        "type"
+      ],
+      "rules": []
+    },
+    "HAS_ALWAYS": {
+      "lineStyle": {
+        "color": "#4299e1",
+        "thickness": 0.8
+      },
+      "labelStyle": {
+        "color": "#1d2531"
+      },
+      "arrowStyle": {
+        "sourceArrowShape": "none",
+        "targetArrowShape": "triangle"
+      },
+      "labelAttribute": "type",
+      "hoverInfoAttributes": [
+        "type"
+      ],
+      "rules": []
+    },
+    "SENSITIVE_TO": {
+      "lineStyle": {
+        "color": "#63b3ed",
+        "thickness": 0.6
+      },
+      "labelStyle": {
+        "color": "#1d2531"
+      },
+      "arrowStyle": {
+        "sourceArrowShape": "none",
+        "targetArrowShape": "triangle"
+      },
+      "labelAttribute": "signal_name",
+      "hoverInfoAttributes": [
+        "signal_name",
+        "type"
+      ],
+      "rules": []
+    },
+    "CLOCKED_BY": {
+      "lineStyle": {
+        "color": "#3182ce",
+        "thickness": 1.0
+      },
+      "labelStyle": {
+        "color": "#1d2531"
+      },
+      "arrowStyle": {
+        "sourceArrowShape": "none",
+        "targetArrowShape": "triangle"
+      },
+      "labelAttribute": "signal_name",
+      "hoverInfoAttributes": [
+        "signal_name",
+        "edge_type",
+        "type"
+      ],
+      "rules": []
+    },
+    "RESET_BY": {
+      "lineStyle": {
+        "color": "#2c5282",
+        "thickness": 0.9
+      },
+      "labelStyle": {
+        "color": "#1d2531"
+      },
+      "arrowStyle": {
+        "sourceArrowShape": "none",
+        "targetArrowShape": "triangle"
+      },
+      "labelAttribute": "signal_name",
+      "hoverInfoAttributes": [
+        "signal_name",
+        "reset_type",
+        "type"
+      ],
+      "rules": []
+    },
+    "CROSSES_DOMAIN": {
+      "lineStyle": {
+        "color": "#f56565",
+        "thickness": 1.5,
+        "lineType": "dashed"
+      },
+      "labelStyle": {
+        "color": "#f56565"
+      },
+      "arrowStyle": {
+        "sourceArrowShape": "none",
+        "targetArrowShape": "triangle"
+      },
+      "labelAttribute": "type",
+      "hoverInfoAttributes": [
+        "type",
+        "metadata"
+      ],
+      "rules": []
+    },
+    "PART_OF_BUS": {
+      "lineStyle": {
+        "color": "#d69e2e",
+        "thickness": 0.8
+      },
+      "labelStyle": {
+        "color": "#1d2531"
+      },
+      "arrowStyle": {
+        "sourceArrowShape": "none",
+        "targetArrowShape": "triangle"
+      },
+      "labelAttribute": "type",
+      "hoverInfoAttributes": [
+        "type"
+      ],
+      "rules": []
+    },
+    "IMPLEMENTS": {
+      "lineStyle": {
+        "color": "#d69e2e",
+        "thickness": 1.0
+      },
+      "labelStyle": {
+        "color": "#1d2531"
+      },
+      "arrowStyle": {
+        "sourceArrowShape": "none",
+        "targetArrowShape": "triangle"
+      },
+      "labelAttribute": "type",
+      "hoverInfoAttributes": [
+        "type"
+      ],
+      "rules": []
+    },
+    "OVERRIDES": {
+      "lineStyle": {
+        "color": "#f6ad55",
+        "thickness": 1.1,
+        "lineType": "dashed"
+      },
+      "labelStyle": {
+        "color": "#1d2531"
+      },
+      "arrowStyle": {
+        "sourceArrowShape": "none",
+        "targetArrowShape": "triangle"
+      },
+      "labelAttribute": "type",
+      "hoverInfoAttributes": [
+        "type",
+        "metadata"
+      ],
+      "rules": []
+    },
+    "ACCESSES": {
+      "lineStyle": {
+        "color": "#fc8181",
+        "thickness": 1.0,
+        "lineType": "solid"
+      },
+      "labelStyle": {
+        "color": "#1d2531"
+      },
+      "arrowStyle": {
+        "sourceArrowShape": "none",
+        "targetArrowShape": "triangle"
+      },
+      "labelAttribute": "type",
+      "hoverInfoAttributes": [
+        "type",
+        "metadata"
+      ],
+      "rules": []
+    },
+    "USES_OPERATOR": {
+      "lineStyle": {
+        "color": "#ed8936",
+        "thickness": 0.8
+      },
+      "labelStyle": {
+        "color": "#1d2531"
+      },
+      "arrowStyle": {
+        "sourceArrowShape": "none",
+        "targetArrowShape": "triangle"
+      },
+      "labelAttribute": "type",
+      "hoverInfoAttributes": [
+        "type"
+      ],
+      "rules": []
+    },
+    "CALLS": {
+      "lineStyle": {
+        "color": "#9f7aea",
+        "thickness": 1.0
+      },
+      "labelStyle": {
+        "color": "#1d2531"
+      },
+      "arrowStyle": {
+        "sourceArrowShape": "none",
+        "targetArrowShape": "triangle"
+      },
+      "labelAttribute": "type",
+      "hoverInfoAttributes": [
+        "type"
+      ],
+      "rules": []
+    }
+  }
+}

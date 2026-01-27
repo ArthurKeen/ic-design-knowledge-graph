@@ -1,0 +1,16 @@
+# Local data and secrets
+.env
+data/*.json
+import_log.txt
+markdown_output/
+__pycache__/
+*.pyc
+
+# IDEs
+.vscode/
+.idea/
+.DS_Store
+
+# Testing
+.coverage
+.pytest_cache/
