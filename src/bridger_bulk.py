@@ -111,9 +111,10 @@ def create_search_view(db):
 
 def normalize_name_aql(name_var):
     """
-    Returns AQL expression to normalize a hardware name.
+    Returns AQL expression to normalize a hardware name: lowercase, trim,
+    replace underscores with space, collapse multiple spaces to one.
     """
-    return "LOWER(TRIM(SUBSTITUTE(SUBSTITUTE(" + name_var + ", '_', ' '), REGEX_REPLACE(" + name_var + ", '\\\\s+', ' ', true), ' ')))"
+    return "LOWER(TRIM(REGEX_REPLACE(SUBSTITUTE(" + name_var + ", '_', ' '), '\\\\s+', ' ', true)))"
 
 
 def approximate_jaro_winkler_aql(str1_var, str2_var):
@@ -147,6 +148,10 @@ def bulk_bridge_collection(db, col_name, view_name, threshold, method, truncate=
     
     # Get compatible types for this collection
     compatible_types = TYPE_COMPATIBILITY.get(col_name, [])
+    
+    # For RTL_Module, require minimum name-based similarity so we don't bridge
+    # generic cells (FLIPFLOP, DECODER, BLOCK0) to doc-only entities (e.g. "Physical Address").
+    min_name_score = 0.35 if col_name == COL_MODULE else 0.0
     
     # Determine label field based on collection
     label_field = "name" if col_name in [COL_BUS, COL_CLOCK, COL_FSM, COL_PARAMETER, COL_MEMORY] else "label"
@@ -194,7 +199,8 @@ def bulk_bridge_collection(db, col_name, view_name, threshold, method, truncate=
         "    // Extract and normalize item label\n"
         "    LET item_label = item." + label_field + "\n"
         "    FILTER item_label != null AND LENGTH(item_label) >= 2\n\n"
-        "    LET norm_label = " + norm_item_aql + "\n\n"
+        "    LET norm_label = " + norm_item_aql + "\n"
+        "    FILTER LENGTH(norm_label) >= 2\n\n"
         "    // Graph-aware context (for ports/signals)\n"
         "    " + graph_context_clause + "\n\n"
         "    // Search for candidate entities using ArangoSearch\n"
@@ -221,7 +227,8 @@ def bulk_bridge_collection(db, col_name, view_name, threshold, method, truncate=
         "            // Graph-aware boost (for ports/signals with parent context)\n"
         "            " + graph_boost_clause + "\n\n"
         "            LET final_score = score_with_lexical * graph_boost\n\n"
-        "            FILTER final_score > @threshold\n\n"
+        "            FILTER final_score > @threshold\n"
+        "            FILTER base_score >= @min_name_score\n\n"
         "            RETURN {\n"
         "                entity_id: cand._id,\n"
         "                entity_name: cand.entity_name,\n"
@@ -250,6 +257,7 @@ def bulk_bridge_collection(db, col_name, view_name, threshold, method, truncate=
         "entities_col": COL_ENTITIES,
         "compatible_types": compatible_types,
         "threshold": threshold,
+        "min_name_score": min_name_score,
         "method": method
     }
     
@@ -262,15 +270,12 @@ def bulk_bridge_collection(db, col_name, view_name, threshold, method, truncate=
         query_time = time.time() - start_time
         logger.info(f"  ✓ Query completed in {query_time:.2f}s, generated {len(edges)} edges")
         
+        if not db.has_collection(EDGE_RESOLVED):
+            db.create_collection(EDGE_RESOLVED, edge=True)
+        if truncate:
+            logger.info(f"  Truncating {EDGE_RESOLVED}...")
+            db.collection(EDGE_RESOLVED).truncate()
         if len(edges) > 0:
-            # Insert edges
-            if not db.has_collection(EDGE_RESOLVED):
-                db.create_collection(EDGE_RESOLVED, edge=True)
-            
-            if truncate:
-                logger.info(f"  Truncating {EDGE_RESOLVED}...")
-                db.collection(EDGE_RESOLVED).truncate()
-            
             logger.info(f"  Inserting {len(edges)} edges...")
             db.collection(EDGE_RESOLVED).import_bulk(edges)
             

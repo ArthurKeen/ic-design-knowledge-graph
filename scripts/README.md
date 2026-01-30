@@ -86,6 +86,24 @@ python3 scripts/setup/install_demo_setup.py
 - Creates canvas actions for demo scenarios
 - Links to viewpoint for OR1200_Knowledge_Graph
 
+### `list_bridging_examples.py`
+
+Lists strong bridging examples for demonstration (RTL_Module and subcomponents → Golden Entities).
+
+**Usage**:
+```bash
+python3 scripts/list_bridging_examples.py
+python3 scripts/list_bridging_examples.py --json   # machine-readable
+```
+
+**What it does**:
+- Queries all RESOLVED_TO edges and enriches with source label and target entity name
+- Groups by RTL_Module, RTL_Port, RTL_Signal
+- Prints module-level bridges (if any), port bridges by parent module, signal bridges by parent module
+- Suggests demo entry points (modules with most bridged ports/signals)
+
+Use this after running `bridger_bulk.py` to find good nodes for a bridging demo (e.g. a module whose ports/signals resolve to doc entities).
+
 ### `setup/install_theme.py`
 
 Installs the 'hardware-design' visualization theme.

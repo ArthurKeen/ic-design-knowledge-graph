@@ -2,6 +2,10 @@
 
 This demonstration showcases the power of **ArangoDB** in harmonizing structured integrated circuit (IC) hardware design (RTL/Verilog), temporal version history (Git), and unstructured technical specifications (GraphRAG) into a single, queryable knowledge graph. The current implementation uses the **OR1200 RISC processor** as sample data.
 
+![Bridging and consolidation](docs/images/bridging_consolidation.png)
+
+*Bridging (RESOLVED_TO edges) and consolidation: entities found in disparate documents are merged into Golden Entities and linked to RTL components (e.g. RTL_Port → Golden Entity).*
+
 ## Research Foundations
 
 This project is a modern implementation of the principles established in the **Design Knowledge Management System (DKMS)** research program co-authored for the Air Force Materiel Command (1989-1992). It realizes the vision of a "Semantic Bridge" between design intent and implementation that was pioneered in these foundational reports.

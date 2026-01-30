@@ -444,8 +444,32 @@ Based on the assessment document:
 
 ---
 
+## Semantic Bridging Fix (Multiple Modules → Same Golden Entity)
+
+**Issue:** Many unrelated RTL modules (e.g. FLIPFLOP, DECODER, BLOCK0) were resolving to the same documentation golden entity (e.g. "物理アドレス (PHYSICAL ADDRESS)"), so the graph showed a star of modules all RESOLVED_TO one doc concept.
+
+**Root cause (bulk bridger):**
+
+1. **Broken AQL normalizer** in `bridger_bulk.py`: `normalize_name_aql()` used `SUBSTITUTE(str, REGEX_REPLACE(str, '\s+', ' ', true), ' ')`, which for labels with no multiple spaces replaced the *entire* string with a space. After TRIM, `norm_label` became `""` for all modules. The SEARCH then used `entity_name LIKE '%%'`, which matches every Golden Entity, so every module got the same candidate set and the same “best” entity.
+
+2. **No name-anchor for modules:** Even with a correct search, bridging allowed description-only matches; generic cell names could win on description overlap without any lexical overlap with the entity name.
+
+**Fixes applied:**
+
+- **`normalize_name_aql()`:** Replaced with `LOWER(TRIM(REGEX_REPLACE(SUBSTITUTE(name_var, '_', ' '), '\\s+', ' ', true)))` so we only collapse spaces and never wipe the string.
+- **Empty label guard:** Added `FILTER LENGTH(norm_label) >= 2` so we never bridge when the normalized label is empty or too short.
+- **Minimum name similarity for RTL_Module:** For module bridging only, added `FILTER base_score >= @min_name_score` (0.35) so we do not create RESOLVED_TO when the raw name similarity (Levenshtein-based) is too low—avoids linking generic cells to doc-only entities.
+
+After re-running bridging, only modules with a real lexical or semantic tie to a golden entity (e.g. name/substring overlap or high name similarity) should get RESOLVED_TO edges.
+
+---
+
 ## Changelog
 
+- **2026-01-29:** Semantic bridging fix (bulk bridger)
+  - Fix `normalize_name_aql()` so normalized labels are not emptied
+  - Require `LENGTH(norm_label) >= 2` before bridging
+  - Require `base_score >= 0.35` for RTL_Module to avoid doc-only matches
 - **2026-01-12:** Initial implementation of all four improvements
   - Task 4: Persistent indexes on RESOLVED_TO
   - Task 3: Graph-aware context for ports/signals
