@@ -22,29 +22,32 @@
 
 ### 2. Graph Structure Overview
 
-**Nodes:**
+**Nodes (Vertex Collections):**
 
 - **RTL_Module** (~104): Verilog modules representing hardware blocks (e.g., or1200_cpu, or1200_alu, or1200_dc_fsm). Hierarchical structure with top-level and sub-modules.
 - **RTL_Port** (~1,491): Module interface pins (input/output/inout). External connectivity points.
 - **RTL_Signal** (~1,441): Internal wires and registers. Dataflow and control paths within modules.
 - **RTL_LogicChunk** (~1,513): Behavioral units—always blocks, assign statements. Implements combinational and sequential logic.
+- **RTL_Assign** (~1,278): Assign statements. Source of DRIVES/READS_FROM dataflow edges.
 - **FSM_StateMachine** (4): Extracted finite state machines (e.g., data cache controller, instruction cache, exception handler).
 - **FSM_State** (23): Individual states within FSMs. Control flow states.
 - **RTL_Parameter** (~221): Design parameters and localparams. Configurable design constants.
 - **RTL_Memory** (8): RAM/ROM arrays and register files. Memory structures.
+- **MemoryPort** (8): Structured memory interfaces (addr, data, we). Links RTL_Memory to ports.
 - **ClockDomain** (6): Clock domains and timing boundaries. CDC (Clock Domain Crossing) analysis.
 - **BusInterface** (22): Logical bus groupings (Wishbone, SPR, LSU). Protocol interfaces.
 - **Operator** (200): Arithmetic and logical operators (adders, multiplexers). Resource usage.
 - **GitCommit** (48): Version history nodes. Design evolution over time.
 - **Author** (8): Hardware engineers/contributors. Expertise and ownership.
 - **OR1200_Golden_Entities** (~4,045): Canonical documentation entities (deduplicated). Spec concepts, registers, instructions, interfaces.
+- **OR1200_Entities** (~5,793): Raw entities from GraphRAG extraction (before consolidation into Golden).
 - **OR1200_Chunks** (~187): Text blocks from specifications. Source documentation paragraphs.
 - **OR1200_Documents** (7): Source PDF file references. Specification documents.
 - **OR1200_Communities** (~478): Entity clusters from Leiden algorithm. Related spec concepts.
 
-**Edges:**
+**Edges (Edge Collections):**
 
-- **CONTAINS**: RTL_Module → RTL_Module, RTL_LogicChunk (hierarchy, encapsulation)
+- **CONTAINS**: RTL_Module → RTL_Module, RTL_LogicChunk, GenerateBlock (hierarchy, encapsulation)
 - **DEPENDS_ON**: RTL_Module → RTL_Module (instantiation dependencies, e.g., CPU depends on ALU)
 - **HAS_PORT**, **HAS_SIGNAL**: RTL_Module → RTL_Port, RTL_Signal (interface and internal structure)
 - **WIRED_TO**: RTL_Port → RTL_Port (structural connectivity, pin-to-pin wiring)
@@ -53,10 +56,23 @@
 - **MAINTAINS**: Author → RTL_Module (derived expertise: ≥3 commits or ≥20% of module commits)
 - **RESOLVED_TO**: RTL_Module, RTL_Port, RTL_Signal → OR1200_Golden_Entities (**Semantic Bridge**—code-to-spec links)
 - **REFERENCES**: RTL_LogicChunk → OR1200_Chunks (direct spec paragraph references)
-- **HAS_FSM**, **HAS_STATE**, **TRANSITIONS_TO**: FSM structure and control flow
-- **CLOCKED_BY**, **CROSSES_DOMAIN**: Timing and CDC relationships
-- **IMPLEMENTS**, **PART_OF_BUS**: Bus interface mappings
-- **OR1200_Golden_Relations**: Entity-to-entity and entity-to-chunk relationships in documentation
+- **HAS_FSM**, **HAS_STATE**, **TRANSITIONS_TO**: FSM structure and control flow (FSM_StateMachine → FSM_State → FSM_State)
+- **STATE_REGISTER**: FSM_StateMachine → RTL_Signal (which signal holds state)
+- **IMPLEMENTED_BY**: FSM_StateMachine → RTL_LogicChunk (implementing always block)
+- **CLOCKED_BY**: RTL_Signal, RTL_LogicChunk → ClockDomain (timing dependency)
+- **CROSSES_DOMAIN**: RTL_Signal → ClockDomain (CDC detection)
+- **IMPLEMENTS**: RTL_Module → BusInterface (bus protocol implementation)
+- **PART_OF_BUS**: RTL_Port, RTL_Signal → BusInterface, MemoryPort (bus grouping)
+- **DRIVES**, **READS_FROM**: RTL_Assign → RTL_Signal (dataflow: what drives/reads each signal)
+- **HAS_PARAMETER**, **HAS_MEMORY**, **OVERRIDES**: RTL_Module → RTL_Parameter, RTL_Memory (design parameters)
+- **ACCESSES**: RTL_LogicChunk → RTL_Memory (memory read/write)
+- **MEMORY_PORT**: RTL_Memory → MemoryPort (memory interface)
+- **USES_OPERATOR**: RTL_LogicChunk, RTL_Signal → Operator (resource usage)
+- **OR1200_Golden_Relations**: OR1200_Golden_Entities ↔ OR1200_Golden_Entities (consolidated entity-to-entity relationships in documentation)
+- **OR1200_Relations**: OR1200_Entities ↔ OR1200_Entities, OR1200_Chunks, OR1200_Communities (raw entity relationships before consolidation)
+- **CONSOLIDATES**: OR1200_Golden_Entities → OR1200_Entities (entity resolution: Golden merges raw entities)
+
+**Graph & Database:** `IC_Knowledge_Graph` in database `ic-knowledge-graph`. Collection names are exact (e.g., `OR1200_Golden_Entities` not `Golden_Entities`). GraphRAG prefix `OR1200_` is configurable via `GRAPHRAG_PREFIX`.
 
 **Scale:**
 
