@@ -98,6 +98,14 @@ pip install -r requirements.txt
   - Lazy loading ensures fast startup times
   - No manual configuration required
 
+### 3b. Install agentic graph analytics (required for analytics reports)
+
+This repo can run analytics via the `graph-analytics-ai-platform` project:
+
+```bash
+pip install -e ~/code/graph-analytics-ai-platform
+```
+
 ### 4. Running the Pipeline
 The entire ingestion and bridging process is orchestrated via:
 ```bash
@@ -118,6 +126,16 @@ Run the test suite to ensure the environment is correctly configured:
 ```bash
 pytest tests/
 ```
+
+## Agentic analytics (reports)
+
+Once your ArangoDB database is populated (pipeline above), run:
+
+```bash
+python run_ic_analysis.py
+```
+
+Reports are written to `ic_analysis_output/` as both Markdown and interactive HTML.
 
 ## Visualization
 The "Semantic Bridge" can be explored visually via the **ArangoDB Dashboard**:

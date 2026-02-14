@@ -6,6 +6,9 @@ markdown_output/
 __pycache__/
 *.pyc
 
+# Agentic analytics outputs (generated)
+ic_analysis_output/
+
 # IDEs
 .vscode/
 .idea/

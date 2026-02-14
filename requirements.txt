@@ -10,6 +10,9 @@ pytest-cov>=4.1.0
 # Data Processing
 numpy>=1.24.0
 
+# Reporting (interactive HTML)
+plotly>=5.0.0
+
 # Optional: For notebook support
 jupyter>=1.0.0
 ipykernel>=6.25.0
