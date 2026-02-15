@@ -1,8 +1,8 @@
 # IC Knowledge Graph — Business Requirements for Graph Analytics
 
-**Purpose:** Domain description and business requirements for driving graph analytics and reporting on the IC Knowledge Graph via the graph-analytics-ai-platform.  
+**Purpose:** Domain description and business requirements for driving graph analytics and reporting on the IC Knowledge Graph via the agentic-graph-analytics.  
 **Audience:** Business analysts, hardware engineers, data scientists, product managers.  
-**Input For:** graph-analytics-ai-platform (graph analytics and reporting).
+**Input For:** agentic-graph-analytics (graph analytics and reporting).
 
 ---
 
@@ -283,4 +283,4 @@ The following use cases should be supported by graph analytics and reporting. Ea
 **Document Version:** 1.0  
 **Last Updated:** February 13, 2026  
 **Project:** ic-knowledge-graph  
-**Target Platform:** graph-analytics-ai-platform
+**Target Platform:** agentic-graph-analytics

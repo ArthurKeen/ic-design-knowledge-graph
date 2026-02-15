@@ -2,7 +2,7 @@
 """
 IC Knowledge Graph — Agentic Graph Analytics Runner
 
-Runs the agentic graph analytics workflow from graph-analytics-ai-platform against
+Runs the agentic graph analytics workflow from agentic-graph-analytics against
 the IC Knowledge Graph (OR1200 demo data) and produces Markdown + interactive HTML
 reports (Plotly).
 
@@ -11,7 +11,7 @@ Usage:
 
 Prereqs:
     - Install the platform library:
-        pip install -e ~/code/graph-analytics-ai-platform
+        pip install -e ~/code/agentic-graph-analytics
     - Configure `.env` (copy from env.template)
     - Ensure graph data is loaded in ArangoDB
 
@@ -78,8 +78,8 @@ def _require_platform():
             ArangoDBStorage,
         )
     except ImportError as e:
-        print("ERROR: graph-analytics-ai-platform is not available.")
-        print("\nFix: pip install -e ~/code/graph-analytics-ai-platform")
+        print("ERROR: agentic-graph-analytics is not available.")
+        print("\nFix: pip install -e ~/code/agentic-graph-analytics")
         raise SystemExit(1) from e
 
 
@@ -324,7 +324,7 @@ async def main() -> None:
         print("✓ Initialized agents")
     except Exception as e:
         print(f"✗ Failed to initialize: {e}")
-        print("\nCheck: `.env`, ArangoDB connection, and `pip install -e ~/code/graph-analytics-ai-platform`.")
+        print("\nCheck: `.env`, ArangoDB connection, and `pip install -e ~/code/agentic-graph-analytics`.")
         raise SystemExit(1) from e
 
     print()

@@ -100,10 +100,10 @@ pip install -r requirements.txt
 
 ### 3b. Install agentic graph analytics (required for analytics reports)
 
-This repo can run analytics via the `graph-analytics-ai-platform` project:
+This repo can run analytics via the `agentic-graph-analytics` project:
 
 ```bash
-pip install -e ~/code/graph-analytics-ai-platform
+pip install -e ~/code/agentic-graph-analytics
 ```
 
 ### 4. Running the Pipeline
