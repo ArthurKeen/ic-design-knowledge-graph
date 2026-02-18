@@ -100,11 +100,15 @@ pip install -r requirements.txt
 
 ### 3b. Install agentic graph analytics (required for analytics reports)
 
-This repo can run analytics via the `agentic-graph-analytics` project:
+This repo runs analytics via the `agentic-graph-analytics` project. Install from source (editable):
 
 ```bash
-pip install -e ~/code/agentic-graph-analytics
+cd ~/code/agentic-graph-analytics
+git pull origin main
+pip install -e .
 ```
+
+Ensure `.env` has valid ArangoDB credentials—the workflow uses JWT for GRAL; tokens expire during long runs and are auto-refreshed using `ARANGO_ENDPOINT`, `ARANGO_USER` (or `ARANGO_USERNAME`), and `ARANGO_PASSWORD`.
 
 ### 4. Running the Pipeline
 The entire ingestion and bridging process is orchestrated via:

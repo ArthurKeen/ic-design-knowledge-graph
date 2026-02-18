@@ -10,9 +10,8 @@ Usage:
     python run_ic_analysis.py
 
 Prereqs:
-    - Install the platform library:
-        pip install -e ~/code/agentic-graph-analytics
-    - Configure `.env` (copy from env.template)
+    - Install agentic-graph-analytics: cd ~/code/agentic-graph-analytics && git pull && pip install -e .
+    - Configure `.env` (copy from env.template); ensure ARANGO_ENDPOINT, ARANGO_USERNAME, ARANGO_PASSWORD are valid
     - Ensure graph data is loaded in ArangoDB
 
 Output:
@@ -79,7 +78,7 @@ def _require_platform():
         )
     except ImportError as e:
         print("ERROR: agentic-graph-analytics is not available.")
-        print("\nFix: pip install -e ~/code/agentic-graph-analytics")
+        print("\nFix: cd ~/code/agentic-graph-analytics && git pull && pip install -e .")
         raise SystemExit(1) from e
 
 
@@ -210,7 +209,7 @@ async def main() -> None:
 
     input_files: list[str] = []
     for fp in (
-        "business-requirements.txt",
+        "business-requirements.md",
         "README.md",
         "docs/README.md",
         "docs/DEMO_EXECUTIVE_SUMMARY.md",
@@ -324,7 +323,7 @@ async def main() -> None:
         print("✓ Initialized agents")
     except Exception as e:
         print(f"✗ Failed to initialize: {e}")
-        print("\nCheck: `.env`, ArangoDB connection, and `pip install -e ~/code/agentic-graph-analytics`.")
+        print("\nCheck: `.env` (ARANGO_ENDPOINT, ARANGO_USERNAME, ARANGO_PASSWORD), and agentic-graph-analytics installed.")
         raise SystemExit(1) from e
 
     print()

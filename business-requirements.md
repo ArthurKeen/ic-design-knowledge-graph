@@ -22,28 +22,30 @@
 
 ### 2. Graph Structure Overview
 
+*Domain context for analytics. The schema agent provides live structure; this section gives semantic meaning and business context.*
+
 **Nodes (Vertex Collections):**
 
-- **RTL_Module** (~104): Verilog modules representing hardware blocks (e.g., or1200_cpu, or1200_alu, or1200_dc_fsm). Hierarchical structure with top-level and sub-modules.
-- **RTL_Port** (~1,491): Module interface pins (input/output/inout). External connectivity points.
-- **RTL_Signal** (~1,441): Internal wires and registers. Dataflow and control paths within modules.
-- **RTL_LogicChunk** (~1,513): Behavioral units—always blocks, assign statements. Implements combinational and sequential logic.
-- **RTL_Assign** (~1,278): Assign statements. Source of DRIVES/READS_FROM dataflow edges.
-- **FSM_StateMachine** (4): Extracted finite state machines (e.g., data cache controller, instruction cache, exception handler).
-- **FSM_State** (23): Individual states within FSMs. Control flow states.
-- **RTL_Parameter** (~221): Design parameters and localparams. Configurable design constants.
-- **RTL_Memory** (8): RAM/ROM arrays and register files. Memory structures.
-- **MemoryPort** (8): Structured memory interfaces (addr, data, we). Links RTL_Memory to ports.
-- **ClockDomain** (6): Clock domains and timing boundaries. CDC (Clock Domain Crossing) analysis.
-- **BusInterface** (22): Logical bus groupings (Wishbone, SPR, LSU). Protocol interfaces.
-- **Operator** (200): Arithmetic and logical operators (adders, multiplexers). Resource usage.
-- **GitCommit** (48): Version history nodes. Design evolution over time.
-- **Author** (8): Hardware engineers/contributors. Expertise and ownership.
-- **OR1200_Golden_Entities** (~4,045): Canonical documentation entities (deduplicated). Spec concepts, registers, instructions, interfaces.
-- **OR1200_Entities** (~5,793): Raw entities from GraphRAG extraction (before consolidation into Golden).
-- **OR1200_Chunks** (~187): Text blocks from specifications. Source documentation paragraphs.
-- **OR1200_Documents** (7): Source PDF file references. Specification documents.
-- **OR1200_Communities** (~478): Entity clusters from Leiden algorithm. Related spec concepts.
+- **RTL_Module** (~100): Verilog modules representing hardware blocks (e.g., or1200_cpu, or1200_alu, or1200_dc_fsm). Hierarchical structure with top-level and sub-modules.
+- **RTL_Port** (~1.5K): Module interface pins (input/output/inout). External connectivity points.
+- **RTL_Signal** (~1.4K): Internal wires and registers. Dataflow and control paths within modules.
+- **RTL_LogicChunk** (~1.5K): Behavioral units—always blocks, assign statements. Implements combinational and sequential logic.
+- **RTL_Assign** (~1.3K): Assign statements. Source of DRIVES/READS_FROM dataflow edges.
+- **FSM_StateMachine** (few): Extracted finite state machines (e.g., data cache controller, instruction cache, exception handler).
+- **FSM_State** (~25): Individual states within FSMs. Control flow states.
+- **RTL_Parameter** (~220): Design parameters and localparams. Configurable design constants.
+- **RTL_Memory** (few): RAM/ROM arrays and register files. Memory structures.
+- **MemoryPort** (few): Structured memory interfaces (addr, data, we). Links RTL_Memory to ports.
+- **ClockDomain** (few): Clock domains and timing boundaries. CDC (Clock Domain Crossing) analysis.
+- **BusInterface** (~20): Logical bus groupings (Wishbone, SPR, LSU). Protocol interfaces.
+- **Operator** (~200): Arithmetic and logical operators (adders, multiplexers). Resource usage.
+- **GitCommit** (~50): Version history nodes. Design evolution over time.
+- **Author** (few): Hardware engineers/contributors. Expertise and ownership.
+- **OR1200_Golden_Entities** (~4K): Canonical documentation entities (deduplicated). Spec concepts, registers, instructions, interfaces.
+- **OR1200_Entities** (~6K): Raw entities from GraphRAG extraction (before consolidation into Golden).
+- **OR1200_Chunks** (~200): Text blocks from specifications. Source documentation paragraphs.
+- **OR1200_Documents** (few): Source PDF file references. Specification documents.
+- **OR1200_Communities** (~500): Entity clusters from Leiden algorithm. Related spec concepts.
 
 **Edges (Edge Collections):**
 
@@ -74,15 +76,15 @@
 
 **Graph & Database:** `IC_Knowledge_Graph` in database `ic-knowledge-graph`. Collection names are exact (e.g., `OR1200_Golden_Entities` not `Golden_Entities`). GraphRAG prefix `OR1200_` is configurable via `GRAPHRAG_PREFIX`.
 
-**Scale:**
+**Scale (approximate):**
 
-- **17,323 vertices** total
-- **58,900 edges** total
-- **2,202 Semantic Bridge links** (RTL → documentation)
-- **75.4% port coverage**, **66.1% signal coverage** (RTL elements resolved to specs)
+- **~17K vertices** total
+- **~59K edges** total
+- **~2.2K Semantic Bridge links** (RTL → documentation)
+- **~75% port coverage**, **~66% signal coverage** (RTL elements resolved to specs)
 - **Sub-200ms** traversal queries for multi-hop traversals
-- **48 commits** of design history (OR1200)
-- **7 specification documents** (PDFs) ingested via GraphRAG
+- **~50 commits** of design history (OR1200)
+- **~7 specification documents** (PDFs) ingested via GraphRAG
 
 ---
 
