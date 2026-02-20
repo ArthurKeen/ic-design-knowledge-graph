@@ -29,16 +29,47 @@ For theme installation, run: python install_theme.py
 import os
 import sys
 import json
+import argparse
 from datetime import datetime
 
 # Add src to path
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
 
-try:
-    from db_utils import get_db
-except ImportError:
-    print("Error: Could not import db_utils. Make sure you're in the project root.")
-    sys.exit(1)
+DEFAULT_GRAPH_NAME = "IC_Knowledge_Graph"
+
+
+def _rewrite_graph_refs(text: str, graph_name: str) -> str:
+    """Rewrite any hard-coded GRAPH \"...\" reference to the target graph."""
+    if not isinstance(text, str):
+        return text
+    # Support legacy names found in assets
+    text = text.replace('GRAPH "OR1200_Knowledge_Graph"', f'GRAPH "{graph_name}"')
+    text = text.replace('GRAPH "IC_Knowledge_Graph"', f'GRAPH "{graph_name}"')
+    return text
+
+
+def _normalize_assets(data: list, database_name: str, graph_name: str) -> list:
+    """Ensure assets are scoped to the target DB and graph."""
+    # Saved queries
+    for q in data[0].get("queries", []):
+        q["databaseName"] = database_name
+        if "content" in q:
+            q["content"] = _rewrite_graph_refs(q["content"], graph_name)
+        if "queryText" in q:
+            q["queryText"] = _rewrite_graph_refs(q["queryText"], graph_name)
+
+    # Canvas actions
+    for a in data[1].get("actions", []):
+        # Actions in our JSON use `query` (Graph Visualizer), but keep compatibility
+        if "query" in a:
+            a["query"] = _rewrite_graph_refs(a["query"], graph_name)
+        if "queryText" in a:
+            a["queryText"] = _rewrite_graph_refs(a["queryText"], graph_name)
+        # Ensure consistent graphId if present/used
+        if "graphId" in a:
+            a["graphId"] = graph_name
+
+    return data
 
 
 def install_saved_queries(db, queries_data):
@@ -116,7 +147,7 @@ def install_canvas_actions(db, actions_data):
     return installed
 
 
-def link_actions_to_graph(db, actions_data):
+def link_actions_to_graph(db, actions_data, graph_name: str):
     """Create edges linking viewpoint to canvas actions."""
     print("\n[3/3] Linking Canvas Actions to Viewpoint...")
     
@@ -136,8 +167,8 @@ def link_actions_to_graph(db, actions_data):
         print("  Please open IC_Knowledge_Graph in the visualizer, then run this script again.")
         return 0
     
-    # Prefer viewpoint matching the graphId used by actions (fallback to first)
-    action_graph_id = actions_data[1]["actions"][0].get("graphId")
+    # Prefer viewpoint matching the target graph (fallback to action graphId, then first viewpoint)
+    action_graph_id = actions_data[1]["actions"][0].get("graphId") or graph_name
     viewpoint = None
     if action_graph_id:
         for vp in viewpoints:
@@ -241,6 +272,22 @@ def verify_installation(db):
 
 def main():
     """Main installation routine."""
+    parser = argparse.ArgumentParser(description="Install demo saved queries and canvas actions")
+    parser.add_argument("--db", help="Target database name (e.g., ic-knowledge-graph-1)")
+    parser.add_argument("--graph", default=DEFAULT_GRAPH_NAME, help="Target graph name (default: IC_Knowledge_Graph)")
+    args = parser.parse_args()
+
+    if args.db:
+        # Ensure config resolves the correct DB regardless of LOCAL/REMOTE mode
+        os.environ["ARANGO_DATABASE"] = args.db
+        os.environ["LOCAL_ARANGO_DATABASE"] = args.db
+
+    try:
+        from db_utils import get_db
+    except ImportError:
+        print("Error: Could not import db_utils. Make sure you're in the project root.")
+        sys.exit(1)
+
     print("="*60)
     print("OR1200 Knowledge Graph - Demo Setup Installer")
     print("="*60)
@@ -259,6 +306,10 @@ def main():
     print(f"\nLoading data from: {json_file}")
     with open(json_file, 'r') as f:
         data = json.load(f)
+
+    # Scope assets to the target DB/graph
+    if args.db:
+        data = _normalize_assets(data, database_name=args.db, graph_name=args.graph)
     
     # Connect to database
     print("\nConnecting to database...")
@@ -271,18 +322,18 @@ def main():
         sys.exit(1)
     
     # Verify graph exists
-    if not db.has_graph("IC_Knowledge_Graph"):
-        print("\nError: Graph 'IC_Knowledge_Graph' not found.")
+    if not db.has_graph(args.graph):
+        print(f"\nError: Graph '{args.graph}' not found.")
         print("Please create the graph before running this script.")
         sys.exit(1)
     
-    print("Graph 'IC_Knowledge_Graph' found.")
+    print(f"Graph '{args.graph}' found.")
     
     # Install components
     try:
         install_saved_queries(db, data)
         install_canvas_actions(db, data)
-        link_actions_to_graph(db, data)
+        link_actions_to_graph(db, data, graph_name=args.graph)
         
         # Verify installation
         success = verify_installation(db)

@@ -8,20 +8,39 @@ knowledge transfer, expertise mapping, and collaboration analysis.
 
 import sys
 import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
-from db_utils import get_db, get_system_db
-import json
+import argparse
 
-def install_author_queries(db):
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
+
+DEFAULT_GRAPH_NAME = "IC_Knowledge_Graph"
+from typing import Optional
+
+
+def _get_target_db(db_name: str = None):
+    if db_name:
+        os.environ["ARANGO_DATABASE"] = db_name
+        os.environ["LOCAL_ARANGO_DATABASE"] = db_name
+    from db_utils import get_db
+    return get_db()
+
+
+def _get_metadata_db(use_system: bool, db_name: str = None):
+    from db_utils import get_system_db
+    if use_system:
+        return get_system_db()
+    return _get_target_db(db_name)
+
+def install_author_queries(db, metadata_db, database_name: Optional[str]):
     """Install saved queries for author expertise and knowledge transfer"""
-    
-    sys_db = get_system_db()
+    # Metadata may be stored in _system or in the target DB depending on deployment
+    sys_db = metadata_db
     
     # Ensure collection exists
     if not sys_db.has_collection('_editor_saved_queries'):
         try:
             sys_db.create_collection('_editor_saved_queries')
-        except: pass
+        except Exception:
+            pass
         
     queries_col = sys_db.collection('_editor_saved_queries')
     
@@ -272,6 +291,10 @@ FOR author IN Author
             }
         }
     ]
+
+    if database_name:
+        for q in queries:
+            q["databaseName"] = database_name
     
     print("\nInstalling Author Expertise Saved Queries...")
     installed = 0
@@ -294,26 +317,42 @@ FOR author IN Author
     return len(queries)
 
 
-def install_author_canvas_actions(db):
+def install_author_canvas_actions(db, metadata_db, graph_name: str):
     """Install canvas actions for author expertise"""
-    
-    sys_db = get_system_db()
+    sys_db = metadata_db
     
     if not sys_db.has_collection('_canvasActions'):
         try:
             sys_db.create_collection('_canvasActions')
-        except: pass
+        except Exception:
+            pass
         
     actions_col = sys_db.collection('_canvasActions')
+    # Ensure viewpoint-actions edge collection exists in the target DB
+    if not db.has_collection('_viewpointActions'):
+        db.create_collection('_viewpointActions', edge=True)
     viewpoint_actions_col = db.collection('_viewpointActions')
     
     # Get the viewpoint ID
+    if not db.has_collection('_viewpoints'):
+        print("[ERROR] _viewpoints collection not found. Open the graph once in the Visualizer, then rerun.")
+        return 0
+
     viewpoints = list(db.collection('_viewpoints').all())
     if not viewpoints:
         print("[ERROR] No viewpoints found. Create a graph view first.")
         return 0
-    
-    viewpoint_id = viewpoints[0]['_id']
+
+    # Prefer viewpoint matching the target graph
+    target_graph = graph_name or DEFAULT_GRAPH_NAME
+    viewpoint = None
+    for vp in viewpoints:
+        if vp.get("graphId") == target_graph:
+            viewpoint = vp
+            break
+    if viewpoint is None:
+        viewpoint = viewpoints[0]
+    viewpoint_id = viewpoint['_id']
     
     actions = [
         {
@@ -324,7 +363,7 @@ def install_author_canvas_actions(db):
 FOR author_id IN @nodes
   FOR module IN 1..1 OUTBOUND author_id MAINTAINS
     RETURN DISTINCT module""",
-            "graphId": "IC_Knowledge_Graph",
+            "graphId": target_graph,
             "bindVariables": {
                 "nodes": []
             }
@@ -337,7 +376,7 @@ FOR author_id IN @nodes
 FOR author_id IN @nodes
   FOR commit IN 1..1 OUTBOUND author_id AUTHORED
     RETURN DISTINCT commit""",
-            "graphId": "IC_Knowledge_Graph",
+            "graphId": target_graph,
             "bindVariables": {
                 "nodes": []
             }
@@ -350,7 +389,7 @@ FOR author_id IN @nodes
 FOR module_id IN @nodes
   FOR author IN 1..1 INBOUND module_id MAINTAINS
     RETURN DISTINCT author""",
-            "graphId": "IC_Knowledge_Graph",
+            "graphId": target_graph,
             "bindVariables": {
                 "nodes": []
             }
@@ -365,7 +404,7 @@ FOR author_id IN @nodes
     FOR collaborator IN 1..1 INBOUND module MAINTAINS
       FILTER collaborator._id != author_id
       RETURN DISTINCT collaborator""",
-            "graphId": "IC_Knowledge_Graph",
+            "graphId": target_graph,
             "bindVariables": {
                 "nodes": []
             }
@@ -380,7 +419,7 @@ FOR author_id IN @nodes
     FOR module IN 1..1 OUTBOUND commit MODIFIED
       FOR entity IN 1..1 OUTBOUND module RESOLVED_TO
         RETURN DISTINCT entity""",
-            "graphId": "IC_Knowledge_Graph",
+            "graphId": target_graph,
             "bindVariables": {
                 "nodes": []
             }
@@ -403,7 +442,7 @@ FOR commit_id IN @nodes
     author ? [author] : [],
     modules
   )""",
-            "graphId": "IC_Knowledge_Graph",
+            "graphId": target_graph,
             "bindVariables": {
                 "nodes": []
             }
@@ -447,18 +486,29 @@ FOR commit_id IN @nodes
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Install author expertise saved queries and canvas actions")
+    parser.add_argument("--db", help="Target database name (e.g., ic-knowledge-graph-1)")
+    parser.add_argument("--graph", default=DEFAULT_GRAPH_NAME, help="Target graph name (default: IC_Knowledge_Graph)")
+    parser.add_argument(
+        "--use-system-metadata",
+        action="store_true",
+        help="Install _editor_saved_queries and _canvasActions into _system instead of the target DB",
+    )
+    args = parser.parse_args()
+
     print("="*70)
     print("Knowledge Transfer & Author Expertise - Visualizer Setup")
     print("="*70)
-    
-    db = get_db()
+
+    db = _get_target_db(args.db)
+    metadata_db = _get_metadata_db(args.use_system_metadata, args.db)
     print(f"\nConnected to: {db.name}")
     
     # Install queries
-    query_count = install_author_queries(db)
+    query_count = install_author_queries(db, metadata_db=metadata_db, database_name=args.db)
     
     # Install canvas actions
-    action_count = install_author_canvas_actions(db)
+    action_count = install_author_canvas_actions(db, metadata_db=metadata_db, graph_name=args.graph)
     
     print("\n" + "="*70)
     print("Installation Complete!")

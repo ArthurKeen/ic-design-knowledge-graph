@@ -155,6 +155,12 @@ Run the test suite to ensure the environment is correctly configured:
 pytest tests/
 ```
 
+## Customer hands-on workflow (numbered databases)
+
+Customers can explore the preloaded demo database `ic-knowledge-graph` in read-only mode, then create their own numbered sandbox database `ic-knowledge-graph-1`, `ic-knowledge-graph-2`, … for hands-on exercises.
+
+See `docs/CUSTOMER_EXERCISE_WORKFLOW.md` for the step-by-step process (UI-primary DB creation, GraphRAG UI import, and one-command setup).
+
 ## Agentic analytics (reports)
 
 Once your ArangoDB database is populated (pipeline above), run:
