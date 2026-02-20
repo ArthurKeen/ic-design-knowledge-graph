@@ -4,6 +4,12 @@
 
 This directory contains everything you need for the Tuesday Cadence demonstration of the Integrated Circuit (IC) Design Knowledge Graph. The demo showcases how ArangoDB's Graph Visualizer enables exploration of integrated circuit designs through semantic bridges between RTL code, specifications, and Git history.
 
+## Customer quickstart (numbered database exercise)
+
+Customers can explore the preloaded demo database `ic-knowledge-graph` in read-only mode, then create a numbered sandbox database `ic-knowledge-graph-1`, `ic-knowledge-graph-2`, … to run the full workflow (GraphRAG UI document import + ETL + consolidation + bridging + Visualizer setup).
+
+Follow the step-by-step guide in [`docs/CUSTOMER_EXERCISE_WORKFLOW.md`](CUSTOMER_EXERCISE_WORKFLOW.md).
+
 ## Demo Materials
 
 ### 1. DEMO_SCRIPT.md
