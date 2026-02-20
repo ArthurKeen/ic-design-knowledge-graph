@@ -11,6 +11,7 @@ from config import (
 from utils import sanitize_id, get_edge_key, VerilogParser, strip_comments, expand_acronym
 
 # Regex patterns
+RE_MODULE = re.compile(r'^\s*module\s+(\w+)\s*[(\s#]', re.MULTILINE)
 # Improved regex to capture width expression and handle comments better
 RE_INPUT = re.compile(r'^\s*input\s+(?:\[([^\]]*)\]\s*)?([^;]+);(?:\s*//(.*))?', re.MULTILINE)
 RE_OUTPUT = re.compile(r'^\s*output\s+(?:\[([^\]]*)\]\s*)?([^;]+);(?:\s*//(.*))?', re.MULTILINE)

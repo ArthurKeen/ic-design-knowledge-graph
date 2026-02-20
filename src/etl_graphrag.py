@@ -522,8 +522,8 @@ Examples:
             logger.info("Attempting cleanup...")
             try:
                 orchestrator.cleanup()
-            except:
-                pass
+            except Exception as cleanup_err:
+                logger.warning(f"Cleanup failed (services may still be running): {cleanup_err}")
         sys.exit(1)
 
 

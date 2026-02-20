@@ -16,8 +16,9 @@ def test_regex_input():
     content = "  input clk, rst;\n  input [31:0] data_i;"
     matches = list(RE_INPUT.finditer(content))
     assert len(matches) == 2
-    assert "clk" in matches[0].group(1)
-    assert "data_i" in matches[1].group(1)
+    # group(1) is the optional width specifier; group(2) is the signal name(s)
+    assert "clk" in matches[0].group(2)
+    assert "data_i" in matches[1].group(2)
 
 def test_regex_always():
     content = """

@@ -59,31 +59,80 @@ class TestGraphRAGClient:
         assert result is False
         assert client.jwt_token is None
         
+    @patch('graphrag_client.requests.request')
     @patch('graphrag_client.requests.post')
-    def test_start_service(self, mock_post, client):
+    def test_start_service(self, mock_post, mock_request, client):
         """Test starting a service"""
-        # Mock auth
+        # Mock auth (requests.post)
         auth_response = Mock()
         auth_response.status_code = 200
         auth_response.json.return_value = {"jwt": "test_token"}
-        
-        # Mock service start
+        mock_post.return_value = auth_response
+
+        # Mock service start (requests.request used by _send_request)
         service_response = Mock()
         service_response.status_code = 200
         service_response.json.return_value = {"service_id": "importer-abc123"}
-        
-        mock_post.side_effect = [auth_response, service_response]
-        
+        mock_request.return_value = service_response
+
         # Start service
         service_id = client.start_service("arangodb-graphrag-importer", {
             "db_name": "test-db",
             "username": "root"
         })
-        
+
         # Verify
         assert service_id == "importer-abc123"
-        assert mock_post.call_count == 2
+        mock_post.assert_called_once()
+        mock_request.assert_called_once()
         
+    @patch('graphrag_client.requests.request')
+    @patch('graphrag_client.requests.post')
+    def test_start_service_serviceinfo_response(self, mock_post, mock_request, client):
+        """Test service ID extraction from nested serviceInfo response format"""
+        auth_response = Mock()
+        auth_response.status_code = 200
+        auth_response.json.return_value = {"jwt": "test_token"}
+        mock_post.return_value = auth_response
+
+        # API returns full ID in serviceInfo.serviceId
+        service_response = Mock()
+        service_response.status_code = 200
+        service_response.json.return_value = {
+            "serviceInfo": {
+                "serviceId": "arangodb-graphrag-importer-abc123xyz"
+            }
+        }
+        mock_request.return_value = service_response
+
+        service_id = client.start_service("arangodb-graphrag-importer", {})
+
+        # Should strip the service name prefix, not just the last "-" segment
+        assert service_id == "abc123xyz"
+
+    @patch('graphrag_client.requests.request')
+    @patch('graphrag_client.requests.post')
+    def test_start_service_uuid_suffix(self, mock_post, mock_request, client):
+        """Test service ID extraction when the unique suffix contains hyphens (UUID-style)"""
+        auth_response = Mock()
+        auth_response.status_code = 200
+        auth_response.json.return_value = {"jwt": "test_token"}
+        mock_post.return_value = auth_response
+
+        service_response = Mock()
+        service_response.status_code = 200
+        service_response.json.return_value = {
+            "serviceInfo": {
+                "serviceId": "arangodb-graphrag-importer-abc1-2345-6789"
+            }
+        }
+        mock_request.return_value = service_response
+
+        service_id = client.start_service("arangodb-graphrag-importer", {})
+
+        # Must preserve the full UUID suffix, not just "6789"
+        assert service_id == "abc1-2345-6789"
+
     @patch('graphrag_client.requests.request')
     def test_stop_service(self, mock_request, client):
         """Test stopping a service"""

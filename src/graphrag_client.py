@@ -167,11 +167,10 @@ class GraphRAGClient:
             
         except requests.exceptions.RequestException as e:
             self.logger.error(f"Request to {url} failed: {e}")
-            # Try to get error details from response
             try:
                 error_detail = response.json() if response.content else {}
                 self.logger.error(f"Error details: {error_detail}")
-            except:
+            except Exception:
                 pass
             raise
             
@@ -194,18 +193,30 @@ class GraphRAGClient:
         try:
             self.logger.info(f"Starting service: {service_name}...")
             response = self._send_request("/gen-ai/v1/service", body, "POST")
-            
+            self.logger.debug(f"start_service raw response: {response}")
+
             # Extract service ID from response (check both possible locations)
             service_id = response.get("service_id")
             if not service_id and "serviceInfo" in response:
                 full_service_id = response["serviceInfo"].get("serviceId")
-                # Extract SHORT form (last part after final dash)
-                # e.g., "arangodb-graphrag-importer-abc123" -> "abc123"
-                service_id = full_service_id.split("-")[-1] if full_service_id else None
-            
+                if full_service_id:
+                    # Strip the known service name prefix to get the unique suffix.
+                    # e.g., "arangodb-graphrag-importer-abc123" -> "abc123"
+                    # Handles UUID-style suffixes like "abc1-2345-6789" correctly
+                    # (unlike split("-")[-1] which would only capture "6789").
+                    prefix = f"{service_name}-"
+                    if full_service_id.startswith(prefix):
+                        service_id = full_service_id[len(prefix):]
+                    else:
+                        service_id = full_service_id
+                        self.logger.warning(
+                            f"Service ID '{full_service_id}' does not start with expected "
+                            f"prefix '{prefix}'. Using full ID."
+                        )
+
             if not service_id:
                 raise ValueError(f"Service start response missing service_id: {response}")
-                
+
             self.logger.info(f"✓ Service started: {service_id}")
             return service_id
             

@@ -3,6 +3,9 @@
 data/*.json
 import_log.txt
 markdown_output/
+
+# Generated runtime artifacts
+*.log
 __pycache__/
 *.pyc
 

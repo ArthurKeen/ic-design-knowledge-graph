@@ -37,6 +37,24 @@ The core value of this project is the **Semantic Bridge**, which connects unstru
 - **Granular RTL Graph**: Decomposes monolithic Verilog files into a rich graph of `Module`, `Port`, `Signal`, and `LogicChunk` nodes.
 - **GraphRAG Augmented**: Integrated with high-quality entity and community extraction from the Arango AI team's GraphRAG pipeline.
 
+## GraphRAG Status
+
+> **Note:** The GraphRAG document import pipeline requires **ArangoDB AMP (cloud)** with the GenAI services feature enabled. It is an optional, advanced component — the core RTL + Git + semantic bridging pipeline works independently without it.
+
+The GraphRAG collections (`OR1200_Entities`, `OR1200_Golden_Entities`, `OR1200_Relations`, etc.) were populated during development and are present in the demo database. The Python-based **re-import** pipeline (`src/etl_graphrag.py`) was implemented but encountered API integration issues during deadline-constrained development and has not been fully validated end-to-end.
+
+**What works without GraphRAG:**
+- Full RTL parsing and graph construction
+- Git history ingestion and author expertise mapping
+- Semantic bridging between RTL elements and documentation entities (reads existing `OR1200_Golden_Entities`)
+- All AQL queries and visualizations in the demo
+
+**What requires ArangoDB AMP + GraphRAG:**
+- Re-importing or refreshing document entities from PDFs (`src/etl_graphrag.py`)
+- Running the Importer/Retriever services via the GenAI API
+
+See [GRAPHRAG_STATUS.md](GRAPHRAG_STATUS.md) for a detailed description of the integration, known issues, and instructions for attempting a fresh import.
+
 ## Project Structure
 
 - `src/`: Core ETL and bridging scripts.
