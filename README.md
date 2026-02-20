@@ -107,7 +107,7 @@ GRAPHRAG_PREFIX=OR1200_
 ### 3. Install Dependencies
 
 ```bash
-pip install -r requirements.txt
+pip install -r requirements-core.txt
 ```
 
 **Key Dependencies:**
@@ -115,6 +115,12 @@ pip install -r requirements.txt
   - Provides `WeightedFieldSimilarity` for multi-field scoring (name + description)
   - Lazy loading ensures fast startup times
   - No manual configuration required
+
+**Optional (GraphRAG/document processing):**
+
+```bash
+pip install -r requirements.txt
+```
 
 ### 3b. Install agentic graph analytics (required for analytics reports)
 

@@ -1,0 +1,13 @@
+# GraphRAG / document processing dependencies
+-r requirements-core.txt
+
+docling==2.26.0
+pymupdf4llm
+PyMuPDF
+pymupdf_layout
+markdownify
+aiohttp
+
+# Optional: notebook support for GraphRAG demos
+jupyter>=1.0.0
+ipykernel>=6.25.0

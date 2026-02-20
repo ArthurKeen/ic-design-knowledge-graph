@@ -1,0 +1,18 @@
+# Core Dependencies
+python-arango>=7.5.0
+python-dotenv>=1.0.0
+requests>=2.31.0
+
+# Data Processing
+numpy>=1.24.0
+
+# Reporting (interactive HTML)
+plotly>=5.0.0
+
+# Arango Entity Resolution Library (Official PyPI Release)
+arango-entity-resolution==3.1.0
+
+# Testing (core)
+pytest>=7.4.0
+pytest-cov>=4.1.0
+pytest-mock>=3.10.0

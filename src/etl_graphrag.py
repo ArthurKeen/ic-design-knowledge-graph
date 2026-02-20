@@ -147,6 +147,45 @@ class GraphRAGOrchestrator:
             error_str = str(e).lower()
             if "already exists" not in error_str:
                 raise
+
+    def _wait_for_service_ready(
+        self,
+        service_name: str,
+        service_id_suffix: str,
+        timeout_s: int = 120,
+        poll_interval_s: int = 5,
+    ) -> None:
+        """
+        Best-effort readiness wait using list_services().
+
+        The GenAI services may take time to become visible / ready; during rollout
+        transient 404/503s can occur. This method avoids a fixed sleep and instead
+        polls for the service to appear.
+        """
+        full_id = f"{service_name}-{service_id_suffix}"
+        deadline = time.time() + timeout_s
+
+        logger.info(f"Waiting for service to be ready: {full_id} (timeout {timeout_s}s)...")
+
+        while time.time() < deadline:
+            try:
+                services = self.client.list_services()
+                for s in services:
+                    sid = s.get("service_id") or s.get("serviceId")
+                    if sid == full_id:
+                        status = (s.get("status") or "").lower()
+                        # Status values vary; treat missing/unknown as ready once visible.
+                        if not status or status in {"running", "ready", "healthy"}:
+                            logger.info(f"✓ Service is ready: {full_id} (status={status or 'unknown'})")
+                            return
+                        logger.debug(f"Service visible but not ready yet: {full_id} (status={status})")
+                # not found yet
+            except Exception as e:
+                logger.debug(f"Readiness poll error (will retry): {e}")
+
+            time.sleep(poll_interval_s)
+
+        logger.warning(f"Timed out waiting for service readiness: {full_id}. Continuing anyway.")
     
     def start_importer(self) -> str:
         """
@@ -178,10 +217,8 @@ class GraphRAGOrchestrator:
             
         self.importer_service_id = service_id
         logger.info(f"✓ Importer started with ID: {service_id}")
-        
-        # Give the service a few seconds to initialize
-        logger.info("Waiting 15 seconds for importer to initialize...")
-        time.sleep(15)
+
+        self._wait_for_service_ready("arangodb-graphrag-importer", service_id)
         
         return service_id
         
@@ -285,10 +322,8 @@ class GraphRAGOrchestrator:
             
         self.retriever_service_id = service_id
         logger.info(f"✓ Retriever started with ID: {service_id}")
-        
-        # Give the service a few seconds to initialize
-        logger.info("Waiting 15 seconds for retriever to initialize...")
-        time.sleep(15)
+
+        self._wait_for_service_ready("arangodb-graphrag-retriever", service_id)
         
         return service_id
         
