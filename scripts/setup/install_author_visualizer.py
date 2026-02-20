@@ -321,16 +321,18 @@ def install_author_canvas_actions(db, metadata_db, graph_name: str):
     """Install canvas actions for author expertise"""
     sys_db = metadata_db
     
+    # _canvasActions is a Visualizer metadata collection created by the UI.
     if not sys_db.has_collection('_canvasActions'):
-        try:
-            sys_db.create_collection('_canvasActions')
-        except Exception:
-            pass
+        print("[PREREQ] Collection _canvasActions not found in this database.")
+        print("Action: Open Graph Visualizer for this DB (Graphs → IC_Knowledge_Graph) once, then rerun this script.")
+        return 0
         
     actions_col = sys_db.collection('_canvasActions')
-    # Ensure viewpoint-actions edge collection exists in the target DB
+    # _viewpointActions is also Visualizer metadata; do not attempt to create it programmatically.
     if not db.has_collection('_viewpointActions'):
-        db.create_collection('_viewpointActions', edge=True)
+        print("[PREREQ] Collection _viewpointActions not found in this database.")
+        print("Action: Open Graph Visualizer for this DB (Graphs → IC_Knowledge_Graph) once, then rerun this script.")
+        return 0
     viewpoint_actions_col = db.collection('_viewpointActions')
     
     # Get the viewpoint ID

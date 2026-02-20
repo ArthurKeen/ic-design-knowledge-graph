@@ -46,14 +46,10 @@ def install_theme(db):
     
     # Ensure collection exists in current database
     if not db.has_collection("_graphThemeStore"):
-        print("  Warning: _graphThemeStore not found in current database.")
-        try:
-            db.create_collection("_graphThemeStore")
-            print("  Created collection: _graphThemeStore")
-        except Exception as e:
-            print(f"  Warning: Cannot create _graphThemeStore programmatically. Please open the ArangoDB UI to initialize it.")
-            print(f"  Details: {e}")
-            return False
+        print("  [PREREQ] Collection _graphThemeStore not found in this database.")
+        print("  ArangoDB creates Visualizer metadata collections when you open the graph in the UI.")
+        print("  Action: Open Graph Visualizer for this DB (Graphs → IC_Knowledge_Graph) once, then rerun this script.")
+        return False
             
     theme_col = db.collection("_graphThemeStore")
     
@@ -163,9 +159,10 @@ def main():
     
     # Install theme
     try:
-        install_theme(db)
-        success = verify_theme(db)
-        sys.exit(0 if success else 1)
+        installed = install_theme(db)
+        success = verify_theme(db) if installed else False
+        # Non-zero exit indicates the UI prerequisite has not been met yet.
+        sys.exit(0 if success else 2)
     except Exception as e:
         print(f"\n[ERROR] Installation failed: {e}")
         import traceback

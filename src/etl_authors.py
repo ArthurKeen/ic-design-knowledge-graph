@@ -290,6 +290,7 @@ def create_maintains_edges(db):
     
     # Query to find author-module relationships
     query = """
+    WITH Author, GitCommit, RTL_Module
     FOR author IN Author
       // Find all modules this author has committed to
       LET module_commits = (

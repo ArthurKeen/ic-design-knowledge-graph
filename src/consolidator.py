@@ -15,6 +15,17 @@ COL_GOLDEN_RELATIONS = COL_RELATIONS
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+def _ensure_collection(db, name: str, edge: bool = False) -> None:
+    if db.has_collection(name):
+        return
+    logger.info(f"Creating collection: {name} ({'edge' if edge else 'vertex'})")
+    db.create_collection(name, edge=edge)
+
+
+def _reset_collection(db, name: str, edge: bool = False) -> None:
+    _ensure_collection(db, name, edge=edge)
+    db.collection(name).truncate()
+
 def apply_indexes(db):
     logger.info(f"Applying indexes to {COL_GOLDEN_ENTITIES}...")
     col = db.collection(COL_GOLDEN_ENTITIES)
@@ -80,9 +91,14 @@ def consolidate_entities():
     logger.info("Starting Lexical Consolidation...")
     
     # 1. Reset Golden Collections
-    db.collection(COL_GOLDEN_ENTITIES).truncate()
-    db.collection(COL_CONSOLIDATES).truncate()
-    db.collection(COL_GOLDEN_RELATIONS).truncate()
+    if not db.has_collection(COL_RAW_ENTITIES):
+        raise RuntimeError(f"Missing raw entity collection '{COL_RAW_ENTITIES}'. Import documents via GraphRAG first.")
+    if not db.has_collection(COL_RAW_RELATIONS):
+        raise RuntimeError(f"Missing raw relations collection '{COL_RAW_RELATIONS}'. Import documents via GraphRAG first.")
+
+    _reset_collection(db, COL_GOLDEN_ENTITIES, edge=False)
+    _reset_collection(db, COL_CONSOLIDATES, edge=True)
+    _reset_collection(db, COL_GOLDEN_RELATIONS, edge=True)
     
     # 2. Group by Name/Type and Create Golden Nodes + CONSOLIDATES Edges
     # This AQL does everything in the database engine.

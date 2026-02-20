@@ -112,14 +112,11 @@ def install_canvas_actions(db, actions_data):
     """Install canvas actions into _canvasActions collection."""
     print("\n[2/3] Installing Canvas Actions...")
 
-    # Ensure collection exists in current database
+    # _canvasActions is a Visualizer metadata collection created by the UI.
     if not db.has_collection("_canvasActions"):
-        try:
-            db.create_collection("_canvasActions")
-            print("  Created collection: _canvasActions")
-        except Exception as e:
-            print(f"  Warning: Could not create _canvasActions: {e}")
-            return 0
+        print("  [PREREQ] Collection _canvasActions not found in this database.")
+        print("  Action: Open Graph Visualizer for this DB (Graphs → IC_Knowledge_Graph) once, then rerun this script.")
+        return 0
 
     action_col = db.collection("_canvasActions")
     installed = 0
@@ -153,10 +150,9 @@ def link_actions_to_graph(db, actions_data, graph_name: str):
     
     # Find the viewpoint for the graph
     if not db.has_collection("_viewpoints"):
-        print("  ERROR: _viewpoints collection not found!")
-        print("  Canvas actions will not appear in the UI.")
-        print("  The viewpoint is created automatically when you first open a graph.")
-        print("  Please open IC_Knowledge_Graph in the visualizer, then run this script again.")
+        print("  [PREREQ] _viewpoints collection not found in this database.")
+        print("  Canvas actions will not appear until the graph has been opened once in Graph Visualizer.")
+        print("  Action: Open Graph Visualizer for this DB (Graphs → IC_Knowledge_Graph) once, then rerun this script.")
         return 0
     
     viewpoints_col = db.collection("_viewpoints")

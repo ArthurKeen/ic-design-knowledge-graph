@@ -94,7 +94,6 @@ def main() -> int:
             COL_SIGNAL,
             COL_LOGIC,
             COL_COMMIT,
-            COL_AUTHOR,
             GRAPHRAG_PREFIX,
         )
         from db_utils import get_db
@@ -116,7 +115,7 @@ def main() -> int:
     _ok(f"Connected to ArangoDB {version} (db='{db.name}')")
 
     # Core collections that should exist after running the main ETL + create_graph.
-    core_collections = [COL_MODULE, COL_PORT, COL_SIGNAL, COL_LOGIC, COL_COMMIT, COL_AUTHOR]
+    core_collections = [COL_MODULE, COL_PORT, COL_SIGNAL, COL_LOGIC, COL_COMMIT, "Author"]
     _check_collections(db, core_collections, require_nonempty=args.require_nonempty)
     _ok("Core collections are present")
 

@@ -58,8 +58,7 @@ def create_search_view(db):
     # Check if view exists
     existing_views = [v['name'] for v in db.views()]
     
-    properties = {
-        "links": {
+    base_links = {
             COL_MODULE: {
                 "fields": {
                     "label": {"analyzers": ["text_en", "identity"]},
@@ -92,8 +91,11 @@ def create_search_view(db):
             }
         },
             COL_CHUNKS: {"fields": {"content": {"analyzers": ["text_en"]}}}
-        }
     }
+
+    # Only link collections that exist in the current database.
+    links = {name: cfg for name, cfg in base_links.items() if db.has_collection(name)}
+    properties = {"links": links}
 
     if view_name in existing_views:
         logger.info(f"Updating ArangoSearch View '{view_name}'...")

@@ -1,30 +1,11 @@
 import os
 import sys
 import json
-import time
 
-# Add src to path
+# Add repo root to path so we can import src.*
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from src.db_utils import get_db
-from src.config import (
-    RTL_NODES_FILE, RTL_EDGES_FILE, 
-    GIT_NODES_FILE, GIT_EDGES_FILE,
-    RTL_DIR
-)
-
-import os
-import sys
-import json
-import time
-
-# Add src to path
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-from src.db_utils import get_db
-from src.config import (
-    RTL_NODES_FILE, RTL_EDGES_FILE, 
-    GIT_NODES_FILE, GIT_EDGES_FILE,
-    RTL_DIR
-)
+from src.config import DATA_DIR
 
 def load_nodes(db, filepath, id_map):
     """Load nodes and populate id_map (id -> collection)."""
@@ -124,6 +105,11 @@ def load_edges(db, filepath, id_map):
             db.create_collection(col_name, edge=True)
             
         col = db.collection(col_name)
+        # Ensure idempotency for re-runs
+        try:
+            col.truncate()
+        except Exception:
+            pass
         BATCH_SIZE = 1000
         total = len(docs)
         imported = 0
@@ -146,15 +132,37 @@ def main():
         
         # 1. Load Nodes and build ID Map
         id_map = {} # id -> collection_name
-        
-        load_nodes(db, RTL_NODES_FILE, id_map)
-        load_nodes(db, GIT_NODES_FILE, id_map)
+
+        # Dynamically discover all generated node files
+        node_files = sorted(
+            [
+                os.path.join(DATA_DIR, f)
+                for f in os.listdir(DATA_DIR)
+                if f.endswith("_nodes.json")
+            ]
+        )
+        if not node_files:
+            print(f"[ERROR] No *_nodes.json files found in {DATA_DIR}")
+            sys.exit(1)
+
+        for nf in node_files:
+            load_nodes(db, nf, id_map)
         
         print(f"\nID Map built: {len(id_map)} entries")
         
         # 2. Load Edges using Map
-        load_edges(db, RTL_EDGES_FILE, id_map)
-        load_edges(db, GIT_EDGES_FILE, id_map)
+        edge_files = sorted(
+            [
+                os.path.join(DATA_DIR, f)
+                for f in os.listdir(DATA_DIR)
+                if f.endswith("_edges.json")
+            ]
+        )
+        if not edge_files:
+            print(f"[WARN] No *_edges.json files found in {DATA_DIR}")
+
+        for ef in edge_files:
+            load_edges(db, ef, id_map)
         
         print("\n" + "="*60)
         print("Data Loading Complete!")
