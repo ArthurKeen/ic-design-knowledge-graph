@@ -1,0 +1,55 @@
+repos:
+  - name: or1200
+    github_url: https://github.com/openrisc/or1200.git
+    branch: master
+    rtl_path: rtl/verilog
+    doc_path: doc
+    prefix: OR1200_
+    priority: 1
+    local_path: null  # uses existing ./or1200 submodule; set to null to use default
+
+  - name: mor1kx
+    github_url: https://github.com/openrisc/mor1kx.git
+    branch: master
+    rtl_path: rtl/verilog
+    doc_path: doc
+    prefix: MOR1KX_
+    priority: 1
+    local_path: null  # auto-cloned to data/repos/mor1kx
+
+  - name: marocchino
+    github_url: https://github.com/openrisc/marocchino.git
+    branch: master
+    rtl_path: rtl/verilog
+    doc_path: doc
+    prefix: MAROCCHINO_
+    priority: 2
+    local_path: null
+
+  - name: ibex
+    github_url: https://github.com/lowRISC/ibex.git
+    branch: master
+    rtl_path: rtl
+    doc_path: doc
+    prefix: IBEX_
+    priority: 2
+    local_path: null
+
+  # Priority 3 — enable manually when needed
+  # - name: neorv32
+  #   github_url: https://github.com/stnolting/neorv32.git
+  #   branch: main
+  #   rtl_path: rtl/core
+  #   doc_path: docs
+  #   prefix: NEORV32_
+  #   priority: 3
+  #   local_path: null
+
+  # - name: cva6
+  #   github_url: https://github.com/openhwgroup/cva6.git
+  #   branch: master
+  #   rtl_path: core
+  #   doc_path: docs
+  #   prefix: CVA6_
+  #   priority: 3
+  #   local_path: null

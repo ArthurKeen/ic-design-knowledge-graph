@@ -1,0 +1,224 @@
+"""
+scripts/multi_repo/ingest_repo.py — Config-driven multi-repo IC ingestion pipeline.
+
+Clones and/or updates each registered repo, runs the temporal ETL and local GraphRAG
+pipeline, and loads results into ArangoDB with repo-specific prefixes.
+
+Usage:
+    # Ingest all repos (in priority order)
+    python scripts/multi_repo/ingest_repo.py
+
+    # Ingest a single repo by name
+    python scripts/multi_repo/ingest_repo.py --repo mor1kx
+
+    # Dry run (no DB writes)
+    python scripts/multi_repo/ingest_repo.py --repo mor1kx --dry-run
+
+    # Skip clone/pull (use existing local copy)
+    python scripts/multi_repo/ingest_repo.py --repo mor1kx --no-clone
+"""
+
+import os
+import sys
+import json
+import argparse
+from datetime import datetime
+
+# Add src/ to path
+SRC_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "src")
+sys.path.insert(0, SRC_DIR)
+sys.path.insert(0, os.path.dirname(__file__))
+
+from config_temporal import (
+    REPO_REGISTRY, INGESTION_LOG_FILE, TEMPORAL_DATA_DIR,
+    get_local_path, load_repo_registry,
+)
+
+from clone_manager import ensure_clone
+
+
+def log_ingestion(repo_name: str, result: dict) -> None:
+    """Append an ingestion record to the log file."""
+    os.makedirs(os.path.dirname(INGESTION_LOG_FILE), exist_ok=True)
+    entry = {
+        "repo":       repo_name,
+        "ts":         int(datetime.utcnow().timestamp()),
+        "ts_human":   datetime.utcnow().isoformat(),
+        **result,
+    }
+    with open(INGESTION_LOG_FILE, "a") as f:
+        f.write(json.dumps(entry) + "\n")
+
+
+def ingest_one_repo(
+    repo_config:  dict,
+    do_clone:     bool = True,
+    do_temporal:  bool = True,
+    do_graphrag:  bool = True,
+    dry_run:      bool = False,
+    commit_limit: int  = None,
+) -> dict:
+    """
+    Full ingestion pipeline for a single repo.
+
+    Steps:
+        1. Clone / pull
+        2. Temporal ETL (commit replay + epoch detection + ArangoDB load)
+        3. Local GraphRAG (doc chunking + entity extraction + community + load)
+
+    Returns summary dict.
+    """
+    name       = repo_config["name"]
+    prefix     = repo_config["prefix"]
+    rtl_subdir = repo_config.get("rtl_path", "rtl/verilog")
+    doc_subdir = repo_config.get("doc_path", "doc")
+    branch     = repo_config.get("branch", "master")
+    github_url = repo_config.get("github_url", "")
+
+    print(f"\n{'='*60}")
+    print(f" Ingesting repo: {name}  (prefix={prefix})")
+    print(f"{'='*60}")
+
+    summary = {"nodes": 0, "edges": 0, "entities": 0, "chunks": 0, "communities": 0}
+
+    # ---- Step 1: Clone / pull -----------------------------------------------
+    if do_clone:
+        try:
+            local_path = ensure_clone(repo_config, verbose=True)
+        except RuntimeError as e:
+            print(f"[ingestor] FATAL: Could not clone {name}: {e}")
+            return {"error": str(e)}
+    else:
+        local_path = get_local_path(repo_config)
+        if not os.path.isdir(local_path):
+            print(f"[ingestor] ERROR: local path not found: {local_path} (use --no-clone only if already cloned)")
+            return {"error": "local path missing"}
+
+    repo_git_name = github_url.rstrip("/").split("github.com/")[-1] if "github.com" in github_url else name
+
+    # ---- Step 2: Temporal ETL -----------------------------------------------
+    if do_temporal:
+        print(f"\n[ingestor] Running temporal ETL for {name} …")
+        try:
+            # Import here to avoid circular issues at module level
+            from etl_temporal_git import replay_git_history, save_jsonl
+            from scripts.temporal.load_temporal_data import main as load_temporal_main
+        except ImportError:
+            # Adjust path for running from scripts/multi_repo/
+            sys.path.insert(0, os.path.join(SRC_DIR, "..", "scripts", "temporal"))
+            from etl_temporal_git import replay_git_history, save_jsonl
+
+        nodes_out = os.path.join(TEMPORAL_DATA_DIR, f"{name}_temporal_nodes.jsonl")
+        edges_out = os.path.join(TEMPORAL_DATA_DIR, f"{name}_temporal_edges.jsonl")
+
+        nodes, edges = replay_git_history(
+            repo_path=local_path,
+            repo_name=repo_git_name,
+            rtl_subdir=rtl_subdir,
+            commit_limit=commit_limit,
+            original_branch=branch,
+        )
+
+        if not dry_run:
+            save_jsonl(nodes, nodes_out)
+            save_jsonl(edges, edges_out)
+
+            # Load into ArangoDB
+            import subprocess as _sp
+            load_script = os.path.join(
+                os.path.dirname(__file__), "..", "temporal", "load_temporal_data.py"
+            )
+            _sp.run([
+                sys.executable, load_script,
+                "--nodes-file", nodes_out,
+                "--edges-file", edges_out,
+            ], check=False)
+
+        summary["nodes"] = len(nodes)
+        summary["edges"] = len(edges)
+        print(f"[ingestor] Temporal ETL done: {len(nodes)} nodes, {len(edges)} edges")
+
+    # ---- Step 3: Local GraphRAG on docs ------------------------------------
+    if do_graphrag:
+        doc_dir = os.path.join(local_path, doc_subdir)
+        if not os.path.isdir(doc_dir):
+            print(f"[ingestor] No doc dir found at {doc_dir} — skipping GraphRAG for {name}")
+        else:
+            print(f"\n[ingestor] Running local GraphRAG on {doc_dir} …")
+            try:
+                from local_graphrag.pipeline import LocalGraphRAGPipeline
+                pipeline = LocalGraphRAGPipeline(prefix=prefix)
+                graphrag_summary = pipeline.run(doc_dir=doc_dir, dry_run=dry_run)
+                summary["entities"]    = graphrag_summary.get("entities", 0)
+                summary["chunks"]      = graphrag_summary.get("chunks", 0)
+                summary["communities"] = graphrag_summary.get("communities", 0)
+            except Exception as e:
+                print(f"[ingestor] WARNING: GraphRAG failed for {name}: {e}")
+
+    log_ingestion(name, summary)
+    return summary
+
+
+def ingest_all(
+    repos:        list[dict] = None,
+    do_clone:     bool = True,
+    do_temporal:  bool = True,
+    do_graphrag:  bool = True,
+    dry_run:      bool = False,
+    commit_limit: int  = None,
+) -> dict[str, dict]:
+    """Ingest all repos in priority order."""
+    repos = repos or load_repo_registry()
+    results = {}
+    for repo in repos:
+        results[repo["name"]] = ingest_one_repo(
+            repo,
+            do_clone=do_clone,
+            do_temporal=do_temporal,
+            do_graphrag=do_graphrag,
+            dry_run=dry_run,
+            commit_limit=commit_limit,
+        )
+    return results
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="IC multi-repo ingestor")
+    parser.add_argument("--repo",          default=None,
+                        help="Name of a single repo to ingest (default: all)")
+    parser.add_argument("--no-clone",      action="store_true",
+                        help="Skip git clone/pull (use existing local copy)")
+    parser.add_argument("--no-temporal",   action="store_true",
+                        help="Skip temporal ETL")
+    parser.add_argument("--no-graphrag",   action="store_true",
+                        help="Skip local GraphRAG doc processing")
+    parser.add_argument("--dry-run",       action="store_true")
+    parser.add_argument("--commit-limit",  type=int, default=None,
+                        help="Limit commits processed (for testing)")
+    args = parser.parse_args()
+
+    registry = load_repo_registry()
+
+    if args.repo:
+        repo_cfg = next((r for r in registry if r["name"] == args.repo), None)
+        if not repo_cfg:
+            print(f"ERROR: repo '{args.repo}' not found in registry.")
+            sys.exit(1)
+        repos_to_run = [repo_cfg]
+    else:
+        repos_to_run = registry
+
+    results = ingest_all(
+        repos=repos_to_run,
+        do_clone=not args.no_clone,
+        do_temporal=not args.no_temporal,
+        do_graphrag=not args.no_graphrag,
+        dry_run=args.dry_run,
+        commit_limit=args.commit_limit,
+    )
+
+    print(f"\n{'='*60}")
+    print(" Ingestion Summary")
+    print(f"{'='*60}")
+    for repo_name, summary in results.items():
+        print(f"  {repo_name:20s}: {summary}")
