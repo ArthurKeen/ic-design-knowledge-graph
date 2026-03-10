@@ -389,8 +389,7 @@ def replay_git_history(
                 print(f"    [WARNING] Could not check out {sha[:7]}, skipping")
                 continue
 
-            # Build commit node (epoch must be set before RTL module nodes)
-            epoch_label = epoch_assignments.get(sha, "development")
+            # Build commit node — epoch_label is already set from epoch_map above
             c_node = make_commit_node(commit, repo_name, design_epoch=epoch_label)
             commit_nodes[sha] = c_node
             all_nodes.append(c_node)
