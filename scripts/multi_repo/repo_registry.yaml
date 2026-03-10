@@ -18,9 +18,9 @@ repos:
     local_path: null  # auto-cloned to data/repos/mor1kx
 
   - name: marocchino
-    github_url: https://github.com/openrisc/marocchino.git
+    github_url: https://github.com/openrisc/or1k_marocchino.git
     branch: master
-    rtl_path: rtl/verilog
+    rtl_path: rtl
     doc_path: doc
     prefix: MAROCCHINO_
     priority: 2
