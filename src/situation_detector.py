@@ -90,26 +90,21 @@ def _make_situation_node(
 # Situation detectors (each takes commits for an epoch, returns list of situations)
 # ---------------------------------------------------------------------------
 
-def _detect_subsystem_addition(repo_name: str, epoch: str, commits: list[dict],
-                               db) -> list[dict]:
-    """Detect when a new top-level RTL module was added."""
+def _detect_subsystem_addition(
+    repo_name: str, epoch: str, commits: list[dict],
+    new_modules_by_commit: dict,          # pre-fetched: sha → [module dicts]
+) -> list[dict]:
+    """Detect when a new top-level RTL module was added.
+
+    Uses a pre-fetched dict (one bulk AQL query for the whole repo) rather
+    than issuing one DB round-trip per commit.
+    """
     situations = []
     for commit in commits:
         sha = commit.get("_key") or commit.get("sha")
         ts  = commit.get("valid_from_ts") or commit.get("metadata", {}).get("timestamp", 0)
 
-        # Check MODIFIED edges from this commit — look for modules with valid_from = this commit
-        # (meaning they were introduced at this commit)
-        new_modules = list(db.aql.execute(
-            """
-            FOR m IN RTL_Module
-              FILTER m.repo == @repo AND m.valid_from_commit == @sha
-              FILTER m.valid_to_commit == null  OR m.valid_to_ts > @ts
-              RETURN m
-            """,
-            bind_vars={"repo": repo_name, "sha": sha, "ts": ts}
-        ))
-
+        new_modules = new_modules_by_commit.get(sha, [])
         if new_modules:
             tags = [m.get("label", "") for m in new_modules[:5]]
             situations.append(_make_situation_node(
@@ -119,8 +114,8 @@ def _detect_subsystem_addition(repo_name: str, epoch: str, commits: list[dict],
                 tags=tags,
                 notes=f"New module(s): {', '.join(tags)}",
             ))
-
     return situations
+
 
 
 def _detect_release_prep(repo_name: str, epoch: str, commits: list[dict]) -> list[dict]:
@@ -204,10 +199,24 @@ def detect_design_situations(repo_name: str, db) -> list[dict]:
 
     all_situations: dict[str, dict] = {}
 
+    # Pre-fetch all newly-introduced modules for this repo in ONE query.
+    # Group by introducing commit SHA so _detect_subsystem_addition doesn't
+    # need to issue a separate DB query per commit.
+    new_modules_by_commit: dict[str, list] = defaultdict(list)
+    try:
+        for m in db.aql.execute(
+            "FOR m IN RTL_Module FILTER m.repo == @repo AND m.valid_from_commit != null "
+            "RETURN {sha: m.valid_from_commit, label: m.label, _id: m._id}",
+            bind_vars={"repo": repo_name}
+        ):
+            new_modules_by_commit[m["sha"]].append(m)
+    except Exception as e:
+        print(f"[situation] WARN: could not pre-fetch new modules: {e}")
+
     for epoch, commits in commits_by_epoch.items():
-        # Run each heuristic
+        # Run each heuristic (no per-commit DB queries — all data is pre-fetched)
         new = []
-        new += _detect_subsystem_addition(repo_name, epoch, commits, db)
+        new += _detect_subsystem_addition(repo_name, epoch, commits, new_modules_by_commit)
         new += _detect_release_prep(repo_name, epoch, commits)
         new += _detect_major_refactor(repo_name, epoch, commits)
 
