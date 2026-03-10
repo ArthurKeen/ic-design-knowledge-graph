@@ -212,14 +212,32 @@ def make_commit_node(commit: dict, repo_name: str) -> dict:
     }
 
 
-def make_modified_edge(commit_sha: str, module_key: str, ts: int, file_path: str) -> dict:
+def make_modified_edge(
+    commit_sha: str,
+    module_key: str,
+    ts: int,
+    file_path: str,
+    target_valid_from_ts: int = None,
+    target_valid_to_ts: int = None,
+) -> dict:
+    """
+    MODIFIED edge from GitCommit → RTL_Module.
+
+    Edge carries the target module's valid interval (mirrored from the vertex).
+    This enables ArangoDB vertex-centric persistent indexes on
+    [_from, valid_from_ts] and [_to, valid_to_ts] to prune traversals
+    before loading the neighboring vertex.
+    """
     raw = f"{commit_sha}:{module_key}:MODIFIED"
     edge_key = hashlib.md5(raw.encode()).hexdigest()[:16]
     return {
-        "_key":  edge_key,
-        "from":  commit_sha,
-        "to":    module_key,
-        "type":  EDGE_MODIFIED,
+        "_key":           edge_key,
+        "from":           commit_sha,
+        "to":             module_key,
+        "type":           EDGE_MODIFIED,
+        # Interval mirrored from _to vertex for VCI pruning
+        "valid_from_ts": target_valid_from_ts,
+        "valid_to_ts":   target_valid_to_ts,
         "metadata": {
             "timestamp": ts,
             "file_path": file_path,
@@ -257,14 +275,29 @@ def _classify_epoch_type(epoch_label: str) -> str:
     return "other"
 
 
-def make_belongs_to_epoch_edge(module_key: str, epoch_key: str, role: str) -> dict:
+def make_belongs_to_epoch_edge(
+    module_key: str,
+    epoch_key: str,
+    role: str,
+    target_valid_from_ts: int = None,
+    target_valid_to_ts: int = None,
+) -> dict:
+    """
+    BELONGS_TO_EPOCH edge from RTL_Module → DesignEpoch.
+
+    Edge carries the source module's valid interval so that VCI on
+    [_from, valid_from_ts] allows efficient epoch membership queries.
+    """
     raw = f"{module_key}:{epoch_key}:{role}"
     return {
-        "_key": hashlib.md5(raw.encode()).hexdigest()[:16],
-        "from": module_key,
-        "to":   epoch_key,
-        "type": EDGE_BELONGS_TO_EPOCH,
-        "role": role,  # "introduced_in" | "modified_in" | "removed_in"
+        "_key":           hashlib.md5(raw.encode()).hexdigest()[:16],
+        "from":           module_key,
+        "to":             epoch_key,
+        "type":           EDGE_BELONGS_TO_EPOCH,
+        "role":           role,  # "introduced_in" | "modified_in" | "removed_in"
+        # Interval mirrored from _from vertex for VCI pruning
+        "valid_from_ts": target_valid_from_ts,
+        "valid_to_ts":   target_valid_to_ts,
     }
 
 
@@ -376,13 +409,18 @@ def replay_git_history(
                 live_modules[module_name]  = node
                 module_key_map[module_name] = node["_key"]
 
-                # BELONGS_TO_EPOCH edge
                 all_edges.append(make_belongs_to_epoch_edge(
-                    node["_key"], epoch_key, "introduced_in"
+                    node["_key"], epoch_key, "introduced_in",
+                    target_valid_from_ts=node["valid_from_ts"],
+                    target_valid_to_ts=node["valid_to_ts"],
                 ))
-                # MODIFIED edge
-                all_edges.append(make_modified_edge(sha, node["_key"], ts,
-                                                    curr_snapshot[module_name]["file"]))
+                # MODIFIED edge — interval from target node
+                all_edges.append(make_modified_edge(
+                    sha, node["_key"], ts,
+                    curr_snapshot[module_name]["file"],
+                    target_valid_from_ts=node["valid_from_ts"],
+                    target_valid_to_ts=node["valid_to_ts"],
+                ))
 
             # Handle modified modules — close old version, open new
             for module_name in diff["modified"]:
@@ -400,10 +438,16 @@ def replay_git_history(
                 module_key_map[module_name] = new_node["_key"]
 
                 all_edges.append(make_belongs_to_epoch_edge(
-                    new_node["_key"], epoch_key, "modified_in"
+                    new_node["_key"], epoch_key, "modified_in",
+                    target_valid_from_ts=new_node["valid_from_ts"],
+                    target_valid_to_ts=new_node["valid_to_ts"],
                 ))
-                all_edges.append(make_modified_edge(sha, new_node["_key"], ts,
-                                                    curr_snapshot[module_name]["file"]))
+                all_edges.append(make_modified_edge(
+                    sha, new_node["_key"], ts,
+                    curr_snapshot[module_name]["file"],
+                    target_valid_from_ts=new_node["valid_from_ts"],
+                    target_valid_to_ts=new_node["valid_to_ts"],
+                ))
 
             # Handle removed modules — close their validity
             for module_name in diff["removed"]:

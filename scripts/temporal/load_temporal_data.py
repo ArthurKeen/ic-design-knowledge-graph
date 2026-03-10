@@ -53,6 +53,47 @@ EDGE_TYPES = {
     EDGE_CROSS_REPO_SIMILAR, EDGE_CROSS_REPO_EVOLVED,
 }
 
+# ---------------------------------------------------------------------------
+# Index specifications
+# ---------------------------------------------------------------------------
+
+# Vertex-centric persistent indexes (VCI) on edge collections.
+# The pattern [_from, valid_from_ts] and [_to, valid_to_ts] lets ArangoDB
+# prune edge traversals *before* loading the neighboring vertex,
+# making temporal traversals O(log n) instead of full-collection scans.
+VCI_EDGE_INDEXES = [
+    # MODIFIED  (GitCommit → RTL_Module)
+    {"col": EDGE_MODIFIED, "fields": ["_from", "valid_from_ts"],
+     "name": "idx_modified_from_vci"},
+    {"col": EDGE_MODIFIED, "fields": ["_to",   "valid_to_ts"],
+     "name": "idx_modified_to_vci"},
+    # BELONGS_TO_EPOCH  (RTL_Module → DesignEpoch)
+    {"col": EDGE_BELONGS_TO_EPOCH, "fields": ["_from", "valid_from_ts"],
+     "name": "idx_epoch_from_vci"},
+    {"col": EDGE_BELONGS_TO_EPOCH, "fields": ["_to",   "valid_to_ts"],
+     "name": "idx_epoch_to_vci"},
+    # CROSS_REPO_SIMILAR_TO
+    {"col": EDGE_CROSS_REPO_SIMILAR, "fields": ["_from", "valid_from_ts"],
+     "name": "idx_similar_from_vci"},
+    # CROSS_REPO_EVOLVED_FROM
+    {"col": EDGE_CROSS_REPO_EVOLVED, "fields": ["_from", "valid_from_ts"],
+     "name": "idx_evolved_from_vci"},
+]
+
+# MDI-prefixed indexes on vertex collections.
+# These enable O(log n) interval range scans: FILTER valid_from_ts <= @t
+# AND (valid_to_ts == null OR valid_to_ts > @t).
+# 'prefixFields' keeps the index from being a full multi-dimensional scan
+# by anchoring the leading field.
+MDI_VERTEX_INDEXES = [
+    {"col": COL_MODULE,          "fields": ["valid_from_ts", "valid_to_ts"],
+     "name": "idx_rtl_module_mdi"},
+    {"col": COL_COMMIT,          "fields": ["valid_from_ts", "valid_to_ts"],
+     "name": "idx_gitcommit_mdi"},
+    {"col": COL_DESIGN_SITUATION, "fields": ["valid_from_ts", "valid_to_ts"],
+     "name": "idx_situation_mdi"},
+]
+
 
 def get_db():
     client = ArangoClient(hosts=ARANGO_ENDPOINT)
@@ -73,6 +114,75 @@ def ensure_collections(db, dry_run: bool = False) -> None:
             if not dry_run:
                 db.create_collection(col_name, edge=True)
             print(f"  [create] edge collection:   {col_name}")
+
+
+def create_temporal_indexes(db, dry_run: bool = False) -> None:
+    """
+    Create vertex-centric persistent (VCI) indexes on edge collections
+    and MDI-prefixed indexes on vertex collections.
+
+    VCI pattern: [_from, valid_from_ts] and [_to, valid_to_ts]
+    Allows ArangoDB traversal engine to filter edges by time interval
+    BEFORE loading the neighboring vertex, eliminating cold-vertex reads
+    for out-of-window versions.
+
+    MDI pattern: [valid_from_ts, valid_to_ts] with prefixFields=[valid_from_ts]
+    Supports O(log n) temporal range scans on vertex collections.
+    """
+    if dry_run:
+        print("[indexes] DRY RUN — index creation skipped")
+        return
+
+    existing_cols = {c["name"] for c in db.collections()}
+
+    print("\n[indexes] Creating vertex-centric persistent indexes (VCI) on edge collections …")
+    for spec in VCI_EDGE_INDEXES:
+        col_name = spec["col"]
+        if col_name not in existing_cols:
+            print(f"  [SKIP] {col_name} not found, skipping VCI index")
+            continue
+        col = db.collection(col_name)
+        # Check if index already exists by name
+        existing_idx_names = {idx.get("name") for idx in col.indexes()}
+        if spec["name"] in existing_idx_names:
+            print(f"  [EXISTS] {spec['name']}")
+            continue
+        try:
+            col.add_index({
+                "type":   "persistent",
+                "fields": spec["fields"],
+                "name":   spec["name"],
+                "unique": False,
+                "sparse": True,    # sparse=True skips docs where valid_from_ts is null
+            })
+            print(f"  [DONE] {spec['name']:45s}  on {col_name} fields={spec['fields']}")
+        except Exception as e:
+            print(f"  [ERROR] {spec['name']}: {e}")
+
+    print("\n[indexes] Creating MDI-prefixed indexes on vertex collections …")
+    for spec in MDI_VERTEX_INDEXES:
+        col_name = spec["col"]
+        if col_name not in existing_cols:
+            print(f"  [SKIP] {col_name} not found, skipping MDI index")
+            continue
+        col = db.collection(col_name)
+        existing_idx_names = {idx.get("name") for idx in col.indexes()}
+        if spec["name"] in existing_idx_names:
+            print(f"  [EXISTS] {spec['name']}")
+            continue
+        try:
+            col.add_index({
+                "type":            "mdi-prefixed",
+                "fields":          spec["fields"],
+                "name":            spec["name"],
+                "fieldValueTypes": "double",
+                "prefixFields":    [spec["fields"][0]],   # anchor on valid_from_ts
+                "unique":          False,
+                "sparse":          False,
+            })
+            print(f"  [DONE] {spec['name']:45s}  on {col_name} fields={spec['fields']}")
+        except Exception as e:
+            print(f"  [ERROR] {spec['name']}: {e}")
 
 
 def read_jsonl(path: str) -> list[dict]:
@@ -277,6 +387,13 @@ def main():
         print(f"  [upsert] {edge_type:30s} {count:6d} edges")
 
     print(f"\n[loader] Done. {total_nodes} nodes, {total_edges} edges loaded.")
+
+    # Create indexes after data is loaded (skipped on dry run)
+    if not args.dry_run:
+        print("\n[loader] Creating temporal indexes …")
+        create_temporal_indexes(db, dry_run=False)
+    else:
+        print("\n[loader] DRY RUN: index creation skipped.")
 
 
 if __name__ == "__main__":
