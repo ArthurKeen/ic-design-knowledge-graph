@@ -40,10 +40,23 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 # ---------------------------------------------------------------------------
 ENV_FILE="${PROJECT_ROOT}/.env"
 if [[ -f "${ENV_FILE}" ]]; then
-    set -a
-    # shellcheck disable=SC1090
-    source "${ENV_FILE}"
-    set +a
+    # Safe loader: export each KEY=VALUE line without shell-interpreting the value.
+    # Using 'export KEY=VALUE' with the literal string prevents $SPECIAL chars in
+    # passwords (e.g. $GTEaYL) from being expanded as shell variables.
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        # Skip blank lines and comments
+        [[ "$line" =~ ^[[:space:]]*$ ]] && continue
+        [[ "$line" =~ ^[[:space:]]*# ]] && continue
+        # Only process lines that look like KEY=VALUE
+        if [[ "$line" =~ ^[[:space:]]*([A-Za-z_][A-Za-z0-9_]*)=(.*)$ ]]; then
+            key="${BASH_REMATCH[1]}"
+            val="${BASH_REMATCH[2]}"
+            # Strip surrounding double-quotes if present
+            val="${val#\"}"
+            val="${val%\"}"
+            export "$key=$val"
+        fi
+    done < "${ENV_FILE}"
     echo "[run_all_repos] Loaded .env from ${ENV_FILE}"
 else
     echo "[run_all_repos] WARNING: .env not found at ${ENV_FILE}"
@@ -53,8 +66,15 @@ fi
 # Python environment — prefer project .venv if present
 # ---------------------------------------------------------------------------
 VENV="${PROJECT_ROOT}/.venv"
-if [[ -d "${VENV}" ]]; then
-    PYTHON="${VENV}/bin/python"
+if [[ -d "${VENV}" && -x "${VENV}/bin/python" ]]; then
+    CANDIDATE="${VENV}/bin/python"
+    # Validate venv has required packages; fall back if not
+    if "${CANDIDATE}" -c "import yaml, arango" 2>/dev/null; then
+        PYTHON="${CANDIDATE}"
+    else
+        echo "[run_all_repos] .venv missing deps — falling back to system python3"
+        PYTHON="$(command -v python3 || command -v python)"
+    fi
 else
     PYTHON="$(command -v python3 || command -v python)"
 fi
