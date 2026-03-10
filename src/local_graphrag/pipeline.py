@@ -44,7 +44,7 @@ from local_graphrag.community_detector import detect_communities
 from local_graphrag.loader import load_to_arangodb
 
 
-_DOC_EXTENSIONS = {".pdf", ".txt", ".md", ".rst"}
+_DOC_EXTENSIONS = {".pdf", ".txt", ".md", ".rst", ".asciidoc", ".adoc"}
 
 
 def _discover_docs(doc_dir: str) -> list[str]:

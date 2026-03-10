@@ -71,7 +71,7 @@ def _convert_to_text(doc_path: str) -> str:
     """
     ext = os.path.splitext(doc_path)[1].lower()
 
-    if ext in {".txt", ".md", ".rst"}:
+    if ext in {".txt", ".md", ".rst", ".asciidoc", ".adoc"}:
         with open(doc_path, "r", errors="replace") as f:
             return f.read()
 
