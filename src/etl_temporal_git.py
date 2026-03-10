@@ -195,12 +195,13 @@ def make_rtl_module_node(
     }
 
 
-def make_commit_node(commit: dict, repo_name: str) -> dict:
+def make_commit_node(commit: dict, repo_name: str, design_epoch: str = "development") -> dict:
     return {
         "_key":         commit["sha"],
         "label":        f"Commit {commit['sha'][:7]}",
         "type":         COL_COMMIT,
         "repo":         repo_name,
+        "design_epoch": design_epoch,
         "valid_from_ts": commit["ts"],
         "valid_to_ts":   9999999999,   # sentinel: open-ended validity
         "metadata": {
@@ -388,8 +389,9 @@ def replay_git_history(
                 print(f"    [WARNING] Could not check out {sha[:7]}, skipping")
                 continue
 
-            # Build commit node
-            c_node = make_commit_node(commit, repo_name)
+            # Build commit node (epoch must be set before RTL module nodes)
+            epoch_label = epoch_assignments.get(sha, "development")
+            c_node = make_commit_node(commit, repo_name, design_epoch=epoch_label)
             commit_nodes[sha] = c_node
             all_nodes.append(c_node)
 
