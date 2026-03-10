@@ -115,18 +115,35 @@ def build_embedding_bridges(
 
 
 # ---------------------------------------------------------------------------
-# Structural (port-signature) similarity bridge
+# Structural (label-name) similarity bridge
 # ---------------------------------------------------------------------------
 
-def _port_signature_similarity(ports_a: list[str], ports_b: list[str]) -> float:
-    """Jaccard similarity on lowercased port name sets with size penalty."""
-    if not ports_a or not ports_b:
+def _label_suffix(label: str) -> str:
+    """
+    Strip common repo-specific prefixes from module names to get the functional suffix.
+    e.g. 'or1200_cpu' → 'cpu',  'mor1kx_cpu' → 'cpu',  'ibex_core' → 'core'
+    Splits on first underscore only (or returns full label if no underscore).
+    """
+    parts = label.lower().split("_", 1)
+    return parts[1] if len(parts) > 1 else parts[0]
+
+
+def _label_similarity(label_a: str, label_b: str) -> float:
+    """
+    Name-based similarity between two RTL module labels.
+    - Exact suffix match after stripping repo prefix → 1.0
+    - Token Jaccard on underscore-split words → partial score
+    """
+    sa, sb = _label_suffix(label_a), _label_suffix(label_b)
+    if sa == sb:
+        return 1.0
+    # Token Jaccard on full label
+    ta = set(label_a.lower().split("_"))
+    tb = set(label_b.lower().split("_"))
+    if not ta or not tb:
         return 0.0
-    sa = {p.lower() for p in ports_a}
-    sb = {p.lower() for p in ports_b}
-    jaccard = len(sa & sb) / len(sa | sb)
-    size_diff = abs(len(sa) - len(sb)) / max(len(sa), len(sb))
-    return round(0.6 * jaccard + 0.4 * (1.0 - size_diff), 4)
+    jaccard = len(ta & tb) / len(ta | tb)
+    return round(jaccard, 4)
 
 
 def build_structural_bridges(
@@ -136,55 +153,60 @@ def build_structural_bridges(
     min_score: float = None,
 ) -> list[dict]:
     """
-    Compare RTL_Module nodes between repos by port-signature Jaccard similarity.
-    Queries the existing RTL_Module collection filtered by repo prefix.
+    Compare RTL_Module nodes between repos by label-name similarity.
+
+    Uses label suffix matching and token Jaccard on module names.  This is
+    the best structural signal available from the temporal ETL (HAS_PORT is
+    not populated by the git-replay pipeline).  A future enhancement can
+    re-add port-level comparison once a Verilog port extractor is added.
     """
     min_score = min_score or CROSS_REPO_MIN_SIMILARITY
 
-    # Derive repo name from prefix (e.g. OR1200_ → or1200)
     src_repo = source_prefix.rstrip("_").lower()
     tgt_repo = target_prefix.rstrip("_").lower()
 
-    print(f"[bridge] Structural bridge: {src_repo} ↔ {tgt_repo}  (min_score={min_score})")
+    print(f"[bridge] Structural bridge (label-name): {src_repo} ↔ {tgt_repo}  (min_score={min_score})")
 
-    # Fetch RTL_Module nodes with their ports for each repo
-    src_modules = list(db.aql.execute(
-        "FOR m IN RTL_Module FILTER CONTAINS(m.repo, @r) "
-        "LET ports = (FOR e IN HAS_PORT FILTER e._from == m._id "
-        "             LET p = DOCUMENT(e._to) RETURN p.label) "
-        "RETURN {id: m._id, label: m.label, ports: ports}",
-        bind_vars={"r": src_repo}
+    # Fetch the most-recent snapshot of each module (open-ended validity)
+    # Fetch open-ended modules for both repos.
+    # Note: combining CONTAINS() with the MDI index filter triggers an ArangoDB
+    # AMP cluster planner bug (ERR 4). Workaround: fetch all open-ended modules
+    # then filter by repo in Python.
+    all_open = list(db.aql.execute(
+        "FOR m IN RTL_Module FILTER m.valid_to_ts > 9000000000 "
+        "RETURN {id: m._id, label: m.label, file_hash: m.file_hash, repo: m.repo}"
     ))
-    tgt_modules = list(db.aql.execute(
-        "FOR m IN RTL_Module FILTER CONTAINS(m.repo, @r) "
-        "LET ports = (FOR e IN HAS_PORT FILTER e._from == m._id "
-        "             LET p = DOCUMENT(e._to) RETURN p.label) "
-        "RETURN {id: m._id, label: m.label, ports: ports}",
-        bind_vars={"r": tgt_repo}
-    ))
+    src_modules = [m for m in all_open if src_repo in (m.get("repo") or "").lower()]
+    tgt_modules = [m for m in all_open if tgt_repo in (m.get("repo") or "").lower()]
 
     if not src_modules or not tgt_modules:
         print(f"[bridge] No RTL_Module nodes found with repo filter.")
         return []
 
+    print(f"[bridge]   {len(src_modules)} {src_repo} modules × {len(tgt_modules)} {tgt_repo} modules")
+
     edges = []
     for src in src_modules:
         for tgt in tgt_modules:
-            score = _port_signature_similarity(src["ports"], tgt["ports"])
+            # Exact file hash match → definite copy/port
+            if src["file_hash"] and src["file_hash"] == tgt["file_hash"]:
+                score = 1.0
+            else:
+                score = _label_similarity(src["label"], tgt["label"])
+
             if score >= min_score:
                 edge_key = hashlib.md5(
                     f"{src['id']}:{tgt['id']}:structural".encode()
                 ).hexdigest()[:16]
                 edges.append({
-                    "_key":                    edge_key,
-                    "_from":                   src["id"],
-                    "_to":                     tgt["id"],
-                    "similarity_score":        score,
-                    "similarity_type":         "structural",
-                    "port_signature_overlap":  score,
-                    "source_repo":             source_prefix,
-                    "target_repo":             target_prefix,
-                    "created_by":              "cross_repo_bridge",
+                    "_key":             edge_key,
+                    "_from":            src["id"],
+                    "_to":              tgt["id"],
+                    "similarity_score": score,
+                    "similarity_type":  "structural_label",
+                    "source_repo":      source_prefix,
+                    "target_repo":      target_prefix,
+                    "created_by":       "cross_repo_bridge",
                 })
 
     print(f"[bridge] {len(edges)} structural bridges found (≥{min_score})")
