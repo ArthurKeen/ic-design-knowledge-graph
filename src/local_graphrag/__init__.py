@@ -12,14 +12,18 @@ Supports backends:
 
 from .pipeline import LocalGraphRAGPipeline
 from .chunker import chunk_document
-from .extractor import extract_entities_and_relations
-from .loader import load_to_arangodb
+from .extractor import EntityExtractor
+from .embedder import embed_entities
+from .loader import load_to_arangodb, build_golden_entities, build_golden_relations
 
 __all__ = [
     "LocalGraphRAGPipeline",
     "chunk_document",
-    "extract_entities_and_relations",
+    "EntityExtractor",
+    "embed_entities",
     "load_to_arangodb",
+    "build_golden_entities",
+    "build_golden_relations",
 ]
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"

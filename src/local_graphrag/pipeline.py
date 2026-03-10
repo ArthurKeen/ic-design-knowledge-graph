@@ -39,6 +39,7 @@ from config_temporal import ARANGO_DATABASE, LOCAL_GRAPHRAG_BACKEND
 
 from local_graphrag.chunker import chunk_document
 from local_graphrag.extractor import EntityExtractor
+from local_graphrag.embedder import embed_entities
 from local_graphrag.community_detector import detect_communities
 from local_graphrag.loader import load_to_arangodb
 
@@ -73,23 +74,25 @@ class LocalGraphRAGPipeline:
 
     def __init__(
         self,
-        prefix:          str   = "OR1200_",
-        backend:         str   = None,
-        model:           str   = None,
-        chunk_size:      int   = None,
-        overlap:         int   = None,
-        doc_version:     str   = None,
-        source_commit:   str   = None,
-        valid_from_epoch: str  = None,
+        prefix:           str   = "OR1200_",
+        backend:          str   = None,
+        model:            str   = None,
+        chunk_size:       int   = None,
+        overlap:          int   = None,
+        doc_version:      str   = None,
+        source_commit:    str   = None,
+        valid_from_epoch: str   = None,
+        embedding_backend: str  = "sentence_transformers",
     ):
-        self.prefix           = prefix
-        self.backend          = backend or LOCAL_GRAPHRAG_BACKEND
-        self.model            = model
-        self.chunk_size       = chunk_size
-        self.overlap          = overlap
-        self.doc_version      = doc_version
-        self.source_commit    = source_commit
-        self.valid_from_epoch = valid_from_epoch
+        self.prefix            = prefix
+        self.backend           = backend or LOCAL_GRAPHRAG_BACKEND
+        self.model             = model
+        self.chunk_size        = chunk_size
+        self.overlap           = overlap
+        self.doc_version       = doc_version
+        self.source_commit     = source_commit
+        self.valid_from_epoch  = valid_from_epoch
+        self.embedding_backend = embedding_backend
 
         self.extractor = EntityExtractor(backend=self.backend, model=self.model)
 
@@ -164,17 +167,21 @@ class LocalGraphRAGPipeline:
         print(f"  Total chunks: {len(all_chunks)}\n")
 
         # ---- Step 2: Extract entities + relations ----
-        print("[pipeline] Step 2/4: Extracting entities and relations …")
+        print("[pipeline] Step 2/5: Extracting entities and relations …")
         all_entities, all_relations = self.extractor.extract_from_chunks(
             all_chunks, prefix=self.prefix
         )
 
-        # ---- Step 3: Community detection ----
-        print("\n[pipeline] Step 3/4: Detecting communities …")
+        # ---- Step 3: Embed entities ----
+        print(f"\n[pipeline] Step 3/5: Generating entity embeddings ({self.embedding_backend}) …")
+        all_entities = embed_entities(all_entities, backend=self.embedding_backend)
+
+        # ---- Step 4: Community detection ----
+        print("\n[pipeline] Step 4/5: Detecting communities …")
         communities = detect_communities(all_entities, all_relations, prefix=self.prefix)
 
-        # ---- Step 4: Load into ArangoDB ----
-        print("\n[pipeline] Step 4/4: Loading into ArangoDB …")
+        # ---- Step 5: Load into ArangoDB ----
+        print("\n[pipeline] Step 5/5: Loading into ArangoDB …")
         summary = {
             "chunks":      len(all_chunks),
             "entities":    len(all_entities),
@@ -229,6 +236,9 @@ def main():
                         help="Source git commit SHA for this document version")
     parser.add_argument("--chunk-size",   type=int, default=None)
     parser.add_argument("--overlap",      type=int, default=None)
+    parser.add_argument("--embedding-backend", default="sentence_transformers",
+                        choices=["sentence_transformers", "openai"],
+                        help="Embedding backend for entity vectors (default: sentence_transformers)")
     parser.add_argument("--dry-run",      action="store_true")
 
     args = parser.parse_args()
@@ -242,6 +252,7 @@ def main():
         doc_version=args.doc_version,
         source_commit=args.commit,
         valid_from_epoch=args.epoch,
+        embedding_backend=args.embedding_backend,
     )
 
     pipeline.run(
