@@ -251,10 +251,17 @@ if __name__ == "__main__":
 
     db = get_db()
 
-    repos_to_scan = (
-        [r.get("github_url", r["name"]) for r in REPO_REGISTRY]
-        if args.all else [args.repo_name]
-    )
+    repos_to_scan: list[str]
+    if args.all:
+        # Discover actual repo names from DB — matches exactly what ETL wrote
+        repos_to_scan = [
+            r["repo"] for r in db.aql.execute(
+                "FOR c IN GitCommit COLLECT repo = c.repo RETURN {repo}"
+            )
+        ]
+        print(f"[situation] Scanning {len(repos_to_scan)} repos from DB: {repos_to_scan}")
+    else:
+        repos_to_scan = [args.repo_name]
 
     for repo_name in repos_to_scan:
         situations = detect_design_situations(repo_name, db)
