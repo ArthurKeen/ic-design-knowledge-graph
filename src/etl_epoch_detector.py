@@ -2,10 +2,11 @@
 etl_epoch_detector.py — Design epoch detection for the temporal IC knowledge graph.
 
 Assigns each commit in a git repository to a named design epoch based on:
-  1. Git tags  → "milestone_<tag>"
-  2. High file-change ratio  → "major_refactor_<sha7>"
-  3. First commit  → "initial_commit"
-  4. Default  → inherits previous commit's epoch ("development" if none)
+  1. First commit                        → "initial_commit"
+  2. Git tags present on this commit     → "milestone_<tag>"
+  3. >N days since last epoch boundary   → "period_<YYYY_MM>"
+  4. High file-change ratio              → "major_refactor_<sha7>"
+  5. Default                             → inherits previous commit's epoch
 
 Usage:
     from etl_epoch_detector import detect_epochs
@@ -19,7 +20,8 @@ import os
 import re
 import subprocess
 import json
-from config_temporal import MAJOR_REFACTOR_THRESHOLD, EPOCHS_FILE
+from datetime import datetime, timezone
+from config_temporal import MAJOR_REFACTOR_THRESHOLD, EPOCH_WINDOW_DAYS, EPOCHS_FILE
 
 
 def get_git_tags(repo_path: str) -> dict[str, list[str]]:
@@ -111,6 +113,13 @@ def detect_epochs(repo_path: str, commits: list[dict]) -> dict[str, str]:
     """
     Assign each commit to a named design epoch.
 
+    Rules (in priority order):
+      1. First commit                    → "initial_commit"
+      2. Git tag on this commit           → "milestone_<tag>"
+      3. >EPOCH_WINDOW_DAYS since last   → "period_<YYYY_MM>"
+      4. RTL change ratio >= threshold   → "major_refactor_<sha7>"
+      5. Default                         → inherit last epoch
+
     Args:
         repo_path:  Absolute path to the git repository.
         commits:    List of commit dicts, sorted oldest-first.
@@ -125,19 +134,29 @@ def detect_epochs(repo_path: str, commits: list[dict]) -> dict[str, str]:
     tags = get_git_tags(repo_path)
     epochs: dict[str, str] = {}
     last_epoch = "development"
+    last_epoch_ts: int = commits[0]["ts"]   # timestamp of the last epoch boundary
 
     for i, commit in enumerate(commits):
         sha = commit["sha"]
+        ts  = commit.get("ts", 0)
 
         # Rule 1: first commit
         if i == 0:
             epoch = "initial_commit"
+            last_epoch_ts = ts
 
         # Rule 2: git tag present on this commit
         elif sha in tags:
             epoch = _clean_tag_name(tags[sha][0])
+            last_epoch_ts = ts
 
-        # Rule 3: major refactor detection
+        # Rule 3: time-window — too long since last epoch boundary
+        elif EPOCH_WINDOW_DAYS > 0 and (ts - last_epoch_ts) > (EPOCH_WINDOW_DAYS * 86400):
+            dt = datetime.fromtimestamp(ts, tz=timezone.utc)
+            epoch = f"period_{dt.strftime('%Y_%m')}"
+            last_epoch_ts = ts
+
+        # Rule 4: major refactor detection
         else:
             prev_sha = commits[i - 1]["sha"]
             rtl_total = count_rtl_files_at_commit(repo_path, sha)
@@ -145,8 +164,9 @@ def detect_epochs(repo_path: str, commits: list[dict]) -> dict[str, str]:
 
             if rtl_total > 0 and (rtl_changed / rtl_total) >= MAJOR_REFACTOR_THRESHOLD:
                 epoch = f"major_refactor_{sha[:7]}"
+                last_epoch_ts = ts
             else:
-                # Rule 4: inherit last epoch
+                # Rule 5: inherit last epoch
                 epoch = last_epoch
 
         epochs[sha] = epoch

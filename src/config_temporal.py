@@ -31,7 +31,13 @@ ARANGO_DATABASE = _os.getenv("ARANGO_DATABASE", "ic-knowledge-graph-temporal")
 TEMPORAL_GRAPH_NAME = os.getenv("TEMPORAL_GRAPH_NAME", "IC_Temporal_Knowledge_Graph")
 
 # Threshold: fraction of RTL files changed in one commit to qualify as a major refactor epoch
-MAJOR_REFACTOR_THRESHOLD = float(os.getenv("MAJOR_REFACTOR_THRESHOLD", "0.30"))
+# 0.15 = 15% of all RTL files touched in one commit — catches significant rewrites
+# without triggering on routine incremental commits.
+MAJOR_REFACTOR_THRESHOLD = float(os.getenv("MAJOR_REFACTOR_THRESHOLD", "0.15"))
+
+# Time-window epoch: if this many days elapse since the last epoch boundary, start a
+# new period_YYYY_MM epoch.  Set to 0 to disable.  180 days ≈ 2 major releases/year.
+EPOCH_WINDOW_DAYS = int(os.getenv("EPOCH_WINDOW_DAYS", "180"))
 
 # Branch to replay history from in each source repo
 TEMPORAL_CHECKOUT_BRANCH = os.getenv("TEMPORAL_CHECKOUT_BRANCH", "master")
