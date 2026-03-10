@@ -723,3 +723,143 @@ python3 src/prepare_arango.py  # Regenerate import files
 ```
 
 The Author and FSM ETLs are idempotent and safe to re-run.
+
+---
+
+## 8. Temporal Graph Extension (`feature/temporal-kg`)
+
+This section documents schema additions for the temporal multi-repo knowledge graph. All changes live in database `ic-knowledge-graph-temporal` on branch `feature/temporal-kg`.
+
+### 8.1 Temporal Fields Added to Existing Node Types
+
+Every `RTL_Module` and `GitCommit` node in the temporal database carries additional fields:
+
+| Field | Type | Description |
+|---|---|---|
+| `valid_from_commit` | string | SHA of commit that introduced this element |
+| `valid_from_ts` | int (unix) | Timestamp of that commit |
+| `valid_to_commit` | string \| null | SHA where element was removed/replaced; `null` = still valid |
+| `valid_to_ts` | int | Timestamp of removal, or `9999999999` sentinel for open-ended |
+| `design_epoch` | string | Named epoch label (e.g. `milestone_5_2`, `period_2022_09`) |
+| `repo` | string | Canonical repo name (e.g. `openrisc/or1200.git`) |
+| `file_hash` | string | MD5 of Verilog source at this version |
+
+### 8.2 New Vertex Collections
+
+#### `DesignEpoch`
+Named design phase for a specific repo.
+
+```json
+{
+  "_key":         "a1b2c3d4e5f6a7b8",
+  "label":        "openrisc/mor1kx — milestone_5_2",
+  "type":         "DesignEpoch",
+  "repo":         "openrisc/mor1kx.git",
+  "epoch_type":   "milestone_tag",
+  "git_tag":      "v5.2",
+  "start_commit": "0238e6f01ae8...",
+  "start_ts":     1609459200,
+  "end_ts":       null
+}
+```
+
+**Epoch types:** `initial_commit`, `milestone_tag`, `period_YYYY_MM`, `major_refactor`
+
+#### `DesignSituation`
+Named, cross-referenceable structural pattern extracted at a specific repo/epoch.
+
+```json
+{
+  "_key":               "a1b2c3d4e5f6a7b8",
+  "label":              "Major Refactor — openrisc/mor1kx @ major_refactor_8b42024",
+  "type":               "DesignSituation",
+  "repo":               "openrisc/mor1kx.git",
+  "epoch":              "major_refactor_8b42024",
+  "situation_class":    "major_refactor",
+  "commit_range_start": "8b42024...",
+  "commit_range_end":   "...",
+  "valid_from_ts":      1361836800,
+  "valid_to_ts":        1364515200,
+  "tags":               ["refactor", "mor1kx"],
+  "outcome":            "unknown"
+}
+```
+
+**Situation classes:** `subsystem_addition`, `major_refactor`, `release_prep`
+
+### 8.3 New Edge Collections
+
+| Edge Collection | From | To | Description |
+|---|---|---|---|
+| `BELONGS_TO_EPOCH` | `RTL_Module` | `DesignEpoch` | Links a module version to its design epoch |
+| `CROSS_REPO_SIMILAR_TO` | `RTL_Module` | `RTL_Module` | Structural similarity across repos (score ≥ 0.7) |
+| `CROSS_REPO_EVOLVED_FROM` | `RTL_Module` | `RTL_Module` | Architectural lineage (rule-based) |
+
+`CROSS_REPO_SIMILAR_TO` edge schema:
+```json
+{
+  "_from":            "RTL_Module/...",
+  "_to":              "RTL_Module/...",
+  "similarity_score": 1.0,
+  "similarity_type":  "structural_label",
+  "source_repo":      "OR1200_",
+  "target_repo":      "MOR1KX_"
+}
+```
+
+### 8.4 Vertex-Centric Indexes (VCI) — Performance
+
+To enable efficient temporal range scans on the remote AMP cluster:
+
+| Index Name | Collection | Fields | Type |
+|---|---|---|---|
+| `idx_modified_from_vci` | `MODIFIED` | `[_from, valid_from_ts]` | persistent |
+| `idx_modified_to_vci` | `MODIFIED` | `[_to, valid_to_ts]` | persistent |
+| `idx_epoch_from_vci` | `BELONGS_TO_EPOCH` | `[_from, valid_from_ts]` | persistent |
+| `idx_epoch_to_vci` | `BELONGS_TO_EPOCH` | `[_to, valid_to_ts]` | persistent |
+| `idx_rtl_module_mdi` | `RTL_Module` | `[valid_from_ts, valid_to_ts]` | mdi (prefix) |
+| `idx_gitcommit_mdi` | `GitCommit` | `[valid_from_ts, valid_to_ts]` | mdi (prefix) |
+
+> [!NOTE]
+> **AMP cluster AQL pattern:** Always prefix traversal queries with `WITH <collection_name>` when querying through edge collections in a cluster. Example: `WITH RTL_Module, GitCommit FOR v, e IN 1..1 OUTBOUND @start MODIFIED RETURN v`. Omitting `WITH` causes `ERR 1521: collection not known to traversal`.
+
+### 8.5 Canonical Temporal AQL Patterns
+
+```aql
+// State-as-of-timestamp: what modules were active at a given point in time?
+FOR m IN RTL_Module
+  FILTER m.repo == "openrisc/or1200.git"
+  FILTER m.valid_from_ts <= @target_ts
+  FILTER m.valid_to_ts > @target_ts
+  RETURN m
+```
+
+```aql
+// Evolution between two commits: which modules changed?
+WITH RTL_Module
+FOR m IN RTL_Module
+  FILTER m.repo == @repo AND m.valid_from_ts >= @from_ts AND m.valid_from_ts <= @to_ts
+  RETURN {label: m.label, epoch: m.design_epoch, introduced: m.valid_from_ts}
+```
+
+```aql
+// Cross-repo analog finder: modules structurally similar to a given module
+WITH RTL_Module
+FOR v, e IN 1..1 OUTBOUND @module_id CROSS_REPO_SIMILAR_TO
+  FILTER e.similarity_score >= 0.7
+  RETURN {module: v.label, repo: v.repo, score: e.similarity_score}
+```
+
+### 8.6 Temporal Database Statistics (2026-03-10)
+
+| Collection | Type | Count |
+|---|---|---|
+| `GitCommit` | Vertex | 3,808 |
+| `RTL_Module` | Vertex | 6,594 |
+| `DesignEpoch` | Vertex | 385 |
+| `DesignSituation` | Vertex | 722 |
+| `MODIFIED` | Edge | 6,594 |
+| `BELONGS_TO_EPOCH` | Edge | 6,794 |
+| `CROSS_REPO_SIMILAR_TO` | Edge | 17 |
+
+*Database: `ic-knowledge-graph-temporal` · Graph: `IC_Temporal_Knowledge_Graph` · Branch: `feature/temporal-kg`*
