@@ -51,12 +51,13 @@ def log_ingestion(repo_name: str, result: dict) -> None:
 
 
 def ingest_one_repo(
-    repo_config:  dict,
-    do_clone:     bool = True,
-    do_temporal:  bool = True,
-    do_graphrag:  bool = True,
-    dry_run:      bool = False,
-    commit_limit: int  = None,
+    repo_config:       dict,
+    do_clone:          bool = True,
+    do_temporal:       bool = True,
+    do_graphrag:       bool = True,
+    dry_run:           bool = False,
+    commit_limit:      int  = None,
+    embedding_backend: str  = "sentence_transformers",
 ) -> dict:
     """
     Full ingestion pipeline for a single repo.
@@ -147,7 +148,10 @@ def ingest_one_repo(
             print(f"\n[ingestor] Running local GraphRAG on {doc_dir} …")
             try:
                 from local_graphrag.pipeline import LocalGraphRAGPipeline
-                pipeline = LocalGraphRAGPipeline(prefix=prefix)
+                pipeline = LocalGraphRAGPipeline(
+                    prefix=prefix,
+                    embedding_backend=embedding_backend,
+                )
                 graphrag_summary = pipeline.run(doc_dir=doc_dir, dry_run=dry_run)
                 summary["entities"]    = graphrag_summary.get("entities", 0)
                 summary["chunks"]      = graphrag_summary.get("chunks", 0)
@@ -160,12 +164,13 @@ def ingest_one_repo(
 
 
 def ingest_all(
-    repos:        list[dict] = None,
-    do_clone:     bool = True,
-    do_temporal:  bool = True,
-    do_graphrag:  bool = True,
-    dry_run:      bool = False,
-    commit_limit: int  = None,
+    repos:             list[dict] = None,
+    do_clone:          bool = True,
+    do_temporal:       bool = True,
+    do_graphrag:       bool = True,
+    dry_run:           bool = False,
+    commit_limit:      int  = None,
+    embedding_backend: str  = "sentence_transformers",
 ) -> dict[str, dict]:
     """Ingest all repos in priority order."""
     repos = repos or load_repo_registry()
@@ -178,6 +183,7 @@ def ingest_all(
             do_graphrag=do_graphrag,
             dry_run=dry_run,
             commit_limit=commit_limit,
+            embedding_backend=embedding_backend,
         )
     return results
 
@@ -195,6 +201,9 @@ if __name__ == "__main__":
     parser.add_argument("--dry-run",       action="store_true")
     parser.add_argument("--commit-limit",  type=int, default=None,
                         help="Limit commits processed (for testing)")
+    parser.add_argument("--embedding-backend", default="sentence_transformers",
+                        choices=["sentence_transformers", "openai"],
+                        help="Embedding backend for entity vectors (default: sentence_transformers)")
     args = parser.parse_args()
 
     registry = load_repo_registry()
@@ -215,6 +224,7 @@ if __name__ == "__main__":
         do_graphrag=not args.no_graphrag,
         dry_run=args.dry_run,
         commit_limit=args.commit_limit,
+        embedding_backend=args.embedding_backend,
     )
 
     print(f"\n{'='*60}")
