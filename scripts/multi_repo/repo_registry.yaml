@@ -6,7 +6,7 @@ repos:
     doc_path: doc
     prefix: OR1200_
     priority: 1
-    local_path: null  # uses existing ./or1200 submodule; set to null to use default
+    local_path: /Users/arthurkeen/code/ic-knowledge-graph/or1200
 
   - name: mor1kx
     github_url: https://github.com/openrisc/mor1kx.git

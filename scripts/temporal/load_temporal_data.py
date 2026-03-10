@@ -178,7 +178,7 @@ def create_temporal_indexes(db, dry_run: bool = False) -> None:
                 "fieldValueTypes": "double",
                 "prefixFields":    [spec["fields"][0]],   # anchor on valid_from_ts
                 "unique":          False,
-                "sparse":          False,
+                "sparse":          True,   # exclude docs where valid_from_ts|valid_to_ts is null
             })
             print(f"  [DONE] {spec['name']:45s}  on {col_name} fields={spec['fields']}")
         except Exception as e:

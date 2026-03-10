@@ -187,7 +187,7 @@ def make_rtl_module_node(
         "valid_from_commit":  valid_from_commit,
         "valid_from_ts":      valid_from_ts,
         "valid_to_commit":    None,
-        "valid_to_ts":        None,
+        "valid_to_ts":        9999999999,   # sentinel: open-ended validity (ts > 9e9 in AQL)
         "design_epoch":       epoch,
         "metadata": {
             "file": file_info.get("file", ""),
@@ -202,7 +202,7 @@ def make_commit_node(commit: dict, repo_name: str) -> dict:
         "type":         COL_COMMIT,
         "repo":         repo_name,
         "valid_from_ts": commit["ts"],
-        "valid_to_ts":   None,
+        "valid_to_ts":   9999999999,   # sentinel: open-ended validity
         "metadata": {
             "author":       commit["author"],
             "author_email": commit["author_email"],
