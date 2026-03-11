@@ -134,13 +134,13 @@ FOR e IN DesignEpoch
 
 ## Scene 2 — "The Time Machine" (~4 min)
 
-**Talking point:** *We can ask: "What did OR1200 look like in 2001, before the MMU was added?" Or: "How many ibex modules existed when the project started vs. today?"*
+**Talking point:** *OR1200 has a great backstory — it was originally in SVN. The git history starts in May 2009 when the community migrated to github. We can ask: "What did OR1200 look like the moment it arrived on GitHub?" And then: "How many modules were added in the big rel3 drop in June 2010?"*
 
-### Query 2a — State of OR1200 at its very beginning (2001)
+### Query 2a — State of OR1200 at GitHub migration day (May 2009)
 
 ```aql
-// What RTL modules existed in OR1200 at the beginning of the project?
-LET target_ts = DATE_TIMESTAMP("2001-11-01") / 1000  // Nov 2001
+// What RTL modules existed in OR1200 on its first GitHub commit (May 2009)?
+LET target_ts = 1243238472   // 2009-05-25 — first git commit (SVN migration)
 FOR m IN RTL_Module
   FILTER m.repo == "openrisc/or1200.git"
   FILTER m.valid_from_ts <= target_ts
@@ -152,6 +152,33 @@ FOR m IN RTL_Module
     file:   m.file
   }
 ```
+
+**Expected:** ~60 modules — the full OR1200 v1 design that arrived on GitHub.
+
+### Query 2a-alt — State after the OR1200 rel3 major release (June 2010)
+
+```aql
+// What changed when the rel3 snapshot landed?
+LET before_ts = 1243238472   // 2009-05-25 — initial import
+LET after_ts  = 1283211145   // 2010-08-30 — rel3 fully merged
+
+LET before = (FOR m IN RTL_Module FILTER m.repo == "openrisc/or1200.git"
+  FILTER m.valid_from_ts <= before_ts AND m.valid_to_ts > before_ts
+  RETURN m.label)
+
+LET after = (FOR m IN RTL_Module FILTER m.repo == "openrisc/or1200.git"
+  FILTER m.valid_from_ts <= after_ts AND m.valid_to_ts > after_ts
+  RETURN m.label)
+
+RETURN {
+  modules_at_svn_migration: LENGTH(before),
+  modules_after_rel3:        LENGTH(after),
+  new_in_rel3:               MINUS(after, before),
+  removed_in_rel3:           MINUS(before, after)
+}
+```
+
+**Point out:** `MINUS()` shows which modules were added and removed between the two snapshots — a built-in, zero-effort diff between two points in time.
 
 ### Query 2b — Show ibex module growth over time
 
