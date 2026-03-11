@@ -68,14 +68,17 @@ FOR e IN DesignEpoch
   RETURN { epoch: NEW.label, git_tag: NEW.git_tag }
 ```
 
-### Query 1b — Epoch timeline as a **graph** (visualizer friendly)
+### Query 1b — Epoch timeline as a **graph**
 
-> [!TIP]
-> The ArangoDB graph visualizer renders any result that contains objects with `_id`, `_from`, `_to`, and `_key` fields. You can synthesize fake vertices and edges on the fly to visualise any structure — the data never has to be in a real edge collection.
+> [!IMPORTANT]
+> **Two separate query contexts in ArangoDB — use the right one:**
+> - **Standalone Query Editor** (left nav → Queries icon → New Query): Supports synthetic `{vertices, edges}` objects. Switch to the **Graph** tab in results to visualise.
+> - **Graph Explorer built-in query panel** (Graphs → `IC_Temporal_Knowledge_Graph` → Queries): Stricter — only accepts `_id` strings pointing to real graph collections. Use this to find seed nodes, then click-expand.
 
+**For the Standalone Query Editor** — paste this, run it, then click the **Graph** tab in the result:
 ```aql
-// Render the mor1kx epoch timeline as a graph:
-// Synthetic REPO vertex → NEXT_EPOCH edges → DesignEpoch vertices
+// Render the mor1kx epoch skeleton as a timeline arc
+// (skeleton only: milestone + period + initial — skips 90+ major_refactors)
 LET repo_node = {
   _id:   "synthetic/mor1kx_repo",
   _key:  "mor1kx_repo",
@@ -86,8 +89,13 @@ LET repo_node = {
 LET epoch_vertices = (
   FOR e IN DesignEpoch
     FILTER e.repo == "openrisc/mor1kx.git"
+    FILTER e.epoch_type == "milestone_tag"
+        OR e.epoch_type == "initial_commit"
+        OR STARTS_WITH(SPLIT(e.label, " — ")[1], "period_")
     SORT e.start_ts ASC
-    RETURN e
+    RETURN MERGE(e, {
+      label: e.git_tag != null ? e.git_tag : SPLIT(e.label, " — ")[1]
+    })
 )
 
 LET edges = (
@@ -99,8 +107,7 @@ LET edges = (
       _key:  CONCAT("edge_", i),
       _from: from_id,
       _to:   e._id,
-      label: e.epoch_type,
-      date:  DATE_FORMAT(e.start_ts * 1000, "%yyyy-%mm-%dd")
+      label: DATE_FORMAT(e.start_ts * 1000, "%yyyy-%mm")
     }
 )
 
@@ -110,7 +117,16 @@ RETURN {
 }
 ```
 
-**In the graph viewer:** paste the query, switch results to **Graph** tab. You'll see the repo as root with all epochs flowing in chronological order. Milestone nodes will show their `git_tag`; refactor nodes show their SHA.
+**For the Graph Explorer query panel** — use this instead (returns seed `_id` values, then click-expand):
+```aql
+FOR e IN DesignEpoch
+  FILTER e.repo == "openrisc/mor1kx.git"
+  FILTER e.epoch_type == "milestone_tag"
+      OR e.epoch_type == "initial_commit"
+      OR STARTS_WITH(SPLIT(e.label, " — ")[1], "period_")
+  SORT e.start_ts ASC
+  RETURN e._id
+```
 
 **Point out:** Milestone tags like `v5.2` are automatically detected from git. Time-period epochs (`period_2013_09`) fill the gaps between releases.
 
@@ -357,32 +373,38 @@ RETURN {
 
 **Talking point:** *Let me show you this in the graph viewer — you can see the temporal structure visually.*
 
-### In the ArangoDB Graph Viewer:
+### In the ArangoDB Graph Explorer:
+
+> [!IMPORTANT]
+> The Graph Explorer's **Queries** panel only accepts AQL that returns `_id` strings of nodes already in the graph. Use those as seed nodes, then click-expand. Do NOT paste the synthetic `{vertices, edges}` query here — use the standalone Query Editor for that.
 
 1. Navigate to **Graphs** → `IC_Temporal_Knowledge_Graph`
-2. **Start node:** enter `DesignEpoch/` + any key from this query:
+2. Click **Queries** in the top toolbar and paste:
    ```aql
+   // Seed nodes for the Graph Explorer — milestone epochs
    FOR e IN DesignEpoch
      FILTER e.repo == "openrisc/mor1kx.git" AND e.epoch_type == "milestone_tag"
-     LIMIT 1 RETURN e._id
+     SORT e.start_ts ASC
+     RETURN e._id
    ```
-3. Set **depth = 2**, layout = **hierarchical**
-4. You'll see: `DesignEpoch` → `BELONGS_TO_EPOCH` → `RTL_Module` nodes
-5. Click on an `RTL_Module` to expand → shows `MODIFIED` edges → `GitCommit` nodes
+3. Click each loaded node to expand it — you'll see its `RTL_Module` neighbourhood via `BELONGS_TO_EPOCH`
+4. Set **depth = 2**, layout = **Force Directed** or **Hierarchical**
+5. Click on an `RTL_Module` to expand further → shows `MODIFIED` edges → `GitCommit` nodes
 
-**Colour coding to mention:**
+**Colour coding:**
 - Purple nodes = `DesignEpoch`
-- Blue/green nodes = `RTL_Module` (darker = older in history)
+- Green nodes = `RTL_Module`
 - Teal = `DesignSituation`
-- Gold dashed edges = `CROSS_REPO_SIMILAR_TO`
+- Gold edges = `CROSS_REPO_SIMILAR_TO`
 
-### Cross-repo view:
+### Cross-repo view in the Graph Explorer:
 ```aql
-// Visualize the cross-repo bridges as a subgraph
-// (copy this ID into the graph viewer start node)
-FOR e IN CROSS_REPO_SIMILAR_TO LIMIT 1 RETURN e._from
+// Seed: the OR1200 Golden Entities that have cross-repo bridges
+FOR e IN CROSS_REPO_SIMILAR_TO
+  LIMIT 5
+  RETURN e._from
 ```
-Then expand 2 hops — you'll see two modules from different repos connected by the gold `CROSS_REPO_SIMILAR_TO` edge.
+Expand to depth 2 — you'll see two `Golden_Entity` nodes from different repos connected by a `CROSS_REPO_SIMILAR_TO` edge.
 
 ---
 
