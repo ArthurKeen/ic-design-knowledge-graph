@@ -339,15 +339,24 @@ def replay_git_history(
     epoch_map = detect_epochs(repo_path, commits)
     save_epochs(epoch_map)
 
+    # Build a reverse map: sha → tag name for milestone lookup
+    from etl_epoch_detector import get_git_tags as _get_git_tags
+    sha_to_tag: dict[str, str] = {}
+    for tag_sha, tag_names in _get_git_tags(repo_path).items():
+        sha_to_tag[tag_sha] = tag_names[0]   # use first tag if multiple
+
     # Step 3: build epoch nodes
     epoch_nodes_by_label: dict[str, dict] = {}
     for commit in commits:
         epoch_label = epoch_map.get(commit["sha"], "development")
         if epoch_label not in epoch_nodes_by_label:
+            # Pass the git tag name when this epoch is a milestone
+            git_tag = sha_to_tag.get(commit["sha"]) if epoch_label.startswith("milestone_") else None
             epoch_nodes_by_label[epoch_label] = make_epoch_node(
                 repo_name, epoch_label,
                 start_commit=commit["sha"],
                 start_ts=commit["ts"],
+                git_tag=git_tag,
             )
 
     # Finalize epoch end times

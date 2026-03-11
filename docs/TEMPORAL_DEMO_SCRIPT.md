@@ -10,7 +10,11 @@
 
 ## Setup — Before You Present
 
-1. Open the ArangoDB Web UI and **switch to database `ic-knowledge-graph-temporal`** (top-left dropdown)
+> [!CAUTION]
+> **You MUST switch databases before running any query.**  
+> In the ArangoDB Web UI, the database selector is at the **very top of the left sidebar**, just below the ArangoDB logo. It defaults to `ic-knowledge-graph`. Click it and select **`ic-knowledge-graph-temporal`**. All temporal collections (`DesignEpoch`, `DesignSituation`, `RTL_Module`, etc.) live there — not in the main DB.
+
+1. Open the ArangoDB Web UI and **switch to database `ic-knowledge-graph-temporal`** (top-left sidebar dropdown)
 2. Open **Queries** (left nav → Queries icon)
 3. Keep this script open in a second window; paste each query when ready
 
@@ -52,21 +56,63 @@ RETURN {
 
 **Expected output:** 3808 commits, 6594 modules, 390 epochs, 723 situations.
 
-### Query 1b — Show the timeline (graph viewer friendly)
+### Fix — Backfill git_tag on existing DesignEpoch nodes
+*Run this once in the UI to fix the null git_tags. The ETL code has been fixed so future ingest runs will populate git_tag correctly.*
 ```aql
-// The epoch timeline for mor1kx — shows milestone tags + time periods
+// Derive git_tag from the milestone_ epoch label (e.g. milestone_5_2 → "5.2")
 FOR e IN DesignEpoch
-  FILTER e.repo == "openrisc/mor1kx.git"
-  SORT e.start_ts ASC
-  RETURN {
-    epoch:      e.label,
-    type:       e.epoch_type,
-    start_date: DATE_FORMAT(e.start_ts * 1000, "%yyyy-%mm-%dd"),
-    git_tag:    e.git_tag
-  }
+  FILTER e.epoch_type == "milestone_tag"
+  LET tag_raw = REGEX_REPLACE(e.label, "^.+milestone_", "")
+  LET tag = REGEX_REPLACE(tag_raw, "_", ".", true)
+  UPDATE e WITH { git_tag: tag } IN DesignEpoch
+  RETURN { epoch: NEW.label, git_tag: NEW.git_tag }
 ```
 
-**Point out:** Milestone tags like `v5.2` are automatically detected from git. Time-period epochs (`period_2013_09`) fill the gaps.
+### Query 1b — Epoch timeline as a **graph** (visualizer friendly)
+
+> [!TIP]
+> The ArangoDB graph visualizer renders any result that contains objects with `_id`, `_from`, `_to`, and `_key` fields. You can synthesize fake vertices and edges on the fly to visualise any structure — the data never has to be in a real edge collection.
+
+```aql
+// Render the mor1kx epoch timeline as a graph:
+// Synthetic REPO vertex → NEXT_EPOCH edges → DesignEpoch vertices
+LET repo_node = {
+  _id:   "synthetic/mor1kx_repo",
+  _key:  "mor1kx_repo",
+  label: "openrisc/mor1kx",
+  type:  "Repo"
+}
+
+LET epoch_vertices = (
+  FOR e IN DesignEpoch
+    FILTER e.repo == "openrisc/mor1kx.git"
+    SORT e.start_ts ASC
+    RETURN e
+)
+
+LET edges = (
+  FOR i IN 0..LENGTH(epoch_vertices)-1
+    LET e = epoch_vertices[i]
+    LET from_id = i == 0 ? repo_node._id : epoch_vertices[i-1]._id
+    RETURN {
+      _id:   CONCAT("synthetic/edge_", i),
+      _key:  CONCAT("edge_", i),
+      _from: from_id,
+      _to:   e._id,
+      label: e.epoch_type,
+      date:  DATE_FORMAT(e.start_ts * 1000, "%yyyy-%mm-%dd")
+    }
+)
+
+RETURN {
+  vertices: APPEND([repo_node], epoch_vertices),
+  edges: edges
+}
+```
+
+**In the graph viewer:** paste the query, switch results to **Graph** tab. You'll see the repo as root with all epochs flowing in chronological order. Milestone nodes will show their `git_tag`; refactor nodes show their SHA.
+
+**Point out:** Milestone tags like `v5.2` are automatically detected from git. Time-period epochs (`period_2013_09`) fill the gaps between releases.
 
 ---
 
