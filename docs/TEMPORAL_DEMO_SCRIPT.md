@@ -183,7 +183,7 @@ RETURN {
 ### Query 2b — Show ibex module growth over time
 
 ```aql
-// How did ibex grow? Count distinct modules per epoch
+// How did ibex grow? Module count at each epoch boundary
 FOR e IN DesignEpoch
   FILTER e.repo == "lowRISC/ibex.git"
   LET module_count = LENGTH(
@@ -197,13 +197,13 @@ FOR e IN DesignEpoch
   SORT e.start_ts ASC
   LIMIT 15
   RETURN {
-    epoch:    e.label,
-    date:     DATE_FORMAT(e.start_ts * 1000, "%yyyy-%mm"),
-    modules:  module_count
+    epoch:   SPLIT(e.label, " — ")[1],   // strip verbose "lowRISC/ibex.git — " prefix
+    date:    DATE_FORMAT(e.start_ts * 1000, "%yyyy-%mm"),
+    modules: module_count
   }
 ```
 
-**Point out:** ibex started with ~10 modules in 2016 and grew to 30+ through 268 named epochs.
+**Point out:** ibex started with 14 modules in April 2015 and grew to 24+ through hundreds of named epochs. The module count fluctuates — it goes up when modules are introduced, down when they're refactored away.
 
 ---
 
