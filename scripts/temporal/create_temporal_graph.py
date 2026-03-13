@@ -80,6 +80,32 @@ def create_graph(db):
                 "to_vertex_collections":   froms,
             })
 
+    # Per-repo CONSOLIDATES edges: Golden_Entity → raw Entity
+    consolidates_cols = sorted(c for c in cols if c.endswith("_Consolidates"))
+    for con_col in consolidates_cols:
+        prefix   = con_col.replace("Consolidates", "")  # e.g. "IBEX_"
+        ge_col   = prefix + "Golden_Entities"
+        ent_col  = prefix + "Entities"
+        if ge_col in cols and ent_col in cols:
+            edge_definitions.append({
+                "edge_collection": con_col,
+                "from_vertex_collections": [ge_col],
+                "to_vertex_collections":   [ent_col],
+            })
+
+    # Per-repo MENTIONED_IN edges: raw Entity → Chunk
+    mentioned_cols = sorted(c for c in cols if c.endswith("_MentionedIn"))
+    for men_col in mentioned_cols:
+        prefix  = men_col.replace("MentionedIn", "")   # e.g. "IBEX_"
+        ent_col = prefix + "Entities"
+        ch_col  = prefix + "Chunks"
+        if ent_col in cols and ch_col in cols:
+            edge_definitions.append({
+                "edge_collection": men_col,
+                "from_vertex_collections": [ent_col],
+                "to_vertex_collections":   [ch_col],
+            })
+
     # Orphan collections (vertex-only, no direct edge from this graph)
     all_vertex_cols = (
         ["GitCommit", "RTL_Module", "DesignEpoch", "DesignSituation", "Author"]

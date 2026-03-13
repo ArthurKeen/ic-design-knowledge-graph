@@ -25,6 +25,8 @@ from local_graphrag.community_detector import detect_communities
 from local_graphrag.loader import (
     build_golden_entities,
     build_golden_relations,
+    build_consolidates_edges,
+    build_mentioned_in_edges,
     load_to_arangodb,
     _get_collection_names,
 )
@@ -399,12 +401,14 @@ class TestLoader(unittest.TestCase):
 
         cols = _get_collection_names("OR1200_")
         # All expected collections should appear in the return dict
-        self.assertIn(cols["entities"],    counts)
-        self.assertIn(cols["relations"],   counts)
-        self.assertIn(cols["golden"],      counts)
-        self.assertIn(cols["golden_rel"],  counts)
-        self.assertIn(cols["communities"], counts)
-        self.assertIn(cols["chunks"],      counts)
+        self.assertIn(cols["entities"],      counts)
+        self.assertIn(cols["relations"],     counts)
+        self.assertIn(cols["golden"],        counts)
+        self.assertIn(cols["golden_rel"],    counts)
+        self.assertIn(cols["communities"],   counts)
+        self.assertIn(cols["chunks"],        counts)
+        self.assertIn(cols["consolidates"],  counts)
+        self.assertIn(cols["mentioned_in"],  counts)
 
     def test_load_golden_dedup_reduces_count(self):
         """Two entities with the same name should merge into one golden entity."""
@@ -443,6 +447,46 @@ class TestLoader(unittest.TestCase):
         self.assertIn(golden_col, bulk_calls)
         num_golden = sum(len(batch) for batch in bulk_calls[golden_col])
         self.assertEqual(num_golden, 1, "Two same-name entities should merge into one golden")
+
+    def test_consolidates_edges_written(self):
+        """Each raw entity should produce a CONSOLIDATES edge from its golden entity."""
+        entities = [
+            {"_key": "OR1200_aaa", "name": "Pipeline", "type": "PIPELINE_STAGE",
+             "description": "x", "aliases": [], "source_chunk": "c1", "embedding": None},
+            {"_key": "OR1200_bbb", "name": "MMU", "type": "MEMORY_SYSTEM",
+             "description": "y", "aliases": [], "source_chunk": "c1", "embedding": None},
+        ]
+        cols = _get_collection_names("OR1200_")
+        edges = build_consolidates_edges(
+            entities, "OR1200_",
+            golden_col=cols["golden"],
+            entities_col=cols["entities"],
+        )
+        self.assertEqual(len(edges), 2)
+        for e in edges:
+            self.assertTrue(e["_from"].startswith(cols["golden"] + "/")),
+            self.assertTrue(e["_to"].startswith(cols["entities"] + "/"))
+            self.assertEqual(e["type"], "CONSOLIDATES")
+
+    def test_mentioned_in_edges_written(self):
+        """Each raw entity with a source_chunk should produce a MENTIONED_IN edge."""
+        entities = [
+            {"_key": "OR1200_aaa", "name": "Pipeline", "source_chunk": "chunk_001"},
+            {"_key": "OR1200_bbb", "name": "MMU",      "source_chunk": "chunk_001"},
+            {"_key": "OR1200_ccc", "name": "Cache",    "source_chunk": "chunk_002"},
+            {"_key": "OR1200_ddd", "name": "NoChunk",  "source_chunk": ""},  # should be skipped
+        ]
+        cols = _get_collection_names("OR1200_")
+        edges = build_mentioned_in_edges(
+            entities, "OR1200_",
+            entities_col=cols["entities"],
+            chunks_col=cols["chunks"],
+        )
+        self.assertEqual(len(edges), 3)  # ddd is skipped
+        for e in edges:
+            self.assertTrue(e["_from"].startswith(cols["entities"] + "/"))
+            self.assertTrue(e["_to"].startswith(cols["chunks"] + "/"))
+            self.assertEqual(e["type"], "MENTIONED_IN")
 
 
 # ---------------------------------------------------------------------------

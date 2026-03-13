@@ -30,13 +30,15 @@ if _pkg_root not in sys.path:
 def _get_collection_names(prefix: str) -> dict[str, str]:
     """Return a mapping of logical → ArangoDB collection names for a given prefix."""
     return {
-        "entities":    f"{prefix}Entities",
-        "golden":      f"{prefix}Golden_Entities",
-        "relations":   f"{prefix}Relations",
-        "golden_rel":  f"{prefix}Golden_Relations",
-        "communities": f"{prefix}Communities",
-        "chunks":      f"{prefix}Chunks",
-        "documents":   f"{prefix}Documents",
+        "entities":      f"{prefix}Entities",
+        "golden":        f"{prefix}Golden_Entities",
+        "relations":     f"{prefix}Relations",
+        "golden_rel":    f"{prefix}Golden_Relations",
+        "communities":   f"{prefix}Communities",
+        "chunks":        f"{prefix}Chunks",
+        "documents":     f"{prefix}Documents",
+        "consolidates":  f"{prefix}Consolidates",
+        "mentioned_in":  f"{prefix}MentionedIn",
     }
 
 
@@ -130,6 +132,7 @@ def build_golden_relations(
     prefix: str,
     entities_col: str,
     golden_col: str,
+    raw_entities: list[dict] = None,
 ) -> list[dict]:
     """
     Build Golden Relations by re-mapping raw relation endpoints to their
@@ -137,40 +140,54 @@ def build_golden_relations(
 
     A golden relation is created for each unique (golden_from, relation_type, golden_to)
     triple. Duplicate evidence is accumulated in ``evidence_count``.
+
+    Args:
+        raw_entities: The original raw entity list from the extractor.  When
+            provided, the raw_key → golden_key lookup is built directly from
+            entity names, which is exact.  When omitted, a best-effort heuristic
+            is used (may produce dangling edges for multi-word entity names).
     """
     # Build map: raw entity _key → golden entity _key
-    # We derive golden key from entity name the same way build_golden_entities() does.
-    raw_to_golden: dict[str, str] = {}
-    for ent in golden_entities:
-        # Reverse: the raw entity that produced this golden entity has a raw _key
-        # that we can't directly recover, but we can rebuild the golden_key from
-        # the name stored on the golden entity.
-        name = ent.get("name", "").strip()
-        norm = name.lower().replace(" ", "_")
-        golden_key = f"{prefix}g_{hashlib.md5(norm.encode()).hexdigest()[:12]}"
-        raw_to_golden[golden_key] = golden_key  # self-referencing in golden space
+    #
+    # Strategy: both raw keys and golden keys are derived from the entity name,
+    # but with different normalisations:
+    #   raw key:    prefix + md5(name.lower())[:12]            (spaces kept)
+    #   golden key: prefix + "g_" + md5(name.lower().replace(" ","_"))[:12]
+    #
+    # Using the raw entities list we can build the mapping exactly.
+    raw_key_to_golden: dict[str, str] = {}
 
-    # Also build from raw entities — we need to walk the raw list
-    # (handled externally; here we translate endpoint collection/key refs)
+    if raw_entities:
+        for ent in raw_entities:
+            name = ent.get("name", "").strip()
+            if not name:
+                continue
+            raw_k    = f"{prefix}{hashlib.md5(name.lower().encode()).hexdigest()[:12]}"
+            norm     = name.lower().replace(" ", "_")
+            golden_k = f"{prefix}g_{hashlib.md5(norm.encode()).hexdigest()[:12]}"
+            raw_key_to_golden[raw_k] = golden_k
+    else:
+        # Fallback heuristic for callers that don't pass raw_entities.
+        # Only works when name has no spaces (single-word names hash identically).
+        for ent in golden_entities:
+            name = ent.get("name", "").strip()
+            norm = name.lower().replace(" ", "_")
+            golden_k = f"{prefix}g_{hashlib.md5(norm.encode()).hexdigest()[:12]}"
+            raw_key_to_golden[golden_k] = golden_k  # identity — golden self-map
+
     seen: dict[str, dict] = {}
 
     for rel in relations:
-        raw_from = rel.get("_from", "").split("/")[-1]   # bare key
+        raw_from = rel.get("_from", "").split("/")[-1]   # bare key from IBEX_Entities/...
         raw_to   = rel.get("_to",   "").split("/")[-1]
         rel_type = rel.get("type", "RELATED_TO")
 
-        # Keys from build_golden_entities use prefix+g+md5 — we can't remap directly
-        # without the original name.  Use a simpler heuristic: strip the prefix
-        # from the raw entity key to get the md5 portion, then try to build the
-        # golden key by re-prefixing with "g_".
-        # raw entity key format: {prefix}{md5[:12]}  → strip prefix → md5[:12]
-        # golden key format:     {prefix}g_{md5[:12]}
-        def _raw_to_golden_key(raw_key: str) -> str:
-            bare = raw_key.removeprefix(prefix)   # e.g. "a1b2c3d4e5f6"
-            return f"{prefix}g_{bare}"
+        g_from = raw_key_to_golden.get(raw_from)
+        g_to   = raw_key_to_golden.get(raw_to)
 
-        g_from = _raw_to_golden_key(raw_from)
-        g_to   = _raw_to_golden_key(raw_to)
+        if not g_from or not g_to:
+            # No mapping found — skip rather than emit a dangling edge
+            continue
 
         triple_key = hashlib.md5(f"{g_from}:{rel_type}:{g_to}".encode()).hexdigest()[:16]
 
@@ -193,6 +210,72 @@ def build_golden_relations(
     return list(seen.values())
 
 
+def build_consolidates_edges(
+    entities: list[dict],
+    prefix: str,
+    golden_col: str,
+    entities_col: str,
+) -> list[dict]:
+    """
+    Build CONSOLIDATES edges: Golden_Entity → raw Entity.
+
+    For each raw entity, compute the golden key it merges into and emit an
+    edge ``{golden_col}/{golden_key} → {entities_col}/{raw_key}``.
+    This lets the Graph Explorer traverse from a canonical concept down to
+    the individual extraction instances that support it.
+    """
+    edges = []
+    for ent in entities:
+        name = ent.get("name", "").strip()
+        raw_key = ent.get("_key", "").strip()
+        if not name or not raw_key:
+            continue
+        norm      = name.lower().replace(" ", "_")
+        golden_k  = f"{prefix}g_{hashlib.md5(norm.encode()).hexdigest()[:12]}"
+        edge_key  = hashlib.md5(f"{golden_k}:{raw_key}".encode()).hexdigest()[:16]
+        edges.append({
+            "_key":  edge_key,
+            "_from": f"{golden_col}/{golden_k}",
+            "_to":   f"{entities_col}/{raw_key}",
+            "type":  "CONSOLIDATES",
+        })
+    return edges
+
+
+def build_mentioned_in_edges(
+    entities: list[dict],
+    prefix: str,
+    entities_col: str,
+    chunks_col: str,
+) -> list[dict]:
+    """
+    Build MENTIONED_IN edges: raw Entity → Chunk.
+
+    Each raw entity carries a ``source_chunk`` field with the chunk _key it
+    was extracted from.  This function wires them into explicit graph edges so
+    the Explorer can follow  Golden → CONSOLIDATES → Entity → MENTIONED_IN → Chunk.
+    """
+    edges = []
+    seen: set[str] = set()
+    for ent in entities:
+        raw_key     = ent.get("_key", "").strip()
+        chunk_key   = ent.get("source_chunk", "").strip()
+        if not raw_key or not chunk_key:
+            continue
+        pair = f"{raw_key}:{chunk_key}"
+        if pair in seen:
+            continue
+        seen.add(pair)
+        edge_key = hashlib.md5(pair.encode()).hexdigest()[:16]
+        edges.append({
+            "_key":  edge_key,
+            "_from": f"{entities_col}/{raw_key}",
+            "_to":   f"{chunks_col}/{chunk_key}",
+            "type":  "MENTIONED_IN",
+        })
+    return edges
+
+
 def load_to_arangodb(
     entities:    list[dict],
     relations:   list[dict],
@@ -207,13 +290,15 @@ def load_to_arangodb(
     Load all local GraphRAG output into ArangoDB.
 
     Collections written:
-        {prefix}Entities        — raw extracted entities (with embeddings)
-        {prefix}Relations       — raw relations (edge collection)
-        {prefix}Golden_Entities — deduplicated canonical entities
-        {prefix}Golden_Relations— deduplicated canonical relations (edge collection)
-        {prefix}Communities     — Leiden community clusters
-        {prefix}Chunks          — document chunks
-        {prefix}Documents       — document metadata (if provided)
+        {prefix}Entities         — raw extracted entities (with embeddings)
+        {prefix}Relations        — raw relations (edge collection)
+        {prefix}Golden_Entities  — deduplicated canonical entities
+        {prefix}Golden_Relations — deduplicated canonical relations (edge collection)
+        {prefix}Consolidates     — CONSOLIDATES edges: Golden_Entity → Entity (edge)
+        {prefix}MentionedIn      — MENTIONED_IN edges: Entity → Chunk (edge)
+        {prefix}Communities      — Leiden community clusters
+        {prefix}Chunks           — document chunks
+        {prefix}Documents        — document metadata (if provided)
 
     Returns: dict of {collection_name: count_written}
     """
@@ -248,11 +333,12 @@ def load_to_arangodb(
     counts[cols["golden"]] = n
     print(f"  {cols['golden']:40s}  {n:6d}  (from {len(entities)} raw)")
 
-    # Golden relations
+    # Golden relations — pass raw entities so the key mapping is exact
     golden_relations = build_golden_relations(
         relations, golden_entities, prefix,
         entities_col=cols["entities"],
         golden_col=cols["golden"],
+        raw_entities=entities,
     )
     n = _bulk_upsert(db, cols["golden_rel"], golden_relations, batch_size=batch_size, edge=True)
     counts[cols["golden_rel"]] = n
@@ -263,10 +349,30 @@ def load_to_arangodb(
     counts[cols["communities"]] = n
     print(f"  {cols['communities']:40s}  {n:6d}")
 
-    # Chunks (vertex)
+    # Chunks (vertex) — must load before MENTIONED_IN edges
     n = _bulk_upsert(db, cols["chunks"], chunks, batch_size=batch_size)
     counts[cols["chunks"]] = n
     print(f"  {cols['chunks']:40s}  {n:6d}")
+
+    # CONSOLIDATES edges: Golden_Entity → raw Entity
+    consolidates = build_consolidates_edges(
+        entities, prefix,
+        golden_col=cols["golden"],
+        entities_col=cols["entities"],
+    )
+    n = _bulk_upsert(db, cols["consolidates"], consolidates, batch_size=batch_size, edge=True)
+    counts[cols["consolidates"]] = n
+    print(f"  {cols['consolidates']:40s}  {n:6d}")
+
+    # MENTIONED_IN edges: raw Entity → Chunk
+    mentioned_in = build_mentioned_in_edges(
+        entities, prefix,
+        entities_col=cols["entities"],
+        chunks_col=cols["chunks"],
+    )
+    n = _bulk_upsert(db, cols["mentioned_in"], mentioned_in, batch_size=batch_size, edge=True)
+    counts[cols["mentioned_in"]] = n
+    print(f"  {cols['mentioned_in']:40s}  {n:6d}")
 
     # Documents (optional)
     if documents:

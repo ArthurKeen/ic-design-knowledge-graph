@@ -151,6 +151,8 @@ def ingest_one_repo(
                 pipeline = LocalGraphRAGPipeline(
                     prefix=prefix,
                     embedding_backend=embedding_backend,
+                    chunk_size=repo_config.get("chunk_size"),
+                    overlap=repo_config.get("chunk_overlap"),
                 )
                 graphrag_summary = pipeline.run(doc_dir=doc_dir, dry_run=dry_run)
                 summary["entities"]    = graphrag_summary.get("entities", 0)

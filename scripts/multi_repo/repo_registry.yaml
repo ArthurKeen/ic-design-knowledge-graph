@@ -25,6 +25,8 @@ repos:
     prefix: MAROCCHINO_
     priority: 2
     local_path: null
+    chunk_size: 600
+    chunk_overlap: 60
 
   - name: ibex
     github_url: https://github.com/lowRISC/ibex.git
