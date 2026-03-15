@@ -43,6 +43,12 @@ def create_graph(db):
             "from_vertex_collections": ["RTL_Module"],
             "to_vertex_collections":   ["DesignEpoch"],
         },
+        # ── Semantic bridge: RTL → Knowledge ─────────────────────────────
+        {
+            "edge_collection": "RESOLVED_TO",
+            "from_vertex_collections": ["RTL_Port", "RTL_Signal"],
+            "to_vertex_collections":   golden_entity_cols if golden_entity_cols else ["RTL_Module"],
+        },
         # ── Cross-repo bridges ───────────────────────────────────────────
         {
             "edge_collection": "CROSS_REPO_SIMILAR_TO",
