@@ -139,6 +139,43 @@ def create_graph(db):
     return graph
 
 
+def ensure_all_indexes(db) -> None:
+    """
+    Ensure vertex-centric indexes exist on every edge collection in the DB.
+
+    Creates two persistent indexes per edge collection (if not already present):
+      - (_from, toNodeType)   — enables fast "all edges from X to nodes of type Y" queries
+      - (_to,   fromNodeType) — enables fast "all edges into X from nodes of type Y" queries
+
+    This is idempotent: safe to run multiple times.
+    """
+    INDEX_PAIRS = [
+        ["_from", "toNodeType"],
+        ["_to",   "fromNodeType"],
+    ]
+
+    edge_collections = [
+        c["name"] for c in db.collections()
+        if not c["name"].startswith("_") and c["type"] == "edge"
+    ]
+
+    print(f"[indexes] Checking vertex-centric indexes on {len(edge_collections)} edge collections …")
+    created = 0
+    skipped = 0
+
+    for col_name in sorted(edge_collections):
+        col = db.collection(col_name)
+        existing_fields = {frozenset(idx["fields"]) for idx in col.indexes()}
+        for fields in INDEX_PAIRS:
+            if frozenset(fields) not in existing_fields:
+                col.add_index({"type": "persistent", "fields": fields, "sparse": False})
+                created += 1
+            else:
+                skipped += 1
+
+    print(f"[indexes] Done — {created} indexes created, {skipped} already present")
+
+
 if __name__ == "__main__":
     client = ArangoClient(hosts=os.environ["ARANGO_ENDPOINT"])
     db = client.db(
@@ -148,3 +185,4 @@ if __name__ == "__main__":
     )
     print(f"[graph] Connected to: {ARANGO_DATABASE} @ {os.environ['ARANGO_ENDPOINT']}")
     create_graph(db)
+    ensure_all_indexes(db)
