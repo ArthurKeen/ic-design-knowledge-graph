@@ -48,6 +48,23 @@ GRAPHRAG_ENTITY_TYPES = [
     "PROPRIETARY_IP_BLOCK",
 ]
 
+# Canonical relation types — injected into LLM prompt; LLM output normalised against this list
+GRAPHRAG_RELATION_TYPES = [
+    "IMPLEMENTS",       # A implements or realises B
+    "INCLUDES",         # A contains B as a sub-component or feature
+    "CONNECTS_TO",      # A has an interface connection to B
+    "CONFIGURES",       # A parameterises or configures B
+    "CONTROLS",         # A controls the behaviour of B
+    "DRIVES",           # A signal drives B signal
+    "READS_FROM",       # A reads data from B
+    "DEPENDS_ON",       # A depends on B
+    "SUPERSEDES",       # A is the successor/replacement of B
+    "COMPATIBLE_WITH",  # A is protocol-compatible with B
+    "TESTED_BY",        # A is verified/tested by B
+    "DOCUMENTS",        # A spec entity describes B
+    "RELATED_TO",       # catch-all — use sparingly
+]
+
 # Document discovery
 def find_documents(doc_dir: str = None, pattern: str = "*.pdf", recursive: bool = True) -> list:
     """

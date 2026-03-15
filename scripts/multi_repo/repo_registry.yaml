@@ -3,6 +3,7 @@ repos:
     github_url: https://github.com/openrisc/or1200.git
     branch: master
     rtl_path: rtl/verilog
+    rtl_extensions: [".v"]
     doc_path: doc
     prefix: OR1200_
     priority: 1
@@ -12,6 +13,7 @@ repos:
     github_url: https://github.com/openrisc/mor1kx.git
     branch: master
     rtl_path: rtl/verilog
+    rtl_extensions: [".v"]
     doc_path: doc
     prefix: MOR1KX_
     priority: 1
@@ -20,28 +22,59 @@ repos:
   - name: marocchino
     github_url: https://github.com/openrisc/or1k_marocchino.git
     branch: master
-    rtl_path: rtl
+    rtl_path: rtl/verilog
+    rtl_extensions: [".v"]
     doc_path: doc
     prefix: MAROCCHINO_
     priority: 2
     local_path: null
     chunk_size: 600
     chunk_overlap: 60
+    entity_types:
+      - PROCESSOR_COMPONENT
+      - REGISTER
+      - INSTRUCTION
+      - HARDWARE_INTERFACE
+      - MEMORY_UNIT
+      - SIGNAL
+      - ARCHITECTURE_FEATURE
+      - PIPELINE_STAGE        # OoO-specific pipeline stages
+      - EXECUTION_UNIT        # OoO functional units
+      - CONFIGURATION
+      - BUS_PROTOCOL
 
   - name: ibex
     github_url: https://github.com/lowRISC/ibex.git
     branch: master
     rtl_path: rtl
+    rtl_extensions: [".sv", ".v"]   # SystemVerilog + Verilog
     doc_path: doc
     prefix: IBEX_
     priority: 2
     local_path: null
+    entity_types:
+      - PROCESSOR_COMPONENT
+      - REGISTER
+      - INSTRUCTION
+      - HARDWARE_INTERFACE
+      - MEMORY_UNIT
+      - SIGNAL
+      - EXCEPTION_TYPE
+      - ARCHITECTURE_FEATURE
+      - CONFIGURATION
+      - VERIFICATION_CONSTRUCT
+      - PROTOCOL_INTERFACE
+      - SECURITY_FEATURE      # IBEX-specific: TrustZone, PMP
+      - PRIVILEGE_LEVEL       # IBEX-specific: M/S/U privilege modes
+      - BUS_PROTOCOL
+      - TIMING_CONSTRAINT
 
   # Priority 3 — enable manually when needed
   # - name: neorv32
   #   github_url: https://github.com/stnolting/neorv32.git
   #   branch: main
   #   rtl_path: rtl/core
+  #   rtl_extensions: [".vhd"]
   #   doc_path: docs
   #   prefix: NEORV32_
   #   priority: 3
@@ -51,6 +84,7 @@ repos:
   #   github_url: https://github.com/openhwgroup/cva6.git
   #   branch: master
   #   rtl_path: core
+  #   rtl_extensions: [".sv", ".v"]
   #   doc_path: docs
   #   prefix: CVA6_
   #   priority: 3

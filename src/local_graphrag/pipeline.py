@@ -74,15 +74,17 @@ class LocalGraphRAGPipeline:
 
     def __init__(
         self,
-        prefix:           str   = "OR1200_",
-        backend:          str   = None,
-        model:            str   = None,
-        chunk_size:       int   = None,
-        overlap:          int   = None,
-        doc_version:      str   = None,
-        source_commit:    str   = None,
-        valid_from_epoch: str   = None,
-        embedding_backend: str  = "sentence_transformers",
+        prefix:           str       = "OR1200_",
+        backend:          str       = None,
+        model:            str       = None,
+        chunk_size:       int       = None,
+        overlap:          int       = None,
+        doc_version:      str       = None,
+        source_commit:    str       = None,
+        valid_from_epoch: str       = None,
+        embedding_backend: str      = "sentence_transformers",
+        entity_types:     list[str] = None,   # per-repo override; None → global default
+        relation_types:   list[str] = None,   # per-repo override; None → global default
     ):
         self.prefix            = prefix
         self.backend           = backend or LOCAL_GRAPHRAG_BACKEND
@@ -94,7 +96,12 @@ class LocalGraphRAGPipeline:
         self.valid_from_epoch  = valid_from_epoch
         self.embedding_backend = embedding_backend
 
-        self.extractor = EntityExtractor(backend=self.backend, model=self.model)
+        self.extractor = EntityExtractor(
+            backend=self.backend,
+            model=self.model,
+            entity_types=entity_types,
+            relation_types=relation_types,
+        )
 
     def _get_db(self):
         client = ArangoClient(hosts=ARANGO_ENDPOINT)

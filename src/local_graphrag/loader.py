@@ -49,12 +49,23 @@ def _ensure_collection(db, name: str, edge: bool = False) -> None:
         print(f"  [loader] Created {'edge' if edge else 'vertex'} collection: {name}")
 
 
+def _ensure_vertex_centric_indexes(db, col_name: str) -> None:
+    """Add (_from, toNodeType) and (_to, fromNodeType) persistent indexes for fast traversal."""
+    col = db.collection(col_name)
+    existing_fields = {frozenset(idx["fields"]) for idx in col.indexes()}
+    for fields in (["_from", "toNodeType"], ["_to", "fromNodeType"]):
+        if frozenset(fields) not in existing_fields:
+            col.add_persistent_index(fields=fields, sparse=False)
+
+
 def _bulk_upsert(db, col_name: str, records: list[dict],
                  batch_size: int = 500, edge: bool = False) -> int:
     """Upsert records in batches. Returns total inserted/updated."""
     if not records:
         return 0
     _ensure_collection(db, col_name, edge=edge)
+    if edge:
+        _ensure_vertex_centric_indexes(db, col_name)
     col = db.collection(col_name)
     total = 0
     for i in range(0, len(records), batch_size):
@@ -88,36 +99,52 @@ def build_golden_entities(entities: list[dict], prefix: str) -> list[dict]:
     are interchangeable.
     """
     golden: dict[str, dict] = {}  # golden_key → merged entity
+    repo = prefix.rstrip("_")
 
     for ent in entities:
         name = ent.get("name", "").strip()
         if not name:
             continue
-        norm = name.lower().replace(" ", "_")
+        norm      = name.lower().replace(" ", "_")
         golden_key = f"{prefix}g_{hashlib.md5(norm.encode()).hexdigest()[:12]}"
+        ent_type  = ent.get("type", "ARCHITECTURE_FEATURE")
+        doc_ver   = ent.get("doc_version")
 
         if golden_key not in golden:
             golden[golden_key] = {
-                "_key":           golden_key,
-                "name":           name,
-                "type":           ent.get("type", ""),
-                "description":    ent.get("description", ""),
-                "aliases":        list(ent.get("aliases", [])),
-                "source_chunks":  [],
-                "embedding":      ent.get("embedding"),  # take from first occurrence
-                "valid_from_epoch": ent.get("valid_from_epoch"),
-                "doc_version":    ent.get("doc_version"),
+                "_key":               golden_key,
+                "name":               name,
+                "type":               ent_type,
+                "labels":             ["GoldenEntity", ent_type, repo],
+                "repo":               repo,
+                "layer":              "golden",
+                "description":        ent.get("description", ""),
+                "aliases":            list(ent.get("aliases", [])),
+                "source_chunks":      [],
+                "embedding":          ent.get("embedding"),
+                "valid_from_epoch":   ent.get("valid_from_epoch"),
+                "doc_version":        doc_ver,
+                "first_seen_version": doc_ver,
+                "last_seen_version":  doc_ver,
             }
         else:
             g = golden[golden_key]
-            # Accumulate aliases
-            g["aliases"] = list(set(g["aliases"]) | set(ent.get("aliases", [])))
+            # Accumulate aliases (deduplicated)
+            for a in ent.get("aliases", []):
+                if a not in g["aliases"]:
+                    g["aliases"].append(a)
             # Prefer a richer description
             if not g["description"] and ent.get("description"):
                 g["description"] = ent["description"]
             # Take any embedding we find
             if g["embedding"] is None and ent.get("embedding") is not None:
                 g["embedding"] = ent["embedding"]
+            # Doc version Level A: track first/last seen
+            if doc_ver:
+                if g["first_seen_version"] is None:
+                    g["first_seen_version"] = doc_ver
+                if g["last_seen_version"] is None or doc_ver > g["last_seen_version"]:
+                    g["last_seen_version"] = doc_ver
 
         source_chunk = ent.get("source_chunk")
         if source_chunk and source_chunk not in golden[golden_key]["source_chunks"]:
@@ -176,9 +203,10 @@ def build_golden_relations(
             raw_key_to_golden[golden_k] = golden_k  # identity — golden self-map
 
     seen: dict[str, dict] = {}
+    repo = prefix.rstrip("_")
 
     for rel in relations:
-        raw_from = rel.get("_from", "").split("/")[-1]   # bare key from IBEX_Entities/...
+        raw_from = rel.get("_from", "").split("/")[-1]
         raw_to   = rel.get("_to",   "").split("/")[-1]
         rel_type = rel.get("type", "RELATED_TO")
 
@@ -186,7 +214,6 @@ def build_golden_relations(
         g_to   = raw_key_to_golden.get(raw_to)
 
         if not g_from or not g_to:
-            # No mapping found — skip rather than emit a dangling edge
             continue
 
         triple_key = hashlib.md5(f"{g_from}:{rel_type}:{g_to}".encode()).hexdigest()[:16]
@@ -197,6 +224,10 @@ def build_golden_relations(
                 "_from":          f"{golden_col}/{g_from.split('/')[-1]}",
                 "_to":            f"{golden_col}/{g_to.split('/')[-1]}",
                 "type":           rel_type,
+                "labels":         [rel_type],
+                "fromNodeType":   "GoldenEntity",
+                "toNodeType":     "GoldenEntity",
+                "repo":           repo,
                 "context":        rel.get("context", ""),
                 "evidence_count": 1,
                 "source_chunks":  [rel["source_chunk"]] if rel.get("source_chunk") else [],
@@ -225,6 +256,7 @@ def build_consolidates_edges(
     the individual extraction instances that support it.
     """
     edges = []
+    repo = prefix.rstrip("_")
     for ent in entities:
         name = ent.get("name", "").strip()
         raw_key = ent.get("_key", "").strip()
@@ -234,10 +266,14 @@ def build_consolidates_edges(
         golden_k  = f"{prefix}g_{hashlib.md5(norm.encode()).hexdigest()[:12]}"
         edge_key  = hashlib.md5(f"{golden_k}:{raw_key}".encode()).hexdigest()[:16]
         edges.append({
-            "_key":  edge_key,
-            "_from": f"{golden_col}/{golden_k}",
-            "_to":   f"{entities_col}/{raw_key}",
-            "type":  "CONSOLIDATES",
+            "_key":         edge_key,
+            "_from":        f"{golden_col}/{golden_k}",
+            "_to":          f"{entities_col}/{raw_key}",
+            "type":         "CONSOLIDATES",
+            "labels":       ["CONSOLIDATES"],
+            "fromNodeType": "GoldenEntity",
+            "toNodeType":   "RawEntity",
+            "repo":         repo,
         })
     return edges
 
@@ -257,6 +293,7 @@ def build_mentioned_in_edges(
     """
     edges = []
     seen: set[str] = set()
+    repo = prefix.rstrip("_")
     for ent in entities:
         raw_key     = ent.get("_key", "").strip()
         chunk_key   = ent.get("source_chunk", "").strip()
@@ -268,10 +305,14 @@ def build_mentioned_in_edges(
         seen.add(pair)
         edge_key = hashlib.md5(pair.encode()).hexdigest()[:16]
         edges.append({
-            "_key":  edge_key,
-            "_from": f"{entities_col}/{raw_key}",
-            "_to":   f"{chunks_col}/{chunk_key}",
-            "type":  "MENTIONED_IN",
+            "_key":         edge_key,
+            "_from":        f"{entities_col}/{raw_key}",
+            "_to":          f"{chunks_col}/{chunk_key}",
+            "type":         "MENTIONED_IN",
+            "labels":       ["MENTIONED_IN"],
+            "fromNodeType": "RawEntity",
+            "toNodeType":   "Chunk",
+            "repo":         repo,
         })
     return edges
 
@@ -304,8 +345,20 @@ def load_to_arangodb(
     """
     cols = _get_collection_names(prefix)
     counts: dict[str, int] = {}
+    repo = prefix.rstrip("_")
 
     print(f"\n[loader] Loading to ArangoDB (prefix={prefix!r})")
+
+    # Enrich raw entities with LPG fields (in-place, non-destructive)
+    for e in entities:
+        e.setdefault("labels", ["RawEntity", e.get("type", ""), repo])
+        e.setdefault("repo",   repo)
+        e.setdefault("layer",  "raw")
+    # Enrich chunks with LPG fields
+    for c in chunks:
+        c.setdefault("labels", ["Chunk", repo])
+        c.setdefault("repo",   repo)
+        c.setdefault("layer",  "chunk")
 
     # Entities (vertex)
     n = _bulk_upsert(db, cols["entities"], entities, batch_size=batch_size)

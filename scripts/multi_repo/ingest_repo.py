@@ -1,8 +1,8 @@
 """
 scripts/multi_repo/ingest_repo.py — Config-driven multi-repo IC ingestion pipeline.
 
-Clones and/or updates each registered repo, runs the temporal ETL and local GraphRAG
-pipeline, and loads results into ArangoDB with repo-specific prefixes.
+Clones and/or updates each registered repo, runs the temporal ETL, deep RTL extraction,
+and local GraphRAG pipeline, and loads results into ArangoDB.
 
 Usage:
     # Ingest all repos (in priority order)
@@ -11,11 +11,11 @@ Usage:
     # Ingest a single repo by name
     python scripts/multi_repo/ingest_repo.py --repo mor1kx
 
+    # Skip specific steps
+    python scripts/multi_repo/ingest_repo.py --repo ibex --no-clone --no-temporal --no-rtl
+
     # Dry run (no DB writes)
     python scripts/multi_repo/ingest_repo.py --repo mor1kx --dry-run
-
-    # Skip clone/pull (use existing local copy)
-    python scripts/multi_repo/ingest_repo.py --repo mor1kx --no-clone
 """
 
 import os
@@ -54,6 +54,7 @@ def ingest_one_repo(
     repo_config:       dict,
     do_clone:          bool = True,
     do_temporal:       bool = True,
+    do_rtl:            bool = True,
     do_graphrag:       bool = True,
     dry_run:           bool = False,
     commit_limit:      int  = None,
@@ -63,9 +64,10 @@ def ingest_one_repo(
     Full ingestion pipeline for a single repo.
 
     Steps:
-        1. Clone / pull
-        2. Temporal ETL (commit replay + epoch detection + ArangoDB load)
-        3. Local GraphRAG (doc chunking + entity extraction + community + load)
+        1.   Clone / pull
+        2.   Temporal ETL (commit replay + epoch detection + ArangoDB load)
+        2.5  Deep RTL extraction (ports, signals, logic chunks, edges)
+        3.   Local GraphRAG (doc chunking + entity extraction + community + load)
 
     Returns summary dict.
     """
@@ -80,7 +82,8 @@ def ingest_one_repo(
     print(f" Ingesting repo: {name}  (prefix={prefix})")
     print(f"{'='*60}")
 
-    summary = {"nodes": 0, "edges": 0, "entities": 0, "chunks": 0, "communities": 0}
+    summary = {"nodes": 0, "edges": 0, "entities": 0, "chunks": 0, "communities": 0,
+               "rtl_modules": 0, "rtl_ports": 0, "rtl_signals": 0}
 
     # ---- Step 1: Clone / pull -----------------------------------------------
     if do_clone:
@@ -139,6 +142,40 @@ def ingest_one_repo(
         summary["edges"] = len(edges)
         print(f"[ingestor] Temporal ETL done: {len(nodes)} nodes, {len(edges)} edges")
 
+    # ---- Step 2.5: Deep RTL extraction ------------------------------------
+    if do_rtl:
+        rtl_dir = os.path.join(local_path, rtl_subdir)
+        if not os.path.isdir(rtl_dir):
+            print(f"[ingestor] No RTL dir at {rtl_dir} — skipping deep RTL for {name}")
+        else:
+            print(f"\n[ingestor] Running deep RTL extraction on {rtl_dir} …")
+            try:
+                from etl_rtl import parse_verilog_files
+                from dotenv import load_dotenv
+                load_dotenv()
+                import os as _os
+                from arango import ArangoClient
+                _client = ArangoClient(hosts=_os.environ["ARANGO_ENDPOINT"])
+                db = _client.db(
+                    _os.environ["ARANGO_DATABASE"],
+                    username=_os.environ["ARANGO_USERNAME"],
+                    password=_os.environ["ARANGO_PASSWORD"],
+                )
+                rtl_extensions = repo_config.get("rtl_extensions", [".v"])
+                rtl_summary = parse_verilog_files(
+                    rtl_dir=rtl_dir,
+                    prefix=prefix,
+                    db=None if dry_run else db,
+                    dry_run=dry_run,
+                    rtl_extensions=rtl_extensions,
+                )
+                summary["rtl_modules"] = rtl_summary.get("modules", 0)
+                summary["rtl_ports"]   = rtl_summary.get("ports", 0)
+                summary["rtl_signals"] = rtl_summary.get("signals", 0)
+            except Exception as e:
+                print(f"[ingestor] WARNING: RTL extraction failed for {name}: {e}")
+                import traceback; traceback.print_exc()
+
     # ---- Step 3: Local GraphRAG on docs ------------------------------------
     if do_graphrag:
         doc_dir = os.path.join(local_path, doc_subdir)
@@ -153,6 +190,8 @@ def ingest_one_repo(
                     embedding_backend=embedding_backend,
                     chunk_size=repo_config.get("chunk_size"),
                     overlap=repo_config.get("chunk_overlap"),
+                    entity_types=repo_config.get("entity_types"),
+                    relation_types=repo_config.get("relation_types"),
                 )
                 graphrag_summary = pipeline.run(doc_dir=doc_dir, dry_run=dry_run)
                 summary["entities"]    = graphrag_summary.get("entities", 0)
@@ -169,6 +208,7 @@ def ingest_all(
     repos:             list[dict] = None,
     do_clone:          bool = True,
     do_temporal:       bool = True,
+    do_rtl:            bool = True,
     do_graphrag:       bool = True,
     dry_run:           bool = False,
     commit_limit:      int  = None,
@@ -182,6 +222,7 @@ def ingest_all(
             repo,
             do_clone=do_clone,
             do_temporal=do_temporal,
+            do_rtl=do_rtl,
             do_graphrag=do_graphrag,
             dry_run=dry_run,
             commit_limit=commit_limit,
@@ -198,6 +239,8 @@ if __name__ == "__main__":
                         help="Skip git clone/pull (use existing local copy)")
     parser.add_argument("--no-temporal",   action="store_true",
                         help="Skip temporal ETL")
+    parser.add_argument("--no-rtl",        action="store_true",
+                        help="Skip deep RTL extraction (ports, signals, logic chunks)")
     parser.add_argument("--no-graphrag",   action="store_true",
                         help="Skip local GraphRAG doc processing")
     parser.add_argument("--dry-run",       action="store_true")
@@ -223,6 +266,7 @@ if __name__ == "__main__":
         repos=repos_to_run,
         do_clone=not args.no_clone,
         do_temporal=not args.no_temporal,
+        do_rtl=not args.no_rtl,
         do_graphrag=not args.no_graphrag,
         dry_run=args.dry_run,
         commit_limit=args.commit_limit,

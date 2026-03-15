@@ -25,7 +25,7 @@ _pkg_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _pkg_root not in sys.path:
     sys.path.insert(0, _pkg_root)
 
-from config import GRAPHRAG_ENTITY_TYPES, OPENAI_API_KEY
+from config import GRAPHRAG_ENTITY_TYPES, GRAPHRAG_RELATION_TYPES, OPENAI_API_KEY
 from config_temporal import (
     LOCAL_GRAPHRAG_BACKEND, OLLAMA_BASE_URL, OLLAMA_MODEL,
     ARANGO_DATABASE,
@@ -43,6 +43,9 @@ Extract entities and relationships from the provided text.
 ENTITY TYPES (use exact type strings):
 {entity_types}
 
+RELATION TYPES (use exact strings; use RELATED_TO as catch-all):
+{relation_types}
+
 OUTPUT FORMAT (valid JSON only, no markdown fences):
 {{
   "entities": [
@@ -55,6 +58,7 @@ OUTPUT FORMAT (valid JSON only, no markdown fences):
 
 Rules:
 - Only use entity types from the list above.
+- Only use relation types from the list above; use RELATED_TO if unsure.
 - Entity names must be concise (≤5 words).
 - Relations must have both source and target matching an entity in this extraction.
 - Output ONLY the JSON. No explanation, no markdown."""
@@ -66,14 +70,55 @@ USER_PROMPT = """Extract hardware design entities and relationships from this te
 </text>"""
 
 
-def _build_messages(chunk_text: str) -> list[dict]:
-    entity_types_str = "\n".join(f"  - {t}" for t in GRAPHRAG_ENTITY_TYPES)
-    system = SYSTEM_PROMPT.format(entity_types=entity_types_str)
+def _build_messages(chunk_text: str, entity_types: list[str], relation_types: list[str]) -> list[dict]:
+    entity_types_str   = "\n".join(f"  - {t}" for t in entity_types)
+    relation_types_str = "\n".join(f"  - {t}" for t in relation_types)
+    system = SYSTEM_PROMPT.format(
+        entity_types=entity_types_str,
+        relation_types=relation_types_str,
+    )
     user = USER_PROMPT.format(chunk_text=chunk_text[:4000])  # hard cap to stay in context
     return [
         {"role": "system", "content": system},
         {"role": "user",   "content": user},
     ]
+
+
+# Relation normalisation: maps common LLM free-form variants → canonical types
+_RELATION_NORMALISE: dict[str, str] = {
+    "uses":                  "INCLUDES",
+    "has":                   "INCLUDES",
+    "contains":              "INCLUDES",
+    "is_part_of":            "INCLUDES",
+    "is_subcomponent_of":    "INCLUDES",
+    "has_feature":           "INCLUDES",
+    "is_component_of":       "INCLUDES",
+    "connects":              "CONNECTS_TO",
+    "is_connected_to":       "CONNECTS_TO",
+    "is_interface_of":       "CONNECTS_TO",
+    "interfaces_with":       "CONNECTS_TO",
+    "implements_interface":  "IMPLEMENTS",
+    "is_implemented_by":     "IMPLEMENTS",
+    "requires":              "DEPENDS_ON",
+    "needs":                 "DEPENDS_ON",
+    "verifies":              "TESTED_BY",
+    "is_verified_by":        "TESTED_BY",
+    "describes":             "DOCUMENTS",
+    "is_described_by":       "DOCUMENTS",
+    "documents":             "DOCUMENTS",
+    "associated_with":       "RELATED_TO",
+    "relates_to":            "RELATED_TO",
+    "is_related_to":         "RELATED_TO",
+    "interacts_with":        "RELATED_TO",
+}
+
+
+def _normalise_relation(raw: str, allowed: set[str]) -> str:
+    """Map free-form LLM relation label to a canonical type."""
+    t = raw.upper().replace(" ", "_").replace("-", "_")
+    if t in allowed:
+        return t
+    return _RELATION_NORMALISE.get(raw.lower().replace(" ", "_"), "RELATED_TO")
 
 
 def _parse_llm_response(raw: str, chunk_key: str) -> tuple[list[dict], list[dict]]:
@@ -153,15 +198,20 @@ def _call_ollama(messages: list[dict], model: str = None,
 class EntityExtractor:
     def __init__(
         self,
-        backend: str = None,
-        model: str = None,
-        retry_attempts: int = 2,
-        retry_delay: float = 2.0,
+        backend:        str       = None,
+        model:          str       = None,
+        retry_attempts: int       = 2,
+        retry_delay:    float     = 2.0,
+        entity_types:   list[str] = None,   # None → use global GRAPHRAG_ENTITY_TYPES
+        relation_types: list[str] = None,   # None → use global GRAPHRAG_RELATION_TYPES
     ):
-        self.backend = backend or LOCAL_GRAPHRAG_BACKEND
-        self.model   = model
+        self.backend        = backend or LOCAL_GRAPHRAG_BACKEND
+        self.model          = model
         self.retry_attempts = retry_attempts
         self.retry_delay    = retry_delay
+        self.entity_types   = entity_types   or GRAPHRAG_ENTITY_TYPES
+        self.relation_types = relation_types or GRAPHRAG_RELATION_TYPES
+        self._allowed_relation_types = set(self.relation_types)
 
         print(f"[extractor] Backend: {self.backend}"
               f"{'  model: ' + (self.model or 'default') if self.model else ''}")
@@ -187,8 +237,9 @@ class EntityExtractor:
         """Extract entities and relations from a single chunk dict."""
         chunk_key  = chunk.get("_key", "unknown")
         chunk_text = chunk.get("text", "")
+        repo       = prefix.rstrip("_")
 
-        messages = _build_messages(chunk_text)
+        messages = _build_messages(chunk_text, self.entity_types, self.relation_types)
         raw = self._call_llm(messages)
         raw_entities, raw_relations = _parse_llm_response(raw, chunk_key)
 
@@ -200,12 +251,16 @@ class EntityExtractor:
             name = ent.get("name", "").strip()
             if not name:
                 continue
+            ent_type = ent.get("type", "ARCHITECTURE_FEATURE")
             ent_key = f"{prefix}{hashlib.md5(name.lower().encode()).hexdigest()[:12]}"
             entity_key_map[name.lower()] = ent_key
             entities.append({
                 "_key":        ent_key,
                 "name":        name,
-                "type":        ent.get("type", "ARCHITECTURE_FEATURE"),
+                "type":        ent_type,
+                "labels":      ["RawEntity", ent_type, repo],
+                "repo":        repo,
+                "layer":       "raw",
                 "description": ent.get("description", "")[:300],
                 "aliases":     ent.get("aliases", []),
                 "source_chunk": chunk_key,
@@ -223,15 +278,22 @@ class EntityExtractor:
             if not src_key or not tgt_key:
                 continue  # skip dangling relations
 
+            rel_type = _normalise_relation(
+                rel.get("relation", ""), self._allowed_relation_types
+            )
             rel_key = hashlib.md5(
-                f"{src_key}:{rel.get('relation','REL')}:{tgt_key}:{chunk_key}".encode()
+                f"{src_key}:{rel_type}:{tgt_key}:{chunk_key}".encode()
             ).hexdigest()[:16]
 
             relations.append({
                 "_key":    rel_key,
                 "_from":   f"{prefix}Entities/{src_key}",
                 "_to":     f"{prefix}Entities/{tgt_key}",
-                "type":    rel.get("relation", "RELATED_TO"),
+                "type":    rel_type,
+                "labels":       [rel_type],
+                "fromNodeType": "RawEntity",
+                "toNodeType":   "RawEntity",
+                "repo":         repo,
                 "context": rel.get("context", "")[:200],
                 "source_chunk": chunk_key,
             })
