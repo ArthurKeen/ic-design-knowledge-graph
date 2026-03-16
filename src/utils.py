@@ -54,15 +54,21 @@ def expand_acronym(name, acronym_dict):
     """
     if not acronym_dict or not name:
         return None
-    
-    # Normalize name for tokenization
-    # Handle both underscores and camelCase (basic)
-    tokens = re.split(r'(_|(?=[A-Z]))', name)
+
+    # Normalize for tokenization:
+    # - split on non-alnum separators (underscore, colon, etc.)
+    # - split CamelCase only at lower/digit -> upper boundaries
+    #   so ALLCAPS tokens like OPTION remain intact.
+    base_tokens = [t for t in re.split(r'[^A-Za-z0-9]+', name) if t]
+    tokens = []
+    for token in base_tokens:
+        tokens.extend(re.split(r'(?<=[a-z0-9])(?=[A-Z])', token))
+
     expanded_tokens = []
     changed = False
     
     for t in tokens:
-        if not t or t == '_':
+        if not t:
             continue
         
         t_lower = t.lower()

@@ -42,15 +42,29 @@ from config import (
 )
 from utils import sanitize_id, get_edge_key, VerilogParser, strip_comments, expand_acronym
 
-# Load default acronym dictionary (OR1200-specific; other repos fall back to empty)
-_DEFAULT_ACRONYM_DICT = {}
-try:
-    _acronym_path = os.path.join(_pkg_root, "or1200_acronyms.json")
-    with open(_acronym_path) as f:
-        _DEFAULT_ACRONYM_DICT = json.load(f)
-    print(f"[etl_rtl] Loaded {len(_DEFAULT_ACRONYM_DICT)} acronym mappings")
-except FileNotFoundError:
-    pass
+# Repo-specific acronym dictionaries loaded on demand.
+# Convention: src/<repo>_acronyms.json, where <repo> is lower-cased prefix without trailing "_".
+_ACRONYM_CACHE: dict[str, dict] = {}
+
+
+def _load_repo_acronym_dict(repo_key: str) -> dict:
+    """Load acronym dictionary for a repo key (e.g. 'or1200', 'marocchino')."""
+    repo_key = (repo_key or "").strip().lower()
+    if not repo_key:
+        return {}
+    if repo_key in _ACRONYM_CACHE:
+        return _ACRONYM_CACHE[repo_key]
+
+    path = os.path.join(_pkg_root, f"{repo_key}_acronyms.json")
+    if os.path.exists(path):
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+            _ACRONYM_CACHE[repo_key] = data
+            print(f"[etl_rtl] Loaded {len(data)} acronym mappings for {repo_key}")
+            return data
+
+    _ACRONYM_CACHE[repo_key] = {}
+    return {}
 
 # ---------------------------------------------------------------------------
 # Regex patterns — Verilog and SystemVerilog
@@ -152,14 +166,17 @@ def parse_verilog_files(
                         If None, writes JSON files (legacy behaviour).
         dry_run:        If True, parses but does not write anything.
         rtl_extensions: File extensions to process. Default: [".v"].
-        acronym_dict:   Acronym expansion dictionary. Default: or1200_acronyms.json.
+        acronym_dict:   Acronym expansion dictionary override. If None, a repo-specific
+                        dictionary is loaded from src/<repo>_acronyms.json when present.
 
     Returns:
         Summary dict: {modules, ports, signals, logic_chunks, parameters, edges}
     """
     rtl_dir        = rtl_dir        or RTL_DIR
     rtl_extensions = rtl_extensions or [".v"]
-    acronym_dict   = acronym_dict   or _DEFAULT_ACRONYM_DICT
+    if acronym_dict is None:
+        repo_key = prefix.rstrip("_").lower()
+        acronym_dict = _load_repo_acronym_dict(repo_key)
     repo           = prefix.rstrip("_")
 
     print(f"[etl_rtl] Scanning: {rtl_dir}  (prefix={prefix}, extensions={rtl_extensions})")

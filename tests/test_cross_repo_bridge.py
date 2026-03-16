@@ -225,27 +225,28 @@ class TestBuildEmbeddingBridges(unittest.TestCase):
 # ---------------------------------------------------------------------------
 
 class TestBuildStructuralBridges(unittest.TestCase):
-    def _make_module_stub(self, id: str, label: str, ports: list[str]) -> dict:
-        return {"id": id, "label": label, "ports": ports}
+    def _make_module_stub(self, id: str, label: str, repo: str,
+                          file_hash: str = None) -> dict:
+        return {"id": id, "label": label, "repo": repo, "file_hash": file_hash}
 
     def test_high_overlap_modules_linked(self):
-        wishbone_ports = ["wb_clk_i", "wb_rst_i", "wb_adr_i", "wb_dat_i", "wb_dat_o",
-                           "wb_we_i", "wb_sel_i", "wb_stb_i", "wb_cyc_i", "wb_ack_o"]
-        src = [self._make_module_stub("RTL_Module/or1200_cpu",
-                                      "or1200_cpu", wishbone_ports)]
-        tgt = [self._make_module_stub("RTL_Module/mor1kx_cpu",
-                                      "mor1kx_cpu", wishbone_ports[:8])]  # 80% overlap
-
+        # "or1200_cpu" and "mor1kx_cpu" share the token "cpu" → structural link.
+        # Implementation does ONE AQL call, returns all open-ended modules, then
+        # filters by repo in Python.
+        all_modules = [
+            self._make_module_stub("RTL_Module/or1200_cpu",  "or1200_cpu",  "openrisc/or1200"),
+            self._make_module_stub("RTL_Module/mor1kx_cpu",  "mor1kx_cpu",  "openrisc/mor1kx"),
+        ]
         db = MagicMock()
-        db.aql.execute.side_effect = [iter(src), iter(tgt)]
+        db.aql.execute.return_value = iter(all_modules)
 
         edges = bridge.build_structural_bridges(db, "OR1200_", "MOR1KX_", min_score=0.3)
         self.assertGreater(len(edges), 0)
-        self.assertEqual(edges[0]["similarity_type"], "structural")
+        self.assertEqual(edges[0]["similarity_type"], "structural_label")
 
     def test_no_rtl_modules_returns_empty(self):
         db = MagicMock()
-        db.aql.execute.side_effect = [iter([]), iter([])]
+        db.aql.execute.return_value = iter([])
         edges = bridge.build_structural_bridges(db, "OR1200_", "MOR1KX_", min_score=0.5)
         self.assertEqual(edges, [])
 

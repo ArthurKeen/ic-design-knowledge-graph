@@ -1,0 +1,32 @@
+{
+  "MAROCCHINO_": {
+    "Wishbone clock": [
+      "wishbone clk",
+      "wb_clk",
+      "wb clock",
+      "wbclk"
+    ],
+    "PIC": [
+      "programmable interrupt controller",
+      "pic"
+    ],
+    "DU SPRs": [
+      "debug unit sprs",
+      "du sprs",
+      "du_sprs"
+    ],
+    "EPCR": [
+      "exception program counter register",
+      "epcr"
+    ],
+    "SPR EVBAR": [
+      "spr evbar",
+      "exception vector base address register",
+      "evbar"
+    ],
+    "pipeline_flush": [
+      "pipeline flush",
+      "pipeline_flush_r"
+    ]
+  }
+}

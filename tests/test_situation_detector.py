@@ -174,21 +174,15 @@ class TestDetectMajorRefactorHeuristic(unittest.TestCase):
 
 class TestDetectSubsystemAddition(unittest.TestCase):
     def test_new_module_at_commit_creates_situation(self):
-        """When the DB returns a new module at a commit, a situation is created."""
+        """When new_modules_by_commit has an entry for a commit SHA, a situation is created."""
         commits = [_commit("sha001", 1000, "development")]
 
-        # DB mock: return one new module for the subsystem query
-        db = MagicMock()
-        db.aql.execute.return_value = iter([{
-            "_key": "or1200_mmu",
-            "label": "or1200_mmu",
-            "repo": "openrisc/or1200",
-            "valid_from_commit": "sha001",
-            "valid_from_ts": 1000,
-        }])
+        new_modules_by_commit = {
+            "sha001": [{"label": "or1200_mmu", "repo": "openrisc/or1200"}],
+        }
 
         results = sd._detect_subsystem_addition(
-            "openrisc/or1200", "development", commits, db
+            "openrisc/or1200", "development", commits, new_modules_by_commit
         )
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0]["situation_class"], "subsystem_addition")
@@ -196,11 +190,10 @@ class TestDetectSubsystemAddition(unittest.TestCase):
 
     def test_no_new_modules_returns_empty(self):
         commits = [_commit("sha001", 1000, "development")]
-        db = MagicMock()
-        db.aql.execute.return_value = iter([])
+        new_modules_by_commit: dict = {}
 
         results = sd._detect_subsystem_addition(
-            "openrisc/or1200", "development", commits, db
+            "openrisc/or1200", "development", commits, new_modules_by_commit
         )
         self.assertEqual(results, [])
 

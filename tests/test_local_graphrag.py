@@ -172,6 +172,27 @@ class TestExtractorParsing(unittest.TestCase):
         # Just confirm parsing worked
         self.assertEqual(len(relations), 2)
 
+    def test_entity_type_override(self):
+        extractor = EntityExtractor(
+            backend="openai",
+            entity_types=["SECURITY_FEATURE", "PRIVILEGE_LEVEL"],
+        )
+        self.assertIn("SECURITY_FEATURE", extractor.entity_types)
+        self.assertIn("PRIVILEGE_LEVEL", extractor.entity_types)
+
+    def test_relation_type_normalisation(self):
+        allowed = {"INCLUDES", "IMPLEMENTS", "RELATED_TO"}
+        from local_graphrag.extractor import _normalise_relation
+
+        self.assertEqual(_normalise_relation("uses", allowed), "INCLUDES")
+        self.assertEqual(_normalise_relation("IMPLEMENTS", allowed), "IMPLEMENTS")
+
+    def test_relation_type_enforcement(self):
+        allowed = {"INCLUDES", "IMPLEMENTS", "RELATED_TO"}
+        from local_graphrag.extractor import _normalise_relation
+
+        self.assertEqual(_normalise_relation("gibberish_rel", allowed), "RELATED_TO")
+
 
 # ---------------------------------------------------------------------------
 # Section 3 — Embedder
@@ -192,7 +213,9 @@ class TestEmbedder(unittest.TestCase):
     def test_embed_sentence_transformers(self):
         """Embeddings should be float lists of consistent dimension."""
         entities = self._make_entities(3)
-        result = embed_entities(entities, backend="sentence_transformers")
+        fake_vectors = [[0.11, 0.12, 0.13], [0.21, 0.22, 0.23], [0.31, 0.32, 0.33]]
+        with patch("local_graphrag.embedder._embed_sentence_transformers", return_value=fake_vectors):
+            result = embed_entities(entities, backend="sentence_transformers")
         self.assertEqual(len(result), 3)
         for e in result:
             self.assertIsInstance(e["embedding"], list)
@@ -304,6 +327,24 @@ class TestGoldenDedup(unittest.TestCase):
         keys1 = {g["_key"] for g in golden1}
         keys2 = {g["_key"] for g in golden2}
         self.assertEqual(keys1, keys2)
+
+    def test_golden_entity_has_labels(self):
+        golden = build_golden_entities(
+            [{"name": "Foo", "type": "REGISTER", "description": "", "aliases": []}],
+            prefix="OR1200_",
+        )
+        self.assertEqual(golden[0]["labels"], ["GoldenEntity", "REGISTER", "OR1200"])
+        self.assertEqual(golden[0]["repo"], "OR1200")
+        self.assertEqual(golden[0]["layer"], "golden")
+
+    def test_golden_entity_version_tracking(self):
+        entities = [
+            {"name": "Foo", "type": "REGISTER", "doc_version": "v1"},
+            {"name": "foo", "type": "REGISTER", "doc_version": "v2"},
+        ]
+        golden = build_golden_entities(entities, prefix="OR1200_")
+        self.assertEqual(golden[0]["first_seen_version"], "v1")
+        self.assertEqual(golden[0]["last_seen_version"], "v2")
 
 
 # ---------------------------------------------------------------------------
@@ -488,6 +529,82 @@ class TestLoader(unittest.TestCase):
             self.assertTrue(e["_to"].startswith(cols["chunks"] + "/"))
             self.assertEqual(e["type"], "MENTIONED_IN")
 
+    def test_consolidates_edge_has_lpg_fields(self):
+        edges = build_consolidates_edges(
+            [{"_key": "OR1200_aaa", "name": "Pipeline", "type": "PIPELINE_STAGE"}],
+            "OR1200_",
+            "OR1200_Golden_Entities",
+            "OR1200_Entities",
+        )
+        edge = edges[0]
+        self.assertEqual(edge["labels"], ["CONSOLIDATES"])
+        self.assertEqual(edge["fromNodeType"], "GoldenEntity")
+        self.assertEqual(edge["toNodeType"], "RawEntity")
+
+    def test_mentioned_in_edge_has_lpg_fields(self):
+        edges = build_mentioned_in_edges(
+            [{"_key": "OR1200_aaa", "name": "Pipeline", "source_chunk": "chunk_001"}],
+            "OR1200_",
+            "OR1200_Entities",
+            "OR1200_Chunks",
+        )
+        edge = edges[0]
+        self.assertEqual(edge["labels"], ["MENTIONED_IN"])
+        self.assertEqual(edge["fromNodeType"], "RawEntity")
+        self.assertEqual(edge["toNodeType"], "Chunk")
+
+    def test_raw_entity_has_labels(self):
+        db = MagicMock()
+        db.collections.return_value = []
+
+        class _CollectionMock:
+            def __init__(self):
+                self.rows = []
+
+            def import_bulk(self, records, on_duplicate="replace"):
+                self.rows.extend(records)
+                return {"created": len(records), "updated": 0}
+
+            def indexes(self):
+                return []
+
+            def add_persistent_index(self, fields, sparse=False):
+                return None
+
+            def insert(self, rec, overwrite=True):
+                self.rows.append(rec)
+                return rec
+
+        cols: dict[str, _CollectionMock] = {}
+
+        def _get_col(name, **kwargs):
+            if name not in cols:
+                cols[name] = _CollectionMock()
+            return cols[name]
+
+        db.collection.side_effect = _get_col
+        db.create_collection.side_effect = _get_col
+
+        load_to_arangodb(
+            entities=[{
+                "_key": "OR1200_aaa",
+                "name": "Pipeline",
+                "type": "PIPELINE_STAGE",
+                "description": "CPU pipeline",
+                "aliases": [],
+                "source_chunk": "c1",
+                "embedding": None,
+            }],
+            relations=[],
+            communities=[],
+            chunks=[{"_key": "c1", "text": "chunk text"}],
+            prefix="OR1200_",
+            db=db,
+        )
+
+        entity_rows = cols["OR1200_Entities"].rows
+        self.assertEqual(entity_rows[0]["labels"], ["RawEntity", "PIPELINE_STAGE", "OR1200"])
+
 
 # ---------------------------------------------------------------------------
 # Section 7 — End-to-end dry run
@@ -512,7 +629,15 @@ class TestPipelineDryRun(unittest.TestCase):
             # Mock the LLM call so no real API is needed
             with patch.object(pipeline.extractor, "_call_llm",
                                return_value=FIXTURE_LLM_RESPONSE):
-                summary = pipeline.run(doc_paths=[path], dry_run=True)
+                # Mock embeddings inside pipeline module so no model download/network is needed
+                def _fake_embed_entities(entities, backend="sentence_transformers", **kwargs):
+                    for e in entities:
+                        if not e.get("embedding"):
+                            e["embedding"] = [0.1, 0.2, 0.3]
+                    return entities
+
+                with patch("local_graphrag.pipeline.embed_entities", side_effect=_fake_embed_entities):
+                    summary = pipeline.run(doc_paths=[path], dry_run=True)
 
             self.assertIn("chunks",      summary)
             self.assertIn("entities",    summary)

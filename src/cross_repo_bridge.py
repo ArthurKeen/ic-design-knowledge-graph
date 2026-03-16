@@ -146,6 +146,24 @@ def _label_similarity(label_a: str, label_b: str) -> float:
     return round(jaccard, 4)
 
 
+def _port_signature_similarity(ports_a: list[str], ports_b: list[str]) -> float:
+    """
+    Jaccard similarity on normalised port-name sets, weighted with a size-match bonus.
+
+    Score = 0.6 * jaccard + 0.4 * (1 - size_diff_ratio)
+
+    This gives > 0.9 for identical sets and < 0.5 for completely disjoint sets
+    of very different cardinality (e.g. 1 vs 8 ports).
+    """
+    if not ports_a or not ports_b:
+        return 0.0
+    a = {p.lower() for p in ports_a}
+    b = {p.lower() for p in ports_b}
+    jaccard = len(a & b) / len(a | b)
+    size_diff = abs(len(a) - len(b)) / max(len(a), len(b))
+    return round(0.6 * jaccard + 0.4 * (1.0 - size_diff), 4)
+
+
 def build_structural_bridges(
     db,
     source_prefix: str,

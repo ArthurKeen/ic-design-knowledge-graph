@@ -1,0 +1,14 @@
+{
+  "wb": "Wishbone",
+  "pic": "Programmable Interrupt Controller",
+  "du": "Debug Unit",
+  "dmmu": "Data Memory Management Unit",
+  "immu": "Instruction Memory Management Unit",
+  "lsu": "Load Store Unit",
+  "ic": "Instruction Cache",
+  "dc": "Data Cache",
+  "epcr": "Exception Program Counter Register",
+  "npc": "Next Program Counter",
+  "ifetch": "Instruction Fetch",
+  "ctrl": "Control"
+}

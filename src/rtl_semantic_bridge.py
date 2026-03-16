@@ -21,6 +21,7 @@ import sys
 import re
 import hashlib
 import argparse
+import json
 
 _src = os.path.dirname(os.path.abspath(__file__))
 if _src not in sys.path:
@@ -61,6 +62,8 @@ RTL_RELEVANT_TYPES = {
 # RTL attribute types that are infrastructure noise — skip for embedding match
 SKIP_NAMES = {"clk", "rst", "rst_n", "reset", "vcc", "gnd", "clk_i", "clk_o",
               "rst_i", "a", "b", "c", "d", "en", "sel", "out", "in"}
+
+_ALIAS_OVERRIDES_CACHE: dict[str, dict[str, list[str]]] = {}
 
 
 # ---------------------------------------------------------------------------
@@ -113,6 +116,51 @@ def _normalise(text: str) -> str:
     return re.sub(r"\s+", " ", t).strip()
 
 
+def _tokens(text: str) -> set[str]:
+    """Token set for lexical gating and alias matching."""
+    return {t for t in _normalise(text).split() if len(t) >= 3}
+
+
+def _acronym(text: str) -> str:
+    """Initialism-like acronym from normalized tokens."""
+    toks = _normalise(text).split()
+    if not toks:
+        return ""
+    return "".join(t[0] for t in toks if t and t[0].isalnum()).upper()
+
+
+def _load_alias_overrides(prefix: str) -> dict[str, list[str]]:
+    """
+    Load per-repo golden alias overrides from src/rtl_semantic_aliases.json.
+    JSON shape:
+      { "MAROCCHINO_": { "Golden Name": ["alias1", "alias2"] }, ... }
+    """
+    if prefix in _ALIAS_OVERRIDES_CACHE:
+        return _ALIAS_OVERRIDES_CACHE[prefix]
+
+    path = os.path.join(os.path.dirname(__file__), "rtl_semantic_aliases.json")
+    if not os.path.exists(path):
+        _ALIAS_OVERRIDES_CACHE[prefix] = {}
+        return {}
+
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        repo_map = data.get(prefix, {}) if isinstance(data, dict) else {}
+        if not isinstance(repo_map, dict):
+            repo_map = {}
+        # Ensure list[str] shape
+        cleaned: dict[str, list[str]] = {}
+        for k, v in repo_map.items():
+            if isinstance(v, list):
+                cleaned[k] = [str(x) for x in v if str(x).strip()]
+        _ALIAS_OVERRIDES_CACHE[prefix] = cleaned
+        return cleaned
+    except Exception:
+        _ALIAS_OVERRIDES_CACHE[prefix] = {}
+        return {}
+
+
 def _best_text(node: dict) -> str:
     """Choose the richest text representation of an RTL node for embedding."""
     expanded = (node.get("expanded_name") or "").strip()
@@ -163,9 +211,34 @@ def load_golden_entities(db, prefix: str) -> list[dict]:
             name:        g.name,
             type:        g.type,
             description: g.description,
-            embedding:   g.embedding
+            embedding:   g.embedding,
+            aliases:     g.aliases
           }}
     """))
+
+    # Merge curated alias overrides and add acronym aliases for multi-word names.
+    # This improves high-precision exact matching before embedding stage.
+    alias_overrides = _load_alias_overrides(prefix)
+    for g in results:
+        merged = list(g.get("aliases") or [])
+        merged += alias_overrides.get(g.get("name", ""), [])
+        # Multi-word names get acronym alias (e.g. "Wishbone Clock" -> "WBC")
+        ac = _acronym(g.get("name", ""))
+        if ac and len(g.get("name", "").split()) >= 2:
+            merged.append(ac)
+        # Deduplicate while preserving order
+        seen = set()
+        deduped = []
+        for a in merged:
+            if not a:
+                continue
+            k = _normalise(a)
+            if not k or k in seen:
+                continue
+            seen.add(k)
+            deduped.append(a)
+        g["aliases"] = deduped
+
     print(f"  [bridge] {col}: {len(results)} eligible golden entities")
     return results
 
@@ -208,16 +281,19 @@ def match_exact(rtl_nodes: list[dict], golden_entities: list[dict]) -> list[dict
     Stage 1: match by normalised name.
     Returns list of match dicts: {rtl, golden, score, method}.
     """
-    # Build lookup: normalised_golden_name → golden entity
+    # Build lookup: normalized golden names/aliases → golden entity
     lookup: dict[str, dict] = {}
     for g in golden_entities:
-        norm = _normalise(g["name"])
-        if norm and norm not in lookup:
-            lookup[norm] = g
-        # Also index individual meaningful words (≥ 4 chars) of the golden name
-        for word in norm.split():
-            if len(word) >= 4 and word not in lookup:
-                lookup[word] = g
+        name_keys = [g.get("name", "")]
+        name_keys += list(g.get("aliases") or [])
+        for raw in name_keys:
+            norm = _normalise(raw)
+            if norm and norm not in lookup:
+                lookup[norm] = g
+            # Also index individual meaningful words (≥ 4 chars)
+            for word in norm.split():
+                if len(word) >= 4 and word not in lookup:
+                    lookup[word] = g
 
     matches = []
     for node in rtl_nodes:
@@ -243,6 +319,41 @@ def match_exact(rtl_nodes: list[dict], golden_entities: list[dict]) -> list[dict
 
     print(f"  [bridge] Stage 1 (exact): {len(matches)} matches")
     return matches
+
+
+def _embedding_gate(node: dict, golden: dict, score: float, second_best: float, min_score: float) -> bool:
+    """
+    Precision-first acceptance gate for embedding candidates.
+    Keep matches that have lexical support, or exceptionally strong semantic lead.
+    """
+    rtl_text = node.get("expanded_name") or node.get("name") or ""
+    rtl_tokens = _tokens(rtl_text)
+    golden_texts = [golden.get("name", "")]
+    golden_texts += list(golden.get("aliases") or [])
+    golden_tokens = set()
+    for t in golden_texts:
+        golden_tokens |= _tokens(t)
+
+    overlap = len(rtl_tokens & golden_tokens)
+    margin = score - second_best
+
+    rtl_has_wishbone = "wishbone" in rtl_tokens or "wb" in rtl_tokens
+    golden_has_wishbone = "wishbone" in golden_tokens or "wb" in golden_tokens
+    rtl_has_clk_rst = bool({"clock", "clk", "reset", "rst"} & rtl_tokens)
+    golden_type = golden.get("type", "")
+
+    # Reject likely context drift unless confidence is unusually high.
+    if rtl_has_wishbone and not golden_has_wishbone and score < max(min_score + 0.05, 0.78):
+        return False
+    if rtl_has_clk_rst and golden_type not in {"SIGNAL", "CLOCK_DOMAIN", "HARDWARE_INTERFACE"} and score < max(min_score + 0.05, 0.78):
+        return False
+
+    # Prefer lexical support; otherwise require a strong semantic lead.
+    if overlap >= 1:
+        return True
+    if score >= max(min_score + 0.08, 0.80) and margin >= 0.05:
+        return True
+    return False
 
 
 # ---------------------------------------------------------------------------
@@ -288,14 +399,20 @@ def match_embedding(
     matches = []
     for node, vec in zip(unmatched, vectors):
         best_score  = 0.0
+        second_best = 0.0
         best_golden = None
         for g, emb in golden_embs:
             s = _cosine(vec, emb)
             if s > best_score:
+                second_best = best_score
                 best_score  = s
                 best_golden = g
+            elif s > second_best:
+                second_best = s
 
-        if best_golden and best_score >= min_score:
+        if best_golden and best_score >= min_score and _embedding_gate(
+            node=node, golden=best_golden, score=best_score, second_best=second_best, min_score=min_score
+        ):
             matches.append({
                 "rtl":    node,
                 "golden": best_golden,

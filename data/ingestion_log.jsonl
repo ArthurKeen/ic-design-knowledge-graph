@@ -1,0 +1,30 @@
+{"repo": "or1200", "ts": 1773214417, "ts_human": "2026-03-11T01:33:37.501603", "nodes": 62, "edges": 120, "entities": 157, "chunks": 10, "communities": 102}
+{"repo": "or1200", "ts": 1773214684, "ts_human": "2026-03-11T01:38:04.039689", "nodes": 62, "edges": 120, "entities": 151, "chunks": 10, "communities": 87}
+{"repo": "ibex", "ts": 1773272556, "ts_human": "2026-03-11T17:42:36.840479", "nodes": 0, "edges": 0, "entities": 492, "chunks": 51, "communities": 171}
+{"repo": "ibex", "ts": 1773273222, "ts_human": "2026-03-11T17:53:42.728205", "nodes": 0, "edges": 0, "entities": 528, "chunks": 51, "communities": 205}
+{"repo": "ibex", "ts": 1773274001, "ts_human": "2026-03-11T18:06:41.035533", "nodes": 0, "edges": 0, "entities": 528, "chunks": 51, "communities": 195}
+{"repo": "or1200", "ts": 1773274529, "ts_human": "2026-03-11T18:15:29.813078", "nodes": 0, "edges": 0, "entities": 162, "chunks": 10, "communities": 84}
+{"repo": "mor1kx", "ts": 1773274586, "ts_human": "2026-03-11T18:16:26.516379", "nodes": 0, "edges": 0, "entities": 38, "chunks": 3, "communities": 19}
+{"repo": "marocchino", "ts": 1773274699, "ts_human": "2026-03-11T18:18:19.342842", "nodes": 0, "edges": 0, "entities": 42, "chunks": 4, "communities": 14}
+{"repo": "or1200", "ts": 1773276723, "ts_human": "2026-03-11T18:52:03.383506", "nodes": 0, "edges": 0, "entities": 172, "chunks": 10, "communities": 83}
+{"repo": "mor1kx", "ts": 1773276773, "ts_human": "2026-03-11T18:52:53.527533", "nodes": 0, "edges": 0, "entities": 39, "chunks": 3, "communities": 20}
+{"repo": "marocchino", "ts": 1773276875, "ts_human": "2026-03-11T18:54:35.237151", "nodes": 0, "edges": 0, "entities": 65, "chunks": 5, "communities": 32}
+{"repo": "ibex", "ts": 1773277480, "ts_human": "2026-03-11T19:04:40.773067", "nodes": 0, "edges": 0, "entities": 543, "chunks": 51, "communities": 186}
+{"repo": "marocchino", "ts": 1773381261, "ts_human": "2026-03-12T23:54:21.394483", "nodes": 0, "edges": 0, "entities": 122, "chunks": 5, "communities": 69}
+{"repo": "or1200", "ts": 1773563627, "ts_human": "2026-03-15T02:33:47.830491", "nodes": 0, "edges": 0, "entities": 0, "chunks": 0, "communities": 0, "rtl_modules": 87, "rtl_ports": 1228, "rtl_signals": 775}
+{"repo": "mor1kx", "ts": 1773563644, "ts_human": "2026-03-15T02:34:04.771911", "nodes": 0, "edges": 0, "entities": 0, "chunks": 0, "communities": 0, "rtl_modules": 39, "rtl_ports": 1370, "rtl_signals": 1461}
+{"repo": "marocchino", "ts": 1773563644, "ts_human": "2026-03-15T02:34:04.775053", "nodes": 0, "edges": 0, "entities": 0, "chunks": 0, "communities": 0, "rtl_modules": 0, "rtl_ports": 0, "rtl_signals": 0}
+{"repo": "ibex", "ts": 1773563656, "ts_human": "2026-03-15T02:34:16.453897", "nodes": 0, "edges": 0, "entities": 0, "chunks": 0, "communities": 0, "rtl_modules": 28, "rtl_ports": 1013, "rtl_signals": 1454}
+{"repo": "marocchino", "ts": 1773563717, "ts_human": "2026-03-15T02:35:17.227292", "nodes": 0, "edges": 0, "entities": 0, "chunks": 0, "communities": 0, "rtl_modules": 31, "rtl_ports": 981, "rtl_signals": 1571}
+{"repo": "or1200", "ts": 1773630222, "ts_human": "2026-03-15T21:03:42.849346", "nodes": 0, "edges": 0, "entities": 153, "chunks": 10, "communities": 36, "rtl_modules": 0, "rtl_ports": 0, "rtl_signals": 0}
+{"repo": "mor1kx", "ts": 1773630256, "ts_human": "2026-03-15T21:04:16.499672", "nodes": 0, "edges": 0, "entities": 41, "chunks": 3, "communities": 13, "rtl_modules": 0, "rtl_ports": 0, "rtl_signals": 0}
+{"repo": "mor1kx", "ts": 1773630296, "ts_human": "2026-03-15T21:04:56.441461", "nodes": 0, "edges": 0, "entities": 39, "chunks": 3, "communities": 14, "rtl_modules": 0, "rtl_ports": 0, "rtl_signals": 0}
+{"repo": "marocchino", "ts": 1773630343, "ts_human": "2026-03-15T21:05:43.949266", "nodes": 0, "edges": 0, "entities": 92, "chunks": 5, "communities": 45, "rtl_modules": 0, "rtl_ports": 0, "rtl_signals": 0}
+{"repo": "marocchino", "ts": 1773630419, "ts_human": "2026-03-15T21:06:59.041067", "nodes": 0, "edges": 0, "entities": 88, "chunks": 5, "communities": 29, "rtl_modules": 0, "rtl_ports": 0, "rtl_signals": 0}
+{"repo": "ibex", "ts": 1773630755, "ts_human": "2026-03-15T21:12:35.939349", "nodes": 0, "edges": 0, "entities": 548, "chunks": 51, "communities": 149, "rtl_modules": 0, "rtl_ports": 0, "rtl_signals": 0}
+{"repo": "ibex", "ts": 1773637555, "ts_human": "2026-03-15T23:05:55.933722", "nodes": 0, "edges": 0, "entities": 559, "chunks": 51, "communities": 114, "rtl_modules": 0, "rtl_ports": 0, "rtl_signals": 0}
+{"repo": "or1200", "ts": 1773637886, "ts_human": "2026-03-15T23:11:26.840452", "nodes": 0, "edges": 0, "entities": 164, "chunks": 10, "communities": 72, "rtl_modules": 0, "rtl_ports": 0, "rtl_signals": 0}
+{"repo": "mor1kx", "ts": 1773637919, "ts_human": "2026-03-15T23:11:59.905191", "nodes": 0, "edges": 0, "entities": 40, "chunks": 3, "communities": 16, "rtl_modules": 0, "rtl_ports": 0, "rtl_signals": 0}
+{"repo": "marocchino", "ts": 1773638000, "ts_human": "2026-03-15T23:13:20.428232", "nodes": 0, "edges": 0, "entities": 85, "chunks": 5, "communities": 39, "rtl_modules": 0, "rtl_ports": 0, "rtl_signals": 0}
+{"repo": "ibex", "ts": 1773638385, "ts_human": "2026-03-15T23:19:45.617321", "nodes": 0, "edges": 0, "entities": 557, "chunks": 51, "communities": 177, "rtl_modules": 0, "rtl_ports": 0, "rtl_signals": 0}
+{"repo": "marocchino", "ts": 1773654650, "ts_human": "2026-03-16T03:50:50.807005", "nodes": 0, "edges": 0, "entities": 0, "chunks": 0, "communities": 0, "rtl_modules": 31, "rtl_ports": 981, "rtl_signals": 1571}

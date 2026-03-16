@@ -102,7 +102,7 @@ class TestNodeCreation:
         assert node["valid_from_commit"] == "deadbeef01234567"
         assert node["valid_from_ts"] == 1020384000
         assert node["valid_to_commit"] is None
-        assert node["valid_to_ts"] is None
+        assert node["valid_to_ts"] == 9999999999  # open-ended sentinel used in AQL filters
         assert node["design_epoch"] == "initial_commit"
         assert node["repo"] == "openrisc/or1200"
 
