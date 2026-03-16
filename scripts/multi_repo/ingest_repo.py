@@ -59,6 +59,7 @@ def ingest_one_repo(
     dry_run:           bool = False,
     commit_limit:      int  = None,
     embedding_backend: str  = "sentence_transformers",
+    doc_version:       str  = None,
 ) -> dict:
     """
     Full ingestion pipeline for a single repo.
@@ -192,6 +193,7 @@ def ingest_one_repo(
                     overlap=repo_config.get("chunk_overlap"),
                     entity_types=repo_config.get("entity_types"),
                     relation_types=repo_config.get("relation_types"),
+                    doc_version=doc_version,
                 )
                 graphrag_summary = pipeline.run(doc_dir=doc_dir, dry_run=dry_run)
                 summary["entities"]    = graphrag_summary.get("entities", 0)
@@ -213,6 +215,7 @@ def ingest_all(
     dry_run:           bool = False,
     commit_limit:      int  = None,
     embedding_backend: str  = "sentence_transformers",
+    doc_version:       str  = None,
 ) -> dict[str, dict]:
     """Ingest all repos in priority order."""
     repos = repos or load_repo_registry()
@@ -227,6 +230,7 @@ def ingest_all(
             dry_run=dry_run,
             commit_limit=commit_limit,
             embedding_backend=embedding_backend,
+            doc_version=doc_version,
         )
     return results
 
@@ -249,6 +253,10 @@ if __name__ == "__main__":
     parser.add_argument("--embedding-backend", default="sentence_transformers",
                         choices=["sentence_transformers", "openai"],
                         help="Embedding backend for entity vectors (default: sentence_transformers)")
+    parser.add_argument("--doc-version",       default=None,
+                        help="Tag injected into doc_version / first_seen_version on every "
+                             "golden entity (e.g. 'v2.0', '2026-03-16'). Enables temporal "
+                             "tracking of documentation re-ingestions.")
     args = parser.parse_args()
 
     registry = load_repo_registry()
@@ -271,6 +279,7 @@ if __name__ == "__main__":
         dry_run=args.dry_run,
         commit_limit=args.commit_limit,
         embedding_backend=args.embedding_backend,
+        doc_version=args.doc_version,
     )
 
     print(f"\n{'='*60}")

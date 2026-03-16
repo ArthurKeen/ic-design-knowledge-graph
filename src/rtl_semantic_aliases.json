@@ -1,4 +1,81 @@
 {
+  "MOR1KX_": {
+    "mor1kx_cpu": [
+      "cpu",
+      "mor1kx cpu",
+      "mor1kx_cpu_xx"
+    ],
+    "mor1kx_fetch_cappuccino": [
+      "fetch cappuccino",
+      "mor1kx_fetch_xx",
+      "instruction fetch"
+    ],
+    "mor1kx_decode": [
+      "decode",
+      "instruction decode"
+    ],
+    "mor1kx_execute_alu": [
+      "execute alu",
+      "alu",
+      "arithmetic logic unit"
+    ],
+    "mor1kx_lsu_cappuccino": [
+      "lsu cappuccino",
+      "lsu",
+      "load store unit",
+      "mor1kx_lsu_xx"
+    ],
+    "mor1kx_ctrl_cappuccino": [
+      "ctrl cappuccino",
+      "ctrl",
+      "mor1kx_ctrl_xx"
+    ],
+    "mor1kx_icache": [
+      "instruction cache",
+      "icache",
+      "ic"
+    ],
+    "mor1kx_dcache": [
+      "data cache",
+      "dcache",
+      "dc"
+    ],
+    "mor1kx_immu": [
+      "instruction mmu",
+      "immu",
+      "instruction memory management unit"
+    ],
+    "mor1kx_dmmu": [
+      "data mmu",
+      "dmmu",
+      "data memory management unit"
+    ],
+    "mor1kx_rf_cappuccino": [
+      "rf cappuccino",
+      "register file",
+      "rf",
+      "mor1kx_rf_xx"
+    ],
+    "EVBAR": [
+      "evbar",
+      "exception vector base address register",
+      "spr evbar"
+    ],
+    "Multiplier": [
+      "mult",
+      "mul",
+      "multiplier"
+    ],
+    "Divider": [
+      "div",
+      "divider"
+    ],
+    "mor1kx_bus_if_xx": [
+      "bus if",
+      "wishbone interface",
+      "wb_if"
+    ]
+  },
   "MAROCCHINO_": {
     "Wishbone clock": [
       "wishbone clk",

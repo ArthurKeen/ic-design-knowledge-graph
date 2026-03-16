@@ -63,6 +63,18 @@ RTL_RELEVANT_TYPES = {
 SKIP_NAMES = {"clk", "rst", "rst_n", "reset", "vcc", "gnd", "clk_i", "clk_o",
               "rst_i", "a", "b", "c", "d", "en", "sel", "out", "in"}
 
+# Generic hardware vocabulary that appears in many golden-entity names/descriptions.
+# Allowing these into the word-index creates too many false positive exact matches
+# (e.g. RTL signal "cnt" expanded to "counter" matching golden "Program Counter"
+# solely because the word "counter" appears in its alias).
+# These words are blocked from being used as word-index keys in match_exact().
+WORD_INDEX_STOPWORDS = {
+    "output", "input", "counter", "register", "memory", "address", "control",
+    "status", "interface", "unit", "data", "program", "signal", "clock",
+    "reset", "enable", "logic", "mode", "type", "state", "stage", "block",
+    "module", "system", "core", "port", "write", "read",
+}
+
 _ALIAS_OVERRIDES_CACHE: dict[str, dict[str, list[str]]] = {}
 
 
@@ -290,9 +302,9 @@ def match_exact(rtl_nodes: list[dict], golden_entities: list[dict]) -> list[dict
             norm = _normalise(raw)
             if norm and norm not in lookup:
                 lookup[norm] = g
-            # Also index individual meaningful words (≥ 4 chars)
+            # Also index individual meaningful words (≥ 4 chars, not generic stopwords)
             for word in norm.split():
-                if len(word) >= 4 and word not in lookup:
+                if len(word) >= 4 and word not in lookup and word not in WORD_INDEX_STOPWORDS:
                     lookup[word] = g
 
     matches = []

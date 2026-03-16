@@ -31,35 +31,82 @@ def create_graph(db):
     golden_rel_cols    = sorted(c for c in cols if c.endswith("_Golden_Relations"))
     doc_cols           = sorted(c for c in cols if c.endswith("_Documents"))
 
+    rtl_vertex_cols = [c for c in ["RTL_Module", "RTL_Port", "RTL_Signal",
+                                    "RTL_Parameter", "RTL_LogicChunk"] if c in cols]
+
+    cross_vertex_cols = [c for c in golden_entity_cols + ["RTL_Module"] if c in cols]
+
     edge_definitions = [
         # ── Core temporal traversal ──────────────────────────────────────
         {
             "edge_collection": "MODIFIED",
-            "from_vertex_collections": ["GitCommit"],
-            "to_vertex_collections":   ["RTL_Module"],
+            "from_vertex_collections": [c for c in ["GitCommit"] if c in cols],
+            "to_vertex_collections":   [c for c in ["RTL_Module"] if c in cols],
         },
         {
             "edge_collection": "BELONGS_TO_EPOCH",
-            "from_vertex_collections": ["RTL_Module"],
-            "to_vertex_collections":   ["DesignEpoch"],
+            "from_vertex_collections": [c for c in ["RTL_Module"] if c in cols],
+            "to_vertex_collections":   [c for c in ["DesignEpoch"] if c in cols],
+        },
+        # ── RTL structural edges ─────────────────────────────────────────
+        {
+            "edge_collection": "HAS_PORT",
+            "from_vertex_collections": [c for c in ["RTL_Module"] if c in cols],
+            "to_vertex_collections":   [c for c in ["RTL_Port"] if c in cols],
+        },
+        {
+            "edge_collection": "HAS_SIGNAL",
+            "from_vertex_collections": [c for c in ["RTL_Module"] if c in cols],
+            "to_vertex_collections":   [c for c in ["RTL_Signal"] if c in cols],
+        },
+        {
+            "edge_collection": "HAS_PARAMETER",
+            "from_vertex_collections": [c for c in ["RTL_Module"] if c in cols],
+            "to_vertex_collections":   [c for c in ["RTL_Parameter"] if c in cols],
+        },
+        {
+            "edge_collection": "OVERRIDES",
+            "from_vertex_collections": [c for c in ["RTL_Module"] if c in cols],
+            "to_vertex_collections":   [c for c in ["RTL_Parameter"] if c in cols],
+        },
+        {
+            "edge_collection": "CONTAINS",
+            "from_vertex_collections": [c for c in ["RTL_Module"] if c in cols],
+            "to_vertex_collections":   [c for c in ["RTL_LogicChunk"] if c in cols],
+        },
+        {
+            "edge_collection": "DEPENDS_ON",
+            "from_vertex_collections": [c for c in ["RTL_Module"] if c in cols],
+            "to_vertex_collections":   [c for c in ["RTL_Module"] if c in cols],
+        },
+        {
+            "edge_collection": "WIRED_TO",
+            "from_vertex_collections": [c for c in ["RTL_Port", "RTL_Signal"] if c in cols],
+            "to_vertex_collections":   [c for c in ["RTL_Port", "RTL_Signal"] if c in cols],
         },
         # ── Semantic bridge: RTL → Knowledge ─────────────────────────────
         {
             "edge_collection": "RESOLVED_TO",
-            "from_vertex_collections": ["RTL_Port", "RTL_Signal"],
+            "from_vertex_collections": [c for c in ["RTL_Port", "RTL_Signal"] if c in cols],
             "to_vertex_collections":   golden_entity_cols if golden_entity_cols else ["RTL_Module"],
         },
         # ── Cross-repo bridges ───────────────────────────────────────────
         {
             "edge_collection": "CROSS_REPO_SIMILAR_TO",
-            "from_vertex_collections": golden_entity_cols + ["RTL_Module"],
-            "to_vertex_collections":   golden_entity_cols + ["RTL_Module"],
+            "from_vertex_collections": cross_vertex_cols,
+            "to_vertex_collections":   cross_vertex_cols,
         },
         {
             "edge_collection": "CROSS_REPO_EVOLVED_FROM",
-            "from_vertex_collections": golden_entity_cols + ["RTL_Module"],
-            "to_vertex_collections":   golden_entity_cols + ["RTL_Module"],
+            "from_vertex_collections": cross_vertex_cols,
+            "to_vertex_collections":   cross_vertex_cols,
         },
+    ]
+
+    # Drop edge definitions where from/to ended up empty (collection doesn't exist yet)
+    edge_definitions = [
+        ed for ed in edge_definitions
+        if ed["from_vertex_collections"] and ed["to_vertex_collections"]
     ]
 
     # Per-repo GraphRAG Golden relation edges
@@ -114,7 +161,9 @@ def create_graph(db):
 
     # Orphan collections (vertex-only, no direct edge from this graph)
     all_vertex_cols = (
-        ["GitCommit", "RTL_Module", "DesignEpoch", "DesignSituation", "Author"]
+        ["GitCommit", "RTL_Module", "RTL_Port", "RTL_Signal",
+         "RTL_Parameter", "RTL_LogicChunk",
+         "DesignEpoch", "DesignSituation", "Author"]
         + golden_entity_cols + entity_cols + community_cols + chunk_cols + doc_cols
     )
     linked = {
