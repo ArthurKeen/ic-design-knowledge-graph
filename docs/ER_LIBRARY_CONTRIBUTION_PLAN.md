@@ -385,17 +385,34 @@ separate `arango-community-detection` module.
 
 ## Part C — Sequencing
 
+Each PR has two deliverables: a **library change** and a **MCP server change**.
+The MCP server (`src/entity_resolution/mcp/server.py`) is a thin wrapper — new
+library params are invisible to AI agents until the MCP signatures are updated.
+
+| PR | Library | MCP server update |
+|---|---|---|
+| **C1** | `resolve_entity_cross_collection()` + `target_filter` + `source_skip_values` | **New tool**: `resolve_entity_cross_collection` |
+| **C2** | `find_duplicates` + `stages` param | Add `stages: list` to `find_duplicates` tool |
+| **C3** | `min_margin`, `require_token_overlap`, `word_index_stopwords`, `token_type_affinity`, `target_type_field` | Add all five to `find_duplicates` + `resolve_entity` tools |
+| **C4** | `explain_match` output gains `gates` section | Docstring update only — output enrichment flows through automatically |
+| **C5** | `alias_sources` param | Add `alias_sources: list` to `find_duplicates` + `resolve_entity` tools |
+| **C6** | `similarity_type="token_jaccard"`, `token_jaccard_field` | Add both to `find_duplicates` tool |
+
 ```
-Library stable
-     │
      ├── C1: Ship A1 (cross-collection resolve_entity)       ← highest value, self-contained
      │         includes: target_filter, source_skip_values   ← closes RTL_RELEVANT_TYPES / SKIP_NAMES gaps
+     │         MCP: new resolve_entity_cross_collection tool
      ├── C2: Ship A2 (multi_stage strategy)                  ← depends on A1 scaffolding
+     │         MCP: stages param on find_duplicates
      ├── C3: Ship A3 + A4 + A4b (margin + overlap + type-   ← all three gates travel together;
      │         affinity gates)                                  A4b closes contextual hardwiring gap
+     │         MCP: 5 new params on find_duplicates + resolve_entity
      ├── C4: Ship A5 (explain_match gate failures)           ← UX, depends on A3/A4/A4b
+     │         MCP: docstring + output format update only
      ├── C5: Ship A6 (alias expansion)                       ← more invasive, separate PR
+     │         MCP: alias_sources param on find_duplicates + resolve_entity
      └── C6: Ship A7 (token_jaccard similarity)              ← additive, separate PR
+               MCP: similarity_type + token_jaccard_field on find_duplicates
 
 This project refactoring:
      │
