@@ -76,6 +76,121 @@
       "wb_if"
     ]
   },
+  "OR1200_": {
+    "Debug Unit": [
+      "dbg_stall_i", "dbg_we_i", "dbg_stb_i", "dbg_ack_o",
+      "dbg_dat_i", "dbg_dat_o", "dbg_adr_i", "dbg_is_o",
+      "dbg_lss_o", "dbg_ewt_i", "du_stall", "du_addr",
+      "du_dat_i", "du_dat_o", "du_read", "du_write"
+    ],
+    "Watchpoint": [
+      "dbg_wp_o", "dbg_bp_o", "watchpoint", "wp",
+      "du_hwbkpt", "hwbkpt"
+    ],
+    "Power Management": [
+      "pm_clksd_o", "pm_cpu_gate_o", "pm_cpustall_i",
+      "pm_dc_gate_o", "pm_dmmu_gate_o", "pm_ic_gate_o",
+      "pm_immu_gate_o", "pm_lvolt_o", "pm_tt_gate_o",
+      "pm_wakeup_o", "power management unit", "pmu"
+    ],
+    "Programmable Interrupt Controller": [
+      "pic_ints_i", "ppic_ints", "pic_int",
+      "int_i", "ext_int", "irq_i"
+    ],
+    "Store Buffer": [
+      "sb", "sb_en", "store_buffer", "or1200_sb",
+      "sb_dat_i", "sb_adr_i", "sb_cyc_o", "sb_we_o"
+    ],
+    "Quick Memory": [
+      "qmem", "qmem_addr", "qmem_cs", "or1200_qmem_top",
+      "quick memory interface"
+    ],
+    "Memory Built-In Self-Test": [
+      "mbist_ctrl_i", "mbist_si_i", "mbist_so_o",
+      "mbist", "bist"
+    ],
+    "Wishbone Bus Interface": [
+      "iwb_clk_i", "dwb_clk_i", "iwb_rst_i", "dwb_rst_i",
+      "wishbone bus", "wb bus", "wbif"
+    ]
+  },
+  "IBEX_": {
+    "Instruction Fetch": [
+      "ibex_if_stage", "if_stage", "instr_req_o", "instr_rdata_i",
+      "instr_addr_o", "instr_gnt_i", "instr_rvalid_i",
+      "ibex_prefetch_buffer", "ibex_fetch_fifo",
+      "fetch_enable_i", "fetch_valid_o", "prefetch"
+    ],
+    "Instruction Decode": [
+      "ibex_id_stage", "id_stage", "ibex_compressed_decoder",
+      "decode_valid_o", "instr_valid_id_i", "instr_rdata_id_i",
+      "compressed_decoder", "instr_is_compressed_i"
+    ],
+    "ALU": [
+      "ibex_alu", "ibex_ex_block", "alu_operand_a_i",
+      "alu_operand_b_i", "alu_result_o", "alu_en_i",
+      "alu_op_a_mux_sel_i", "alu_op_b_mux_sel_i",
+      "ex_block", "execution block"
+    ],
+    "Load Store Unit": [
+      "ibex_lsu", "lsu_addr_o", "data_req_o", "data_gnt_i",
+      "data_rdata_i", "data_we_o", "data_be_o", "data_addr_o",
+      "data_wdata_o", "data_rvalid_i", "data_err_i",
+      "lsu_wdata_o", "lsu_rdata_i", "lsu_en_i", "load store"
+    ],
+    "Register File": [
+      "ibex_register_file", "ibex_register_file_ff",
+      "ibex_register_file_latch", "rf_rdata_a_o", "rf_rdata_b_o",
+      "rf_wdata_wb_i", "rf_we_wb_i", "rf_raddr_a_i", "rf_raddr_b_i",
+      "rf_waddr_wb_i", "register file"
+    ],
+    "Instruction Cache": [
+      "ibex_icache", "icache_instr_o", "icache_req_i",
+      "ic_tag_req_o", "ic_data_req_o", "instruction cache"
+    ],
+    "Programmable Interrupt Controller": [
+      "irq_software_i", "irq_timer_i", "irq_external_i",
+      "irq_fast_i", "irq_nm_i", "irq_pending_o",
+      "irq_ack_o", "interrupt controller", "interrupt pending"
+    ],
+    "Debug Unit": [
+      "debug_req_i", "debug_mode_o", "ibex_debug_controller",
+      "debug_halted_o", "debug_running_o", "dm_halt_req_i",
+      "dm_resume_req_i", "debug unit"
+    ],
+    "Special Purpose Registers": [
+      "ibex_cs_registers", "csr_rdata_o", "csr_wdata_i",
+      "csr_addr_i", "csr_we_i", "mstatus_o", "mie_o",
+      "mtvec_o", "mepc_o", "mcause_o", "mscratch_o",
+      "csr_mstatus_mie", "csr_op_i", "cs_registers"
+    ],
+    "Multiplier": [
+      "ibex_multdiv_fast", "ibex_multdiv_slow",
+      "mult_en_i", "multdiv_en_i", "multdiv_result_ex_o",
+      "mult_result_o", "multdiv_ready_id_o", "multdiv"
+    ],
+    "Divider": [
+      "div_en_i", "div_result_o", "div_ready_o"
+    ],
+    "Physical Memory Protection": [
+      "ibex_pmp", "pmp_req_err_i", "csr_pmp_addr_i",
+      "csr_pmp_cfg_i", "pmp_priv_mode_i", "pmp",
+      "physical memory protection"
+    ],
+    "Pipeline Freeze": [
+      "ibex_controller", "stall_id_i", "stall_wb_i",
+      "ctrl_busy_o", "stall_o", "flush_id_o", "flush_wb_o",
+      "ctrl_fsm", "pipeline controller"
+    ],
+    "Program Counter": [
+      "boot_addr_i", "pc_id_o", "pc_if_o", "pc_set_i",
+      "branch_target_ex_i", "npc_o", "next_pc"
+    ],
+    "Central Processing Unit": [
+      "ibex_core", "ibex_top", "core_busy_o",
+      "hart_id_i", "ibex cpu", "ibex core"
+    ]
+  },
   "MAROCCHINO_": {
     "Wishbone clock": [
       "wishbone clk",

@@ -20,9 +20,8 @@ import time
 import pytest
 from arango import ArangoClient
 
-# ArangoDB Docker image — matches the enterprise image already on disk.
-# Falls back to the community image if enterprise is not available.
-ARANGO_IMAGE = os.getenv("TEST_ARANGO_IMAGE", "arangodb/arangodb:3.12")
+# Use the locally cached community image (confirmed present on this host).
+ARANGO_IMAGE = os.getenv("TEST_ARANGO_IMAGE", "arangodb:3.12")
 TEST_DB_NAME = "ic_kg_test"
 TEST_ROOT_PASSWORD = "testroot"
 
@@ -34,8 +33,8 @@ def _free_port() -> int:
         return s.getsockname()[1]
 
 
-def _wait_for_arango(host: str, port: int, timeout: int = 60) -> None:
-    """Block until ArangoDB's /_api/version returns 200, or raise TimeoutError."""
+def _wait_for_arango(host: str, port: int, timeout: int = 120) -> None:
+    """Block until ArangoDB is reachable (200 or 401 on /_api/version)."""
     import urllib.request
     import urllib.error
 
@@ -46,9 +45,13 @@ def _wait_for_arango(host: str, port: int, timeout: int = 60) -> None:
             with urllib.request.urlopen(url, timeout=2) as resp:
                 if resp.status == 200:
                     return
+        except urllib.error.HTTPError as exc:
+            # 401 means the server is up but requires auth — that's healthy
+            if exc.code == 401:
+                return
         except Exception:
             pass
-        time.sleep(1)
+        time.sleep(2)
     raise TimeoutError(f"ArangoDB did not become healthy on {host}:{port} within {timeout}s")
 
 
@@ -81,7 +84,7 @@ def arango_docker():
     container_id = result.stdout.strip()
 
     try:
-        _wait_for_arango("localhost", port, timeout=90)
+        _wait_for_arango("localhost", port, timeout=120)
         print(f"[conftest] ArangoDB healthy on localhost:{port}")
 
         client = ArangoClient(hosts=f"http://localhost:{port}")

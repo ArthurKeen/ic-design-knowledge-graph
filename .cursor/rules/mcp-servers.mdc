@@ -1,0 +1,36 @@
+---
+description: Pins the correct MCP servers for this project to avoid cross-project confusion
+alwaysApply: true
+---
+
+# MCP Server Assignments for ic-knowledge-graph
+
+This project uses two MCP servers. Always use these and no others when performing
+ArangoDB operations or entity resolution tasks within this workspace.
+
+## ArangoDB (graph database operations, AQL queries)
+
+**Server name:** `user-arangodb-ic-knowledge-graph-mcp`
+
+Use this for:
+- AQL queries against the `ic-knowledge-graph-temporal` database
+- Collection inspection, document CRUD, index management
+- Graph traversals over `IC_Temporal_Knowledge_Graph`
+
+## Entity Resolution
+
+**Server name:** `user-ic-knowledge-graph-arango-entity-resolution-mcp`
+
+Use this for:
+- Finding duplicate records or resolving entities
+- Explaining why two records match / were rejected
+- Managing entity clusters
+
+## Never use for this project
+
+- `user-arangodb-dnb-sharded-amp-mcp` — DNB dataset, different database
+- `user-arangodb-fraud-intelligence-mcp` — fraud intelligence graph
+- `user-arangodb-risk-intelligence-mcp` — risk intelligence graph
+- `user-dnb-er` — DNB entity resolution
+- `user-fraud-intelligence-arango-entity-resolution-mcp` — fraud ER
+- `user-entity-resolution-demo` — demo instance
