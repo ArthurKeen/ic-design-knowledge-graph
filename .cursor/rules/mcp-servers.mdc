@@ -1,36 +1,53 @@
 ---
-description: Pins the correct MCP servers for this project to avoid cross-project confusion
+description: Pins the correct MCP servers for this project and routes between remote/local based on ARANGO_MODE
 alwaysApply: true
 ---
 
 # MCP Server Assignments for ic-knowledge-graph
 
-This project uses two MCP servers. Always use these and no others when performing
-ArangoDB operations or entity resolution tasks within this workspace.
+## Step 1 — Always check ARANGO_MODE first
 
-## ArangoDB (graph database operations, AQL queries)
+Before any ArangoDB or Entity Resolution MCP operation, read `.env` in the
+project root and check the value of `ARANGO_MODE`.
 
-**Server name:** `user-arangodb-ic-knowledge-graph-mcp`
+```
+ARANGO_MODE=REMOTE  →  use the remote servers (default)
+ARANGO_MODE=LOCAL   →  use the local servers (Docker on localhost:8530)
+```
 
-Use this for:
-- AQL queries against the `ic-knowledge-graph-temporal` database
-- Collection inspection, document CRUD, index management
-- Graph traversals over `IC_Temporal_Knowledge_Graph`
+## Step 2 — Use the correct server pair
 
-## Entity Resolution
+| ARANGO_MODE | ArangoDB server | Entity Resolution server |
+|---|---|---|
+| `REMOTE` | `user-arangodb-ic-knowledge-graph-mcp` | `user-ic-knowledge-graph-arango-entity-resolution-mcp` |
+| `LOCAL` | `user-arangodb-ic-knowledge-graph-local-mcp` | `user-ic-knowledge-graph-arango-entity-resolution-local-mcp` |
 
-**Server name:** `user-ic-knowledge-graph-arango-entity-resolution-mcp`
+Local servers connect to `http://localhost:8530`. The local Docker container must
+be running before using them (see E2E test fixture in `tests/conftest.py`).
 
-Use this for:
-- Finding duplicate records or resolving entities
-- Explaining why two records match / were rejected
-- Managing entity clusters
+## Step 3 — Warn on mismatch
+
+If the user issues a DB command and `ARANGO_MODE` differs from what you expected,
+say so explicitly:
+> "`.env` has `ARANGO_MODE=LOCAL` — I will use the local MCP servers.
+>  Make sure Docker is running and the container is healthy."
 
 ## Never use for this project
 
-- `user-arangodb-dnb-sharded-amp-mcp` — DNB dataset, different database
-- `user-arangodb-fraud-intelligence-mcp` — fraud intelligence graph
-- `user-arangodb-risk-intelligence-mcp` — risk intelligence graph
-- `user-dnb-er` — DNB entity resolution
-- `user-fraud-intelligence-arango-entity-resolution-mcp` — fraud ER
-- `user-entity-resolution-demo` — demo instance
+These servers belong to other projects and must not be used here:
+
+- `user-arangodb-dnb-sharded-amp-mcp`
+- `user-arangodb-fraud-intelligence-mcp`
+- `user-arangodb-risk-intelligence-mcp`
+- `user-dnb-er`
+- `user-fraud-intelligence-arango-entity-resolution-mcp`
+- `user-entity-resolution-demo`
+
+## Switching modes
+
+To switch from REMOTE to LOCAL (or back), edit `.env`:
+```
+ARANGO_MODE=LOCAL
+```
+No Cursor restart is required — the MCP servers for both modes are always
+registered and ready. The agent routes at call time based on `.env`.
