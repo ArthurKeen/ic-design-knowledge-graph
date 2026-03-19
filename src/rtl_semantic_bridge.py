@@ -59,9 +59,20 @@ RTL_RELEVANT_TYPES = {
     "PIPELINE_STAGE",
 }
 
-# RTL attribute types that are infrastructure noise — skip for embedding match
-SKIP_NAMES = {"clk", "rst", "rst_n", "reset", "vcc", "gnd", "clk_i", "clk_o",
-              "rst_i", "a", "b", "c", "d", "en", "sel", "out", "in"}
+# RTL attribute types that are infrastructure noise — skip for embedding match.
+# 2-char abbreviations common in digital design (data-in, data-out, write-enable,
+# output-enable, chip-select, etc.) are excluded because they are too ambiguous
+# to resolve reliably — e.g. "di" (data input on SRAM) was falsely matching the
+# "Development Interface" golden entity via its auto-generated DI acronym alias.
+SKIP_NAMES = {
+    "clk", "rst", "rst_n", "reset", "vcc", "gnd", "clk_i", "clk_o", "rst_i",
+    # single-char signals
+    "a", "b", "c", "d", "e", "q",
+    # common 2-char digital-design abbreviations that are too ambiguous to resolve
+    "di", "do", "we", "oe", "cs", "ce", "qi", "qo",
+    # generic pin direction / qualifier names
+    "en", "sel", "out", "in",
+}
 
 # Generic hardware vocabulary that appears in many golden-entity names/descriptions.
 # Allowing these into the word-index creates too many false positive exact matches
