@@ -83,7 +83,7 @@ python src/create_graph.py
 ```
 
 After completion:
-- Graph exists: `IC_Knowledge_Graph`
+- Graph exists: `IC_Temporal_Knowledge_Graph`
 - Collections include `RTL_Module`, `RTL_Port`, `RTL_Signal`, `GitCommit`, `Author`, etc.
 
 ---

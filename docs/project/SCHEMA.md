@@ -192,7 +192,7 @@ graph TB
 
 ## 3. Collection Statistics
 
-The following table provides the current counts and average document sizes for all collections in the `ic-knowledge-graph` database (as of Jan 8, 2026).
+The following table provides the current counts and average document sizes for all collections in the `ic-knowledge-graph-temporal` database (as of Jan 8, 2026).
 
 | Collection Name | Type | Count | Avg Doc Size (Bytes) |
 | :--- | :--- | :--- | :--- |
@@ -350,8 +350,8 @@ The consolidation process (in `src/consolidator.py`) creates unified "Golden Ent
 
 ## 4. Implementation Details
 
-- **Database**: ArangoDB (`ic-knowledge-graph`)
-- **Graph Name**: `IC_Knowledge_Graph`
+- **Database**: ArangoDB (`ic-knowledge-graph-temporal`)
+- **Graph Name**: `IC_Temporal_Knowledge_Graph`
 - **Naming Convention**: RTL nodes use dot-notation keys (e.g., `or1200_alu.clk`) for uniqueness across the hierarchy.
 - **Analyzers**: The `harmonized_search_view` uses `text_en` and `identity` analyzers to support both fuzzy semantic search and exact technical identifier matching.
 

@@ -69,13 +69,13 @@ FOR edge IN RESOLVED_TO
 ```
 
 ## 5. Visualizing the Graph
-- **Database**: ArangoDB (`ic-knowledge-graph`)
-- **Graph Name**: `IC_Knowledge_Graph`
+- **Database**: ArangoDB (`ic-knowledge-graph-temporal`)
+- **Graph Name**: `IC_Temporal_Knowledge_Graph`
 - **Naming Convention**: RTL nodes use dot-notation keys (e.g., `or1200_alu.clk`) for uniqueness across the hierarchy.
 - **Analyzers**: The `harmonized_search_view` uses `text_en` and `identity` analyzers to support both fuzzy semantic search and exact technical identifier matching.
 
 > [!NOTE]
-> Database manually migrated to `ic-knowledge-graph` on 2026-01-26. Visualizer system collections were mirrored to preserve the demo environment.
+> Database manually migrated to `ic-knowledge-graph-temporal` on 2026-01-26. Visualizer system collections were mirrored to preserve the demo environment.
 
 ---
 *Status: Production-Ready with Enhanced Bridging & Consolidation | Last Updated: 2026-01-20*

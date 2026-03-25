@@ -20,14 +20,14 @@ def fix_and_deep_audit():
     
     total_dangling = 0
     for col in edge_cols:
-        q = f"""
-        FOR e IN {col}
+        q = """
+        FOR e IN @@col
         LET f = DOCUMENT(e._from)
         LET t = DOCUMENT(e._to)
         FILTER f == null OR t == null
-        RETURN {{id: e._id, f_null: f==null, t_null: t==null, from_id: e._from, to_id: e._to}}
+        RETURN {id: e._id, f_null: f==null, t_null: t==null, from_id: e._from, to_id: e._to}
         """
-        results = list(db.aql.execute(q))
+        results = list(db.aql.execute(q, bind_vars={'@col': col}))
         if results:
             print(f"[FAIL] {col}: {len(results)} dangling edges.")
             total_dangling += len(results)
@@ -35,10 +35,9 @@ def fix_and_deep_audit():
                 reason = "Both null" if r['f_null'] and r['t_null'] else ("From null" if r['f_null'] else "To null")
                 print(f"  {r['id']} ({reason}): {r['from_id']} -> {r['to_id']}")
                 
-            # AUTO-FIX
             ids = [r['id'] for r in results]
             print(f"  Deleting {len(ids)} edges from {col}...")
-            db.aql.execute(f"FOR id IN @ids REMOVE id IN {col}", bind_vars={'ids': ids})
+            db.aql.execute("FOR id IN @ids REMOVE id IN @@col", bind_vars={'ids': ids, '@col': col})
         else:
             print(f"[PASS] {col} is clean.")
             

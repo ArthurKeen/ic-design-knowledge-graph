@@ -25,9 +25,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from db_utils import get_db
+from config_temporal import TEMPORAL_GRAPH_NAME
 
 EDGE_COLLECTION = "SNAPSHOT_OF"
-GRAPH_NAME = "IC_Temporal_Knowledge_Graph"
+GRAPH_NAME = TEMPORAL_GRAPH_NAME
 
 REPO_MAP = {
     "lowRISC/ibex.git": "IBEX",

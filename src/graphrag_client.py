@@ -21,6 +21,7 @@ Usage:
     result = client.query_graphrag(retriever_id, "What is the OR1200?")
 """
 
+import os
 import requests
 import json
 import base64
@@ -30,13 +31,11 @@ import warnings
 from typing import Dict, Optional, List
 from pathlib import Path
 
-# Suppress SSL warnings for internal services
-warnings.filterwarnings('ignore', message='Unverified HTTPS request')
-
 class GraphRAGClient:
     """Client for ArangoDB GraphRAG GenAI API services"""
     
-    def __init__(self, server_url: str, username: str, password: str):
+    def __init__(self, server_url: str, username: str, password: str,
+                 verify_ssl: bool = None):
         """
         Initialize GraphRAG client
         
@@ -44,12 +43,20 @@ class GraphRAGClient:
             server_url: Base URL of the GenAI API server (e.g., https://your-instance.arango.ai)
             username: Database username
             password: Database password
+            verify_ssl: SSL certificate verification (default: True; override via ARANGO_VERIFY_SSL env var)
         """
         self.server_url = server_url.rstrip('/')
         self.username = username
         self.password = password
         self.jwt_token = None
         self.logger = logging.getLogger(__name__)
+        if verify_ssl is None:
+            self.verify_ssl = os.getenv("ARANGO_VERIFY_SSL", "true").lower() != "false"
+        else:
+            self.verify_ssl = verify_ssl
+        if not self.verify_ssl:
+            warnings.filterwarnings('ignore', message='Unverified HTTPS request')
+            self.logger.warning("SSL verification disabled — not recommended for production")
         
     def authenticate(self) -> bool:
         """
@@ -66,7 +73,7 @@ class GraphRAGClient:
         
         try:
             self.logger.info("Authenticating with GenAI API...")
-            response = requests.post(auth_url, json=payload, verify=False)
+            response = requests.post(auth_url, json=payload, verify=self.verify_ssl)
             response.raise_for_status()
             self.jwt_token = response.json().get("jwt")
             
@@ -115,7 +122,7 @@ class GraphRAGClient:
         
         try:
             self.logger.info(f"Creating project '{project_name}' in database '{db_name}'...")
-            response = requests.post(url, json=payload, headers=headers, verify=False)
+            response = requests.post(url, json=payload, headers=headers, verify=self.verify_ssl)
             
             # Check if project already exists (don't fail)
             if response.status_code == 400:
@@ -124,7 +131,7 @@ class GraphRAGClient:
                     if "already exists" in error_detail.get("message", "").lower():
                         self.logger.info(f"Project '{project_name}' already exists. Continuing...")
                         return {"projectName": project_name, "projectDbName": db_name}
-                except:
+                except Exception:
                     pass
             
             # Raise for other errors
@@ -161,7 +168,7 @@ class GraphRAGClient:
         
         try:
             self.logger.debug(f"Sending {method} request to {suffix}")
-            response = requests.request(method, url, json=payload, headers=headers, verify=False)
+            response = requests.request(method, url, json=payload, headers=headers, verify=self.verify_ssl)
             response.raise_for_status()
             return response.json()
             

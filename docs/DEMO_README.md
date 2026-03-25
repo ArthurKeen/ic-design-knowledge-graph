@@ -6,7 +6,7 @@ This directory contains everything you need for the Tuesday Cadence demonstratio
 
 ## Customer quickstart (numbered database exercise)
 
-Customers can explore the preloaded demo database `ic-knowledge-graph` in read-only mode, then create a numbered sandbox database `ic-knowledge-graph-1`, `ic-knowledge-graph-2`, … to run the full workflow (GraphRAG UI document import + ETL + consolidation + bridging + Visualizer setup).
+Customers can explore the preloaded demo database `ic-knowledge-graph-temporal` in read-only mode, then create a numbered sandbox database `ic-knowledge-graph-1`, `ic-knowledge-graph-2`, … to run the full workflow (GraphRAG UI document import + ETL + consolidation + bridging + Visualizer setup).
 
 Follow the step-by-step guide in [`docs/CUSTOMER_EXERCISE_WORKFLOW.md`](CUSTOMER_EXERCISE_WORKFLOW.md).
 
@@ -22,7 +22,7 @@ Follow the step-by-step guide in [`docs/CUSTOMER_EXERCISE_WORKFLOW.md`](CUSTOMER
 - Quick reference cards and keyboard shortcuts
 - Agent integration code examples
 
-**Use this as your primary reference during the meeting.**
+**For the current multi-repo temporal demo, see [TEMPORAL_DEMO_SCRIPT.md](TEMPORAL_DEMO_SCRIPT.md) as your primary reference during the meeting.**
 
 ### 2. DEMO_SETUP_QUERIES.json
 **Purpose**: Pre-configured queries, actions, and theme 
@@ -51,13 +51,13 @@ Follow the step-by-step guide in [`docs/CUSTOMER_EXERCISE_WORKFLOW.md`](CUSTOMER
 ```bash
 # Ensure ArangoDB is running and accessible
 # Check that the OR1200 graph exists
-cd /Users/arthurkeen/cadence
-python -c "from src.db_utils import get_db; db = get_db(); print('Database:', db.name); print('Graph exists:', db.has_graph('IC_Knowledge_Graph'))"
+cd /Users/arthurkeen/code/ic-knowledge-graph
+python -c "from src.db_utils import get_db; db = get_db(); print('Database:', db.name); print('Graph exists:', db.has_graph('IC_Temporal_Knowledge_Graph'))"
 ```
 
 **Expected output**:
 ```
-Database: ic-knowledge-graph
+Database: ic-knowledge-graph-temporal
 Graph exists: True
 ```
 
@@ -83,7 +83,7 @@ OR1200 Theme Installer
 ============================================================
 
 Connecting to database...
-Connected to: ic-knowledge-graph
+Connected to: ic-knowledge-graph-temporal
 
 Installing OR1200 Theme...
 ============================================================
@@ -91,7 +91,7 @@ Installing OR1200 Theme...
  [SUCCESS] Installed new theme: 'hardware-design'
  Theme ID: _graphThemeStore/...
 
- Graph: IC_Knowledge_Graph
+ Graph: IC_Temporal_Knowledge_Graph
  Description: Optimized theme for OR1200 hardware design visualization demo
 
  Node Collections Configured: 10
@@ -161,8 +161,8 @@ Installation successful! All components verified.
 ### Step 4: Configure Visualizer
 
 1. Open ArangoDB web interface in your browser
-2. Select database: `ic-knowledge-graph`
-3. Navigate to: **Graphs** → **IC_Knowledge_Graph**
+2. Select database: `ic-knowledge-graph-temporal`
+3. Navigate to: **Graphs** → **IC_Temporal_Knowledge_Graph**
 4. The Graph Visualizer opens
 
 **Apply the theme**:
@@ -214,7 +214,7 @@ If all tests pass, you're ready for the demo!
 
 ### 15 Minutes Before
 - [ ] Open ArangoDB web interface
-- [ ] Load IC_Knowledge_Graph in visualizer
+- [ ] Load IC_Temporal_Knowledge_Graph in visualizer
 - [ ] Verify "hardware-design" theme is active
 - [ ] Clear canvas (start fresh)
 - [ ] Have DEMO_SCRIPT.md open for reference
@@ -250,7 +250,7 @@ If live demo fails (network, database, etc.):
 
 ## Common Issues & Troubleshooting
 
-### Issue: "Graph IC_Knowledge_Graph not found"
+### Issue: "Graph IC_Temporal_Knowledge_Graph not found"
 **Solution**: Run the graph creation script:
 ```bash
 cd src
@@ -329,7 +329,7 @@ cd /path/to/project/src
 python etl_rtl.py && python etl_git.py && python bridger.py
 
 # Check database status
-python -c "from db_utils import get_db; db = get_db(); print('Collections:', len(db.collections())); print('Graph:', db.has_graph('IC_Knowledge_Graph'))"
+python -c "from db_utils import get_db; db = get_db(); print('Collections:', len(db.collections())); print('Graph:', db.has_graph('IC_Temporal_Knowledge_Graph'))"
 
 # Count semantic bridges
 python -c "from db_utils import get_db; db = get_db(); print('RESOLVED_TO edges:', db.collection('RESOLVED_TO').count())"

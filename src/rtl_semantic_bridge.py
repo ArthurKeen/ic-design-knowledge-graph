@@ -30,9 +30,9 @@ if _src not in sys.path:
 from dotenv import load_dotenv
 load_dotenv()
 
-from arango import ArangoClient
-from config import ARANGO_ENDPOINT, ARANGO_USERNAME, ARANGO_PASSWORD
 from config_temporal import ARANGO_DATABASE, REPO_REGISTRY, load_repo_registry
+from db_utils import get_temporal_db, ensure_collection
+from utils import cosine_similarity
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -94,15 +94,11 @@ _ALIAS_OVERRIDES_CACHE: dict[str, dict[str, list[str]]] = {}
 # ---------------------------------------------------------------------------
 
 def get_db():
-    client = ArangoClient(hosts=ARANGO_ENDPOINT)
-    return client.db(ARANGO_DATABASE, username=ARANGO_USERNAME, password=ARANGO_PASSWORD)
+    return get_temporal_db()
 
 
 def _ensure_edge_col(db, name: str) -> None:
-    existing = {c["name"] for c in db.collections()}
-    if name not in existing:
-        db.create_collection(name, edge=True)
-        print(f"  [bridge] Created edge collection: {name}")
+    ensure_collection(db, name, edge=True)
 
 
 def _ensure_vertex_centric_indexes(db, col_name: str) -> None:
@@ -113,19 +109,7 @@ def _ensure_vertex_centric_indexes(db, col_name: str) -> None:
             col.add_index({"type": "persistent", "fields": fields, "sparse": False})
 
 
-# ---------------------------------------------------------------------------
-# Cosine similarity (pure Python — no scipy dependency)
-# ---------------------------------------------------------------------------
-
-def _cosine(a: list[float], b: list[float]) -> float:
-    if not a or not b or len(a) != len(b):
-        return 0.0
-    dot   = sum(x * y for x, y in zip(a, b))
-    mag_a = sum(x * x for x in a) ** 0.5
-    mag_b = sum(y * y for y in b) ** 0.5
-    if mag_a == 0 or mag_b == 0:
-        return 0.0
-    return dot / (mag_a * mag_b)
+_cosine = cosine_similarity
 
 
 # ---------------------------------------------------------------------------

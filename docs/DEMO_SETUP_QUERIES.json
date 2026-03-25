@@ -6,7 +6,7 @@
         "databaseName": "ic-knowledge-graph-temporal",
         "content": "RETURN {\n  GitCommit: LENGTH(GitCommit),\n  RTL_Module: LENGTH(RTL_Module),\n  DesignEpoch: LENGTH(DesignEpoch),\n  DesignSituation: LENGTH(DesignSituation),\n  BELONGS_TO_EPOCH: LENGTH(BELONGS_TO_EPOCH),\n  CROSS_REPO_SIMILAR_TO: LENGTH(CROSS_REPO_SIMILAR_TO),\n  CROSS_REPO_EVOLVED_FROM: LENGTH(CROSS_REPO_EVOLVED_FROM),\n  OR1200_entities: LENGTH(OR1200_Entities),\n  MOR1KX_entities: LENGTH(MOR1KX_Entities),\n  IBEX_entities: LENGTH(IBEX_Entities),\n  MAROCCHINO_entities: LENGTH(MAROCCHINO_Entities)\n}",
         "bindVariables": {},
-        "description": "Pre-demo sanity check. Expected: 3808 commits, 6594 modules, 390 epochs, 723 situations.",
+        "description": "Pre-demo sanity check. Expected: 3796 commits, 6404 modules, 381 epochs, 721 situations.",
         "createdAt": "2026-03-25T00:00:00.000Z",
         "updatedAt": "2026-03-25T00:00:00.000Z"
       },
@@ -15,7 +15,7 @@
         "databaseName": "ic-knowledge-graph-temporal",
         "content": "LET repos = (\n  FOR c IN GitCommit\n    COLLECT r = c.repo WITH COUNT INTO n\n    RETURN {repo: r, commits: n}\n)\nLET epochs = (FOR e IN DesignEpoch COLLECT r = e.repo WITH COUNT INTO n RETURN {repo: r, epochs: n})\nRETURN {\n  total_commits:  SUM(repos[*].commits),\n  total_modules:  LENGTH(RTL_Module),\n  total_epochs:   LENGTH(DesignEpoch),\n  total_situations: LENGTH(DesignSituation),\n  by_repo: repos\n}",
         "bindVariables": {},
-        "description": "Scene 1 opener. Shows the scope: 4 repos, 3808 commits, 6594 modules, 390 epochs spanning 30 years.",
+        "description": "Scene 1 opener. Shows the scope: 4 repos, 3796 commits, 6404 modules, 381 epochs spanning 30 years.",
         "createdAt": "2026-03-25T00:00:00.000Z",
         "updatedAt": "2026-03-25T00:00:00.000Z"
       },

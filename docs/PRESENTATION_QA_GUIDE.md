@@ -20,7 +20,7 @@ However, I want to be transparent: this is a 'proof-of-concept' validation. For 
 ### Q: "What about recall? Are you finding all the matches?"
 
 **Answer**:
-"We achieved 78% recall on the hardware test set, meaning we found 7 out of 9 true matches. We're missing 22% of true matches.
+"We achieved 44% recall on the hardware test set (validated against 9-question ground-truth set), meaning we found 4 out of 9 true matches.
 
 This is a massive improvement from our baseline of 11% recall. The gain came from:
 1. RTL Header Extraction (reading code comments to understand intent)
@@ -265,14 +265,14 @@ The type system is data-driven - we're not hardcoding hardware concepts, we're e
 
 **Results**:
 - Precision: 0.50 → 1.00 (+100% Accuracy, 7 TP / 0 FP)
-- Recall: 0.11 → 0.78 (+600% Coverage, 7 found / 9 True Matches)
-- F1 Score: 0.18 → 0.88 (+381% Overall Gain)
+- Recall: 0.11 → 0.44 (validated against 9-question ground-truth set)
+- F1 Score: 0.18 → 0.62
 
 **Limitations**:
 - Small sample (15 pairs, not 100+)
 - Single domain (hardware only)
 - Single labeler (no inter-rater reliability)
-- Still missing ~22% of edge cases (e.g. `alu_result` vs `alu_output`)
+- Still missing ~56% of edge cases (e.g. `alu_result` vs `alu_output`)
 
 **Reproducible**:
 ```bash
@@ -336,7 +336,7 @@ python validate_metrics.py
 
 Output shows:
 - Baseline: Precision 0.50, Recall 0.11, F1 0.18
-- Enhanced: Precision 1.00, Recall 0.44, F1 0.62
+- Enhanced: Precision 1.00, Recall 0.44, F1 0.62 (validated against 9-question ground-truth set)
 - Confusion matrices
 - Per-example results
 

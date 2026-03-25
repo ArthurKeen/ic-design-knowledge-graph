@@ -132,15 +132,15 @@ def get_parent_module_context(db, item, col_name):
     module_name = parts[0]
     module_id = f"{COL_MODULE}/{module_name}"
     
-    # Query: Find all Golden Entities that this module resolves to
-    query = f"""
-    FOR edge IN {EDGE_RESOLVED}
+    query = """
+    FOR edge IN @@edge_col
         FILTER edge._from == @module_id
         RETURN edge._to
     """
     
     try:
-        resolved_entities = list(db.aql.execute(query, bind_vars={"module_id": module_id}))
+        resolved_entities = list(db.aql.execute(query, bind_vars={"@edge_col": EDGE_RESOLVED,
+                                                                   "module_id": module_id}))
         return resolved_entities
     except Exception as e:
         logger.debug(f"Could not fetch parent context for {module_id}: {e}")
@@ -170,17 +170,15 @@ def get_related_entities(db, parent_entity_ids):
     if not parent_entity_ids:
         return set()
     
-    # Query: Find entities connected to parent entities (depth 1-2)
-    # We look for both outgoing and incoming edges
-    # No type filtering needed here - we want all related entities
-    query = f"""
+    query = """
     FOR parent_id IN @parent_ids
-        FOR v, e, p IN 1..2 ANY parent_id {COL_RELATIONS}
+        FOR v, e, p IN 1..2 ANY parent_id @@rel_col
             RETURN DISTINCT v._id
     """
     
     try:
-        related = list(db.aql.execute(query, bind_vars={"parent_ids": parent_entity_ids}))
+        related = list(db.aql.execute(query, bind_vars={"@rel_col": COL_RELATIONS,
+                                                         "parent_ids": parent_entity_ids}))
         return set(related + parent_entity_ids)  # Include parents themselves
     except Exception as e:
         logger.debug(f"Could not fetch related entities: {e}")
@@ -424,20 +422,23 @@ def bridge_collection_parallel(db, col_name, view_name, threshold, method, trunc
     if col_name in [COL_PORT, COL_SIGNAL]:
         print(f"Pre-fetching module metadata and resolved entities for graph-aware context...")
         # Get all modules and their metadata
-        cursor = db.aql.execute(f"FOR m IN {COL_MODULE} RETURN {{id: m._id, label: m.label, summary: m.metadata.summary}}")
+        cursor = db.aql.execute("FOR m IN @@col RETURN {id: m._id, label: m.label, summary: m.metadata.summary}",
+                                bind_vars={"@col": COL_MODULE})
         for m in cursor:
             module_summaries[m['label']] = m.get('summary', '')
             module_labels[m['label']] = m['label']
         
         # Get resolved entities for each module (graph-aware context)
-        resolved_query = f"""
-        FOR edge IN {EDGE_RESOLVED}
-            FILTER STARTS_WITH(edge._from, "{COL_MODULE}/")
+        resolved_query = """
+        FOR edge IN @@edge_col
+            FILTER STARTS_WITH(edge._from, @prefix)
             COLLECT module_id = edge._from INTO resolved_to = edge._to
-            RETURN {{module_id: module_id, entities: resolved_to}}
+            RETURN {module_id: module_id, entities: resolved_to}
         """
         try:
-            resolved_cursor = db.aql.execute(resolved_query)
+            resolved_cursor = db.aql.execute(resolved_query,
+                                             bind_vars={"@edge_col": EDGE_RESOLVED,
+                                                        "prefix": f"{COL_MODULE}/"})
             for item in resolved_cursor:
                 # Extract module name from full ID
                 module_name = item['module_id'].split('/')[1]

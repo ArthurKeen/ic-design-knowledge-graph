@@ -37,7 +37,8 @@ from datetime import datetime
 # Add src to path
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
 
-DEFAULT_GRAPH_NAME = "IC_Temporal_Knowledge_Graph"
+from config_temporal import TEMPORAL_GRAPH_NAME  # noqa: E402
+DEFAULT_GRAPH_NAME = TEMPORAL_GRAPH_NAME
 
 
 def _rewrite_graph_refs(text: str, graph_name: str) -> str:

@@ -18,8 +18,9 @@ from datetime import datetime
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 
 from db_utils import get_db  # noqa: E402
+from config_temporal import TEMPORAL_GRAPH_NAME  # noqa: E402
 
-GRAPH_NAME = "IC_Temporal_Knowledge_Graph"
+GRAPH_NAME = TEMPORAL_GRAPH_NAME
 THEME_NAME = "Integrated Circuit"
 THEME_FILE = os.path.join(
     os.path.dirname(__file__), "..", "..", "docs", "hardware_design_theme.json"

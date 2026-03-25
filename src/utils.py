@@ -13,16 +13,38 @@ def sanitize_id(raw_id):
     clean = re.sub(r'[^a-zA-Z0-9_\-:\.]', '_', clean)
     return clean.strip('_')
 
-def get_edge_key(from_id, to_id, edge_type):
-    """Generate deterministic key for edges"""
+def get_edge_key(from_id, to_id, edge_type, truncate: int = None):
+    """Generate deterministic key for edges.
+
+    Args:
+        truncate: If set, return only the first N hex characters.
+    """
     raw = f"{from_id}:{to_id}:{edge_type}"
-    return hashlib.md5(raw.encode()).hexdigest()
+    digest = hashlib.md5(raw.encode()).hexdigest()
+    return digest[:truncate] if truncate else digest
+
+
+def cosine_similarity(a: list[float], b: list[float]) -> float:
+    """Compute cosine similarity between two embedding vectors."""
+    if not a or not b or len(a) != len(b):
+        return 0.0
+    dot = sum(x * y for x, y in zip(a, b))
+    mag_a = sum(x * x for x in a) ** 0.5
+    mag_b = sum(y * y for y in b) ** 0.5
+    if mag_a == 0 or mag_b == 0:
+        return 0.0
+    return dot / (mag_a * mag_b)
+
+
+# Repo-specific prefixes stripped during normalization.
+# Extend this list when adding new repos to the knowledge graph.
+_HARDWARE_NAME_PREFIXES = ("or1200_", "mor1kx_", "ibex_", "marocchino_")
 
 def normalize_hardware_name(name):
     """
     Normalizes Verilog module, port, or signal names for better matching.
     - Lowercases the string.
-    - Removes 'or1200_' prefix.
+    - Strips known repo prefixes.
     - Splits by '.' and takes the last part (for module.signal).
     - Replaces underscores with spaces.
     """
@@ -30,10 +52,11 @@ def normalize_hardware_name(name):
         return ""
     
     s = name.lower()
-    if s.startswith("or1200_"):
-        s = s[7:]
+    for prefix in _HARDWARE_NAME_PREFIXES:
+        if s.startswith(prefix):
+            s = s[len(prefix):]
+            break
     
-    # Handle module.subcomponent or signal.bit
     if "." in s:
         s = s.split(".")[-1]
         

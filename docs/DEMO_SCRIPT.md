@@ -1,3 +1,5 @@
+## DEPRECATED — This script targets the legacy single-repo OR1200 demo. For the current multi-repo temporal demo, see [TEMPORAL_DEMO_SCRIPT.md](TEMPORAL_DEMO_SCRIPT.md).
+
 # Integrated Circuit (IC) Design Knowledge Graph Demo Script
 ## Interactive Demonstration
 

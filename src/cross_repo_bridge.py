@@ -13,48 +13,20 @@ Usage:
 
 import os
 import sys
-import hashlib
 import argparse
 from itertools import combinations
 from collections import defaultdict
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from arango import ArangoClient
-from config import ARANGO_ENDPOINT, ARANGO_USERNAME, ARANGO_PASSWORD
 from config_temporal import (
     ARANGO_DATABASE,
     CROSS_REPO_MIN_SIMILARITY,
     EDGE_CROSS_REPO_SIMILAR, EDGE_CROSS_REPO_EVOLVED,
     LINEAGE_RULES, REPO_REGISTRY,
 )
-
-
-def get_db():
-    client = ArangoClient(hosts=ARANGO_ENDPOINT)
-    return client.db(ARANGO_DATABASE, username=ARANGO_USERNAME, password=ARANGO_PASSWORD)
-
-
-def _ensure_edge_col(db, name: str) -> None:
-    existing = {c["name"] for c in db.collections()}
-    if name not in existing:
-        db.create_collection(name, edge=True)
-
-
-# ---------------------------------------------------------------------------
-# Embedding similarity bridge
-# ---------------------------------------------------------------------------
-
-def _cosine(a: list[float], b: list[float]) -> float:
-    """Compute cosine similarity between two embedding vectors."""
-    if not a or not b or len(a) != len(b):
-        return 0.0
-    dot   = sum(x * y for x, y in zip(a, b))
-    mag_a = sum(x * x for x in a) ** 0.5
-    mag_b = sum(y * y for y in b) ** 0.5
-    if mag_a == 0 or mag_b == 0:
-        return 0.0
-    return dot / (mag_a * mag_b)
+from db_utils import get_temporal_db, ensure_collection
+from utils import cosine_similarity, get_edge_key
 
 
 def build_embedding_bridges(
@@ -81,10 +53,12 @@ def build_embedding_bridges(
     print(f"[bridge] Embedding bridge: {src_col} ↔ {tgt_col}  (min_score={min_score})")
 
     src_entities = list(db.aql.execute(
-        f"FOR e IN `{src_col}` FILTER e.embedding != null RETURN e"
+        "FOR e IN @@col FILTER e.embedding != null RETURN e",
+        bind_vars={"@col": src_col}
     ))
     tgt_entities = list(db.aql.execute(
-        f"FOR e IN `{tgt_col}` FILTER e.embedding != null RETURN e"
+        "FOR e IN @@col FILTER e.embedding != null RETURN e",
+        bind_vars={"@col": tgt_col}
     ))
 
     if not src_entities or not tgt_entities:
@@ -94,11 +68,9 @@ def build_embedding_bridges(
     edges = []
     for src in src_entities:
         for tgt in tgt_entities:
-            score = _cosine(src.get("embedding", []), tgt.get("embedding", []))
+            score = cosine_similarity(src.get("embedding", []), tgt.get("embedding", []))
             if score >= min_score:
-                edge_key = hashlib.md5(
-                    f"{src['_id']}:{tgt['_id']}:similar".encode()
-                ).hexdigest()[:16]
+                edge_key = get_edge_key(src["_id"], tgt["_id"], "similar", truncate=16)
                 edges.append({
                     "_key":              edge_key,
                     "_from":             src["_id"],
@@ -213,9 +185,7 @@ def build_structural_bridges(
                 score = _label_similarity(src["label"], tgt["label"])
 
             if score >= min_score:
-                edge_key = hashlib.md5(
-                    f"{src['id']}:{tgt['id']}:structural".encode()
-                ).hexdigest()[:16]
+                edge_key = get_edge_key(src["id"], tgt["id"], "structural", truncate=16)
                 edges.append({
                     "_key":             edge_key,
                     "_from":            src["id"],
@@ -265,18 +235,16 @@ def build_lineage_bridges(db) -> list[dict]:
 
         if match_by == "suffix_after_prefix":
             # Match entities whose names share the same suffix after their repo prefix
-            from_entities = list(db.aql.execute(f"FOR e IN `{from_col}` RETURN e"))
+            from_entities = list(db.aql.execute("FOR e IN @@col RETURN e", bind_vars={"@col": from_col}))
             to_map = {}
-            for e in db.aql.execute(f"FOR e IN `{to_col}` RETURN e"):
+            for e in db.aql.execute("FOR e IN @@col RETURN e", bind_vars={"@col": to_col}):
                 to_map[e.get("name", "").lower()] = e
 
             for fe in from_entities:
                 fe_name = fe.get("name", "").lower()
                 if fe_name in to_map:
                     te = to_map[fe_name]
-                    edge_key = hashlib.md5(
-                        f"{fe['_id']}:{te['_id']}:evolved".encode()
-                    ).hexdigest()[:16]
+                    edge_key = get_edge_key(fe["_id"], te["_id"], "evolved", truncate=16)
                     edges.append({
                         "_key":       edge_key,
                         "_from":      fe["_id"],    # from_repo entity
@@ -298,7 +266,7 @@ def write_bridges(db, edges: list[dict], collection: str) -> int:
     """Bulk upsert bridge edges. Returns count written."""
     if not edges:
         return 0
-    _ensure_edge_col(db, collection)
+    ensure_collection(db, collection, edge=True)
     col = db.collection(collection)
     written = 0
     batch_size = 500
@@ -329,7 +297,7 @@ def main():
     parser.add_argument("--skip-lineage",    action="store_true")
     args = parser.parse_args()
 
-    db = get_db()
+    db = get_temporal_db()
 
     if args.all:
         registered = REPO_REGISTRY

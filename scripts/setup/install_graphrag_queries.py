@@ -18,8 +18,9 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
 
 from db_utils import get_db, get_system_db
+from config_temporal import TEMPORAL_GRAPH_NAME
 
-GRAPH_ID = "IC_Temporal_Knowledge_Graph"
+GRAPH_ID = TEMPORAL_GRAPH_NAME
 
 # ---------------------------------------------------------------------------
 # Saved queries (installed into _system._editor_saved_queries)

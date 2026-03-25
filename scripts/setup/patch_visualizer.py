@@ -25,9 +25,10 @@ from pathlib import Path
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 from db_utils import get_db
+from config_temporal import TEMPORAL_GRAPH_NAME
 
 
-GRAPH_NAME = "IC_Temporal_Knowledge_Graph"
+GRAPH_NAME = TEMPORAL_GRAPH_NAME
 THEME_FILE = Path(__file__).parent.parent.parent / "docs" / "hardware_design_theme.json"
 
 # Collections that exist in the DB but are not yet in the named graph

@@ -27,3 +27,8 @@ arangodump_*/
 
 # Cloned source repos (large, re-cloneable)
 data/repos/
+
+# Python packaging artifacts
+*.egg-info/
+dist/
+build/

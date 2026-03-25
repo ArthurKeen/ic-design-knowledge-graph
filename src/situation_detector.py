@@ -16,23 +16,18 @@ Usage:
 import os
 import sys
 import json
-import hashlib
 import argparse
 from collections import defaultdict
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from arango import ArangoClient
-from config import ARANGO_ENDPOINT, ARANGO_USERNAME, ARANGO_PASSWORD, COL_COMMIT, COL_MODULE
+from config import COL_COMMIT, COL_MODULE
 from config_temporal import (
     ARANGO_DATABASE, COL_DESIGN_SITUATION,
     REPO_REGISTRY, EDGE_EXEMPLIFIES,
 )
-
-
-def get_db():
-    client = ArangoClient(hosts=ARANGO_ENDPOINT)
-    return client.db(ARANGO_DATABASE, username=ARANGO_USERNAME, password=ARANGO_PASSWORD)
+from db_utils import get_temporal_db
+from utils import get_edge_key
 
 
 # ---------------------------------------------------------------------------
@@ -50,6 +45,7 @@ SITUATION_HEURISTICS = {
 
 
 def _sha_key(s: str) -> str:
+    import hashlib
     return hashlib.md5(s.encode()).hexdigest()[:16]
 
 
@@ -231,9 +227,8 @@ def save_situations(db, situations: list[dict]) -> int:
     """Upsert DesignSituation nodes into ArangoDB."""
     if not situations:
         return 0
-    existing = {c["name"] for c in db.collections()}
-    if COL_DESIGN_SITUATION not in existing:
-        db.create_collection(COL_DESIGN_SITUATION)
+    from db_utils import ensure_collection
+    ensure_collection(db, COL_DESIGN_SITUATION)
     col = db.collection(COL_DESIGN_SITUATION)
     written = 0
     for sit in situations:
@@ -258,7 +253,7 @@ if __name__ == "__main__":
                         help="Scan all registered repos")
     args = parser.parse_args()
 
-    db = get_db()
+    db = get_temporal_db()
 
     repos_to_scan: list[str]
     if args.all:

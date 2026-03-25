@@ -74,7 +74,7 @@
 - **OR1200_Relations**: OR1200_Entities ↔ OR1200_Entities, OR1200_Chunks, OR1200_Communities (raw entity relationships before consolidation)
 - **CONSOLIDATES**: OR1200_Golden_Entities → OR1200_Entities (entity resolution: Golden merges raw entities)
 
-**Graph & Database:** `IC_Knowledge_Graph` in database `ic-knowledge-graph`. Collection names are exact (e.g., `OR1200_Golden_Entities` not `Golden_Entities`). GraphRAG prefix `OR1200_` is configurable via `GRAPHRAG_PREFIX`.
+**Graph & Database:** `IC_Temporal_Knowledge_Graph` in database `ic-knowledge-graph-temporal`. Collection names are exact (e.g., `OR1200_Golden_Entities` not `Golden_Entities`). GraphRAG prefix `OR1200_` is configurable via `GRAPHRAG_PREFIX`.
 
 **Scale (approximate):**
 
@@ -284,5 +284,5 @@ The following use cases should be supported by graph analytics and reporting. Ea
 
 **Document Version:** 1.0  
 **Last Updated:** February 13, 2026  
-**Project:** ic-knowledge-graph  
+**Project:** ic-knowledge-graph-temporal  
 **Target Platform:** agentic-graph-analytics

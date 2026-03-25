@@ -1,5 +1,7 @@
 # Customer Exercise Workflow (Numbered Databases)
 
+> **Note:** The current demo database is `ic-knowledge-graph-temporal` with graph `IC_Temporal_Knowledge_Graph`.
+
 This demo supports two modes:
 
 1. **Read-only exploration** (no code): use the preloaded database `ic-knowledge-graph` in the ArangoDB Dashboard/Visualizer.

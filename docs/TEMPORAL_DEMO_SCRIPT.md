@@ -23,7 +23,7 @@
 | Item | Count |
 |---|---|
 | Repositories ingested | 4 (OR1200, mor1kx, marocchino, ibex) |
-| Total commits | 3,808 |
+| Total commits | 3,796 |
 | RTL modules (across all history) | 6,594 |
 | Named design epochs | 390 |
 | Design situations | 723 |
@@ -54,7 +54,7 @@ RETURN {
 }
 ```
 
-**Expected output:** 3808 commits, 6594 modules, 390 epochs, 723 situations.
+**Expected output:** 3,796 commits, 6,404 modules, 381 epochs, 721 situations.
 
 ### Fix — Backfill git_tag on existing DesignEpoch nodes
 *Run this once in the UI to fix the null git_tags. The ETL code has been fixed so future ingest runs will populate git_tag correctly.*
@@ -445,7 +445,7 @@ Expand to depth 2 — you'll see two `Golden_Entity` nodes from different repos 
 | "What's the ArangoDB query latency?" | Single-repo temporal queries: <200ms. Cross-repo traversals: <2s. GraphRAG community lookups: <100ms |
 | "Can I query by author or spec section?" | Yes for author (via `GitCommit.metadata.author`). Spec-to-code links require the `RESOLVED_TO` bridge — next step via full consolidator run |
 | "What about proprietary Verilog formats?" | Parser handles synthesizable SystemVerilog subset. VHDL not yet supported — planned for Phase 3 extension |
-| "How many more repos can you add?" | Schema is unbounded. Each new repo adds its prefix namespace. We've tested at 4 repos / 3808 commits; ArangoDB Community handles millions |
+| "How many more repos can you add?" | Schema is unbounded. Each new repo adds its prefix namespace. We've tested at 4 repos / 3,796 commits; ArangoDB Community handles millions |
 
 ---
 
@@ -470,6 +470,6 @@ RETURN {
 ```
 
 **Healthy expected values:**
-- GitCommit: 3808, RTL_Module: 6594, DesignEpoch: ~390, DesignSituation: ~723
-- BELONGS_TO_EPOCH: ~10200, CROSS_REPO_SIMILAR_TO: ~33
+- GitCommit: 3,796, RTL_Module: 6,404, DesignEpoch: 381, DesignSituation: 721
+- BELONGS_TO_EPOCH: 6,418, CROSS_REPO_SIMILAR_TO: 61, RESOLVED_TO: 193
 - OR1200_entities: 157, MOR1KX_entities: 38, IBEX_entities: 67, MAROCCHINO_entities: 55

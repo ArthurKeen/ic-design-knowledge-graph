@@ -87,6 +87,26 @@ def get_requests_auth():
     """Returns HTTPBasicAuth for requests."""
     return HTTPBasicAuth(ARANGO_USERNAME, ARANGO_PASSWORD)
 
+def get_temporal_db(database: str = None):
+    """Returns an ArangoDB database instance for temporal work.
+
+    Falls back to ARANGO_DATABASE from config_temporal if no override given.
+    Useful for scripts that need the temporal database without importing
+    config_temporal directly.
+    """
+    if database is None:
+        import os as _os
+        database = _os.getenv("ARANGO_DATABASE", "ic-knowledge-graph-temporal")
+    client = get_arango_client()
+    return client.db(database, username=ARANGO_USERNAME, password=ARANGO_PASSWORD)
+
+
+def ensure_collection(db, name: str, edge: bool = False) -> None:
+    """Create a collection if it doesn't already exist."""
+    if not db.has_collection(name):
+        db.create_collection(name, edge=edge)
+
+
 def get_api_url(path=""):
     """Constructs an ArangoDB API URL."""
     base = f"{ARANGO_ENDPOINT}/_db/{ARANGO_DATABASE}/_api"

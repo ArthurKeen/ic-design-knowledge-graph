@@ -1,6 +1,6 @@
 # Scripts Directory
 
-Utility scripts for setup, maintenance, and debugging of the Integrated Circuit (IC) Design Knowledge Graph demo.
+Utility scripts for setup, maintenance, ingestion, and debugging of the Integrated Circuit (IC) Temporal Knowledge Graph (`IC_Temporal_Knowledge_Graph` in ArangoDB).
 
 ---
 
@@ -8,225 +8,467 @@ Utility scripts for setup, maintenance, and debugging of the Integrated Circuit 
 
 ```
 scripts/
-├── setup/           - Installation and setup scripts
-├── archive/         - Archived debugging/fix scripts
-└── README.md       - This file
+├── README.md              This file
+├── rebuild_database.sh    Full rebuild pipeline (ingestion → graph → visualizer)
+├── master_etl.py          Legacy single-repo ETL orchestrator
+├── smoke_test.py          ArangoDB connectivity smoke test
+├── customer_workflow.py   Numbered exercise database workflow driver
+├── diagnose_graphrag.py   GraphRAG import diagnostics
+├── validate_er_migration.py   ER library import validation
+├── migrate_collections.py     Copy collections between databases (env-driven)
+├── list_bridging_examples.py  List RESOLVED_TO bridging demo examples
+├── local_er_mcp.sh        Local Entity Resolution MCP launcher (developer)
+├── multi_repo/            Multi-repo ingestion (registry-driven)
+│   ├── ingest_repo.py
+│   ├── clone_manager.py
+│   ├── run_all_repos.sh
+│   └── repo_registry.yaml
+├── temporal/              Temporal ETL helpers (single-repo / JSONL load)
+│   ├── create_temporal_graph.py
+│   ├── load_temporal_data.py
+│   └── run_temporal_etl.sh
+├── setup/                 Visualizer installers, DB helpers, patches
+│   ├── install_ic_theme.py
+│   ├── install_theme.py
+│   ├── install_demo_setup.py
+│   ├── install_author_visualizer.py
+│   ├── install_graphrag_queries.py
+│   ├── install_dependency_queries.py
+│   ├── install_fsm_queries.py
+│   ├── patch_visualizer.py
+│   ├── enhance_knowledge_transfer.py
+│   ├── create_snapshot_of_edges.py
+│   ├── create_oneshard_database.py
+│   └── migrate_to_oneshard.sh
+└── archive/               Historical debug/migration scripts (reference only)
 ```
 
 ---
 
-## Setup Scripts
+## Pipeline and orchestration
 
-Production-ready scripts for installing and configuring the system.
+### `rebuild_database.sh`
 
-### `setup/install_author_visualizer.py`
+Master shell pipeline that runs the full database rebuild end-to-end. It ties together multi-repo ingestion, graph definition, inference/bridging, SNAPSHOT_OF edges, and visualizer assets.
 
-Installs saved queries and canvas actions for Author expertise mapping.
+**Phases (8 steps)**:
 
-**Usage**:
-```bash
-python3 scripts/setup/install_author_visualizer.py
-```
-
-**What it does**:
-- Installs 10 saved queries for knowledge transfer analysis
-- Installs 6 canvas actions for interactive exploration
-- Links actions to the OR1200_Knowledge_Graph viewpoint
-
-**Queries installed**:
-1. Top Maintainers by Module Count
-2. Find Experts for a Module
-3. Bus Factor Analysis
-4. Collaboration Network
-5. Knowledge Impact (Author → Specs)
-6. Expertise Areas by Module Type
-7. Knowledge Gaps
-8. Succession Planning
-9. Team Coverage Matrix
-10. Commit History Timeline
-
-**Canvas actions installed**:
-1. Show Author's Expertise
-2. Show Author's Commits
-3. Show Module Maintainers
-4. Show Collaborators
-5. Show Author's Specification Impact
-6. Show Commit Context
-
-### `setup/enhance_knowledge_transfer.py`
-
-Generates knowledge transfer risk assessments and action plans.
+| Phase | Step | What runs |
+|-------|------|-----------|
+| 1 | Data ingestion | `multi_repo/ingest_repo.py --no-clone` — temporal ETL, deep RTL, GraphRAG (repos must exist under `repos/` or configured paths; run `ingest_repo.py` without `--no-clone` first if you need clones) |
+| 2 | Named graph | `temporal/create_temporal_graph.py` — `IC_Temporal_Knowledge_Graph` |
+| 3 | Situations | `src/situation_detector.py --all` |
+| 4 | Semantic bridges | `src/rtl_semantic_bridge.py --all` (RESOLVED_TO) |
+| 5 | Cross-repo bridges | `src/cross_repo_bridge.py --all` |
+| 6 | SNAPSHOT_OF | `setup/create_snapshot_of_edges.py` (temporal → HEAD modules) |
+| 7 | Theme | `setup/install_ic_theme.py` — Integrated Circuit theme |
+| 8 | Demo UI | `setup/install_demo_setup.py` — saved queries + canvas actions |
 
 **Usage**:
+
 ```bash
-python3 scripts/setup/enhance_knowledge_transfer.py
+./scripts/rebuild_database.sh                      # full rebuild
+./scripts/rebuild_database.sh --skip-ingestion   # data already loaded
+./scripts/rebuild_database.sh --skip-visualizer  # skip theme + demo setup
 ```
 
-**What it does**:
-- Enriches top authors with team/role information
-- Calculates knowledge transfer risk scores for all modules
-- Generates detailed knowledge transfer plans for high-risk modules
-- Creates executive risk report
+**Prerequisites**: `.env` with `ARANGO_*` variables; Python deps; repos cloneable or already present per `repo_registry.yaml`.
 
-**Output files**:
-- `docs/knowledge-transfer/KNOWLEDGE_TRANSFER_RISK_REPORT.md`
-- `docs/knowledge-transfer/plans/*.md` (individual transfer plans)
+---
 
-### `setup/install_demo_setup.py`
+### `master_etl.py`
 
-Installs demo queries and canvas actions for demonstrations.
+Legacy **single-repository** ETL orchestrator: runs `src/` extractors (RTL, Git, FSM, etc.), loads JSON via `load_data.py`, authors ETL, consolidation/bridging. Use when working against the classic one-repo flow rather than `multi_repo/ingest_repo.py`.
 
 **Usage**:
+
 ```bash
-python3 scripts/setup/install_demo_setup.py
+python3 scripts/master_etl.py
 ```
 
-**What it does**:
-- Installs saved queries from DEMO_SETUP_QUERIES.json
-- Creates canvas actions for demo scenarios
-- Links to viewpoint for OR1200_Knowledge_Graph
+---
+
+### `multi_repo/run_all_repos.sh`
+
+Batch wrapper around `ingest_repo.py`: loads `.env`, prefers project `.venv`, and forwards flags (`--repo`, `--no-clone`, `--no-temporal`, `--no-graphrag`, `--dry-run`, `--commit-limit`, `--embedding-backend`, etc.).
+
+**Usage**:
+
+```bash
+./scripts/multi_repo/run_all_repos.sh
+./scripts/multi_repo/run_all_repos.sh --repo mor1kx
+./scripts/multi_repo/run_all_repos.sh --no-graphrag --dry-run
+```
+
+---
+
+### `multi_repo/ingest_repo.py`
+
+Config-driven **multi-repo** ingestion: clone/update repos from `repo_registry.yaml`, run temporal ETL, deep RTL extraction, local GraphRAG, and load into ArangoDB.
+
+**Usage**:
+
+```bash
+PYTHONPATH=src python3 scripts/multi_repo/ingest_repo.py
+PYTHONPATH=src python3 scripts/multi_repo/ingest_repo.py --repo ibex
+PYTHONPATH=src python3 scripts/multi_repo/ingest_repo.py --repo mor1kx --no-clone --dry-run
+```
+
+---
+
+### `multi_repo/clone_manager.py`
+
+Git helper used by the ingest pipeline: clones on first run, `git pull` on later runs; honors `local_path` overrides (e.g. `or1200` submodule). Import `ensure_clone` from other tools if needed.
+
+---
+
+### `temporal/run_temporal_etl.sh`
+
+Runs the **single-repo** temporal path: `etl_temporal_git.py` (commit replay into JSONL) then `load_temporal_data.py`. Defaults to the `or1200` submodule path; supports `--limit`, `--dry-run`, `--repo`, `--branch`.
+
+**Usage**:
+
+```bash
+./scripts/temporal/run_temporal_etl.sh
+./scripts/temporal/run_temporal_etl.sh --limit 10 --dry-run
+```
+
+---
+
+### `temporal/create_temporal_graph.py`
+
+Creates or recreates the **`IC_Temporal_Knowledge_Graph`** named graph: scans existing collections and builds edge definitions (temporal RTL, GraphRAG collections per repo prefix, cross-repo edges, etc.). Deletes and recreates the graph document only; **does not** delete vertex/edge data.
+
+**Usage**:
+
+```bash
+PYTHONPATH=src python3 scripts/temporal/create_temporal_graph.py
+```
+
+---
+
+### `temporal/load_temporal_data.py`
+
+Loads temporally annotated RTL nodes/edges from JSONL (from `etl_temporal_git.py`) into ArangoDB; ensures collections and temporal indexes.
+
+**Usage**:
+
+```bash
+PYTHONPATH=src python3 scripts/temporal/load_temporal_data.py
+PYTHONPATH=src python3 scripts/temporal/load_temporal_data.py --dry-run
+```
+
+---
+
+## Diagnostics and smoke tests
+
+### `smoke_test.py`
+
+Lightweight connectivity check: no GraphRAG calls, no import. Verifies ArangoDB config and optionally that the configured named graph and collections exist.
+
+**Usage**:
+
+```bash
+python3 scripts/smoke_test.py
+python3 scripts/smoke_test.py --require-graph
+python3 scripts/smoke_test.py --check-graphrag   # also verify GraphRAG collection names exist
+```
+
+---
+
+### `diagnose_graphrag.py`
+
+GraphRAG import diagnostic: configuration summary, collection counts, and importer/service checks. Requires an importer service ID as the first argument.
+
+**Usage**:
+
+```bash
+python3 scripts/diagnose_graphrag.py <importer_service_id>
+```
+
+---
+
+### `validate_er_migration.py`
+
+Validates that the **arango-entity-resolution** package imports and basic similarity APIs work after an ER library upgrade or migration.
+
+**Usage**:
+
+```bash
+python3 scripts/validate_er_migration.py
+```
+
+---
 
 ### `list_bridging_examples.py`
 
-Lists strong bridging examples for demonstration (RTL_Module and subcomponents → Golden Entities).
+Lists strong **RESOLVED_TO** bridging examples (RTL modules, ports, signals → golden entities) for demos. Optional `--json` for machine-readable output.
 
 **Usage**:
+
 ```bash
 python3 scripts/list_bridging_examples.py
-python3 scripts/list_bridging_examples.py --json   # machine-readable
+python3 scripts/list_bridging_examples.py --json
 ```
 
-**What it does**:
-- Queries all RESOLVED_TO edges and enriches with source label and target entity name
-- Groups by RTL_Module, RTL_Port, RTL_Signal
-- Prints module-level bridges (if any), port bridges by parent module, signal bridges by parent module
-- Suggests demo entry points (modules with most bridged ports/signals)
+---
 
-Use this after running `bridger_bulk.py` to find good nodes for a bridging demo (e.g. a module whose ports/signals resolve to doc entities).
+## Customer and local tooling
+
+### `customer_workflow.py`
+
+Driver for **numbered exercise databases**: sets `ARANGO_DATABASE` for subprocesses so customers can run ETL, bridging, and visualizer setup against `ic-knowledge-graph-N` without hand-editing `.env`. Can create a OneShard DB via API when missing.
+
+See script `--help` for flags and workflow steps.
+
+---
+
+### `local_er_mcp.sh`
+
+Launches the **local** ArangoDB Entity Resolution MCP server against Docker ArangoDB (`localhost:8530`), with env vars set for this project. Paths/venv inside the script are **machine-specific**; adjust for your install. Used with Cursor `mcp.json` entry for local ER MCP.
+
+---
+
+## Database layout and migration
+
+### `setup/create_oneshard_database.py`
+
+Creates an ArangoDB database with **OneShard** (`sharding=single`) using project `.env` credentials. Optional Enterprise replication env vars.
+
+**Usage**:
+
+```bash
+PYTHONPATH=src python3 scripts/setup/create_oneshard_database.py
+PYTHONPATH=src python3 scripts/setup/create_oneshard_database.py --name ic-knowledge-graph-temporal
+```
+
+---
+
+### `setup/migrate_to_oneshard.sh`
+
+Migrates an existing database to OneShard layout: **dump → drop → create empty OneShard DB → restore**. Uses host `arangodump`/`arangorestore` when available, otherwise Docker (`ARANGO_CLI_IMAGE`, default `arangodb:3.12`). Requires `.env` with endpoint, credentials, and `ARANGO_DATABASE`.
+
+---
+
+### `migrate_collections.py`
+
+Copies a fixed list of collections (OR1200 GraphRAG collections + visualizer system collections) from a **source** database to a **target** database. Set `ARANGO_SOURCE_DB` / `ARANGO_TARGET_DB` (or `SOURCE_DB` / `TARGET_DB`).
+
+---
+
+## Setup: Graph Visualizer and themes
+
+Open the graph once in the Web UI so `_graphThemeStore`, `_canvasActions`, `_viewpoints`, and `_viewpointActions` exist before running installers.
+
+### `setup/install_ic_theme.py`
+
+Installs the **Integrated Circuit** theme and IC-specific canvas actions for **`IC_Temporal_Knowledge_Graph`**, reading `docs/hardware_design_theme.json`.
+
+**Usage**:
+
+```bash
+PYTHONPATH=src python3 scripts/setup/install_ic_theme.py
+```
+
+---
 
 ### `setup/install_theme.py`
 
-Installs the 'hardware-design' visualization theme.
+Installs the **hardware-design** theme document into `_graphThemeStore` from `docs/hardware_design_theme.json` (colors, icons, labels). Prefer `install_ic_theme.py` for the full temporal demo graph experience.
 
 **Usage**:
+
 ```bash
 python3 scripts/setup/install_theme.py
 ```
 
-**What it does**:
-- Reads theme configuration from `docs/or1200_theme.json`
-- Installs/updates theme in `_graphThemeStore` collection
-- Configures colors, icons, and labels for all node/edge types
-
 ---
 
-## Archived Scripts
+### `setup/install_demo_setup.py`
 
-Historical debugging and fix scripts. Kept for reference but not needed for normal operations.
+Installs demonstration **saved queries** and **canvas actions** from packaged JSON (`DEMO_SETUP_QUERIES.json`); wires `_viewpointActions`. Does **not** install the theme — run `install_ic_theme.py` (or `install_theme.py`) separately.
 
-### Debug Scripts (scripts/archive/)
-
-These were used during development to diagnose and fix issues with the Graph Visualizer:
-
-- `check_queries.py` - Verify saved queries installation
-- `check_viewpoints.py` - Check viewpoint document structure
-- `compare_actions.py` - Compare working vs installed canvas actions
-- `diagnose_actions.py` - Diagnose canvas action issues
-- `fix_action_names.py` - Add name field to canvas actions
-- `fix_canvas_actions.py` - Fix canvas action linking
-- `reinstall_actions.py` - Clean reinstall of canvas actions
-
-### Migration Scripts (scripts/archive/)
-
-- `migrate_to_enrichments.sh` - Migrate from local ic_enrichment to ER library (completed)
-
-**Note**: These scripts are archived and typically don't need to be run again. They're kept for historical reference and troubleshooting.
-
----
-
-## Development Workflow
-
-### Initial Setup
-
-After cloning the repository:
+**Usage**:
 
 ```bash
-# 1. Set up environment
-cp env.template .env
-# Edit .env with your configuration
+python3 scripts/setup/install_demo_setup.py
+python3 scripts/setup/install_demo_setup.py --db ic-knowledge-graph-temporal
+python3 scripts/setup/install_demo_setup.py --graph IC_Temporal_Knowledge_Graph
+```
 
-# 2. Install dependencies
+---
+
+### `setup/install_author_visualizer.py`
+
+Installs saved queries and canvas actions for **Author** expertise / knowledge-transfer exploration; links to the **`IC_Temporal_Knowledge_Graph`** viewpoint.
+
+**Usage**:
+
+```bash
+python3 scripts/setup/install_author_visualizer.py
+```
+
+**Queries installed** (10): Top Maintainers, Find Experts, Bus Factor, Collaboration Network, Knowledge Impact, Expertise Areas, Knowledge Gaps, Succession Planning, Team Coverage Matrix, Commit History Timeline.
+
+**Canvas actions** (6): Author expertise, commits, module maintainers, collaborators, specification impact, commit context.
+
+---
+
+### `setup/install_graphrag_queries.py`
+
+Installs GraphRAG-oriented **saved queries** and **canvas actions** (RTL portrait, golden entity view, RESOLVED_TO bridge, cross-repo lineage), scoped to `TEMPORAL_GRAPH_NAME` / `IC_Temporal_Knowledge_Graph`.
+
+**Usage**:
+
+```bash
+PYTHONPATH=src python3 scripts/setup/install_graphrag_queries.py
+```
+
+---
+
+### `setup/install_dependency_queries.py`
+
+Installs **module dependency** saved queries and canvas actions (legacy graph names may appear in embedded AQL — align with your named graph if needed).
+
+---
+
+### `setup/install_fsm_queries.py`
+
+Installs **FSM** analysis saved queries and canvas actions for state-machine exploration in the visualizer.
+
+---
+
+### `setup/patch_visualizer.py`
+
+One-shot **visualizer repair**: extends Default theme for RTL collections, adds missing vertex collections to the named graph, reinstalls theme from `docs/hardware_design_theme.json`. Run after schema or theme changes if the UI misses nodes or themes.
+
+**Usage**:
+
+```bash
+PYTHONPATH=src python3 scripts/setup/patch_visualizer.py
+```
+
+---
+
+### `setup/create_snapshot_of_edges.py`
+
+Builds **SNAPSHOT_OF** edges from temporal RTL module snapshots to **HEAD** deep-RTL modules (same logical module, full ports/signals/etc.). Idempotent (truncates and rebuilds). Adds the edge collection to **`IC_Temporal_Knowledge_Graph`** when missing.
+
+**Usage**:
+
+```bash
+PYTHONPATH=src python3 scripts/setup/create_snapshot_of_edges.py
+```
+
+---
+
+### `setup/enhance_knowledge_transfer.py`
+
+Generates knowledge-transfer **risk assessments** and per-module **plans**; writes Markdown under `docs/knowledge-transfer/`.
+
+**Usage**:
+
+```bash
+python3 scripts/setup/enhance_knowledge_transfer.py
+```
+
+**Outputs**: `KNOWLEDGE_TRANSFER_RISK_REPORT.md`, `docs/knowledge-transfer/plans/*.md`.
+
+---
+
+## Archived scripts
+
+Historical debugging and one-off migrations. Not required for normal operation.
+
+### `scripts/archive/` — debug and visualizer fixes
+
+- `check_queries.py` — Verify saved query installation
+- `check_viewpoints.py` — Viewpoint document checks
+- `compare_actions.py` — Compare canvas actions
+- `diagnose_actions.py` — Canvas action diagnostics
+- `fix_action_names.py` — Add `name` field to actions
+- `fix_canvas_actions.py` — Fix action linking
+- `reinstall_actions.py` — Reinstall canvas actions
+
+### `scripts/archive/` — migration
+
+- `migrate_to_enrichments.sh` — Legacy migration to ER enrichments (completed)
+
+---
+
+## Development workflow
+
+### Full temporal stack (recommended for multi-repo demo)
+
+```bash
+cp env.template .env   # configure ARANGO_* and paths
 pip install -r requirements.txt
+./scripts/rebuild_database.sh
+```
 
-# 3. Run main ETL pipeline
+Optional: knowledge-transfer reports:
+
+```bash
+python3 scripts/setup/enhance_knowledge_transfer.py
+```
+
+### Legacy single-repo workflow
+
+For older single-repo flows:
+
+```bash
 ./src/import_all.sh
 python3 src/create_graph.py
 python3 src/bridger.py
 python3 src/etl_authors.py
-
-# 4. Install visualizer features
 python3 scripts/setup/install_theme.py
 python3 scripts/setup/install_author_visualizer.py
 python3 scripts/setup/install_demo_setup.py
-
-# 5. Generate knowledge transfer reports
 python3 scripts/setup/enhance_knowledge_transfer.py
 ```
 
-### Regular Maintenance
+### Regular maintenance (legacy)
 
 ```bash
-# Update author relationships after new commits
 python3 src/etl_authors.py
-
-# Regenerate knowledge transfer risk reports
 python3 scripts/setup/enhance_knowledge_transfer.py
 ```
 
 ---
 
-## Script Dependencies
+## Script dependencies
 
-All scripts require:
-- `src/db_utils.py` - Database connection utilities
-- `.env` file - Configuration (copy from `env.template`)
-- ArangoDB connection - Must be running and accessible
+Most scripts expect:
+
+- **`src/db_utils.py`**, **`src/config.py`** / **`src/config_temporal.py`** — DB and graph names
+- **`.env`** — Copy from `env.template`; set `ARANGO_MODE`, endpoints, database name, credentials
+- **ArangoDB** — Reachable from your machine
 
 **Import pattern**:
+
 ```python
 import sys
-sys.path.append('src')
+sys.path.insert(0, "src")
 from db_utils import get_db
 ```
 
 ---
 
-## Adding New Scripts
+## Adding new scripts
 
-When adding new utility scripts:
-
-1. **Production scripts** → `scripts/setup/`
-   - Well-tested, production-ready
-   - Clear documentation
-   - Error handling
-
-2. **Development/debug scripts** → Use temporarily, then move to `scripts/archive/`
-   - Experimental features
-   - One-off fixes
-   - Diagnostic tools
-
-3. **Update this README** with script purpose and usage
+1. **Production / pipeline** — Place under `scripts/`, `scripts/setup/`, `scripts/multi_repo/`, or `scripts/temporal/` by role; document in this README.
+2. **One-off debug** — Move to `scripts/archive/` when done.
+3. **Graph Visualizer assets** — Follow the same patterns as existing installers (`_graphThemeStore`, `_editor_saved_queries`, `_canvasActions`); see `docs/` and the ArangoDB Graph Visualizer docs for collection shapes.
 
 ---
 
-## See Also
+## See also
 
-- [Main README](../README.md) - Project overview
-- [ETL Documentation](../docs/project/) - Data pipeline details
-- [Knowledge Transfer Guide](../docs/knowledge-transfer/) - Expertise mapping features
-- [Demo Setup](../docs/DEMO_README.md) - Presentation preparation
+- [Main README](../README.md) — Project overview
+- [ETL Documentation](../docs/project/) — Data pipeline details
+- [Knowledge Transfer Guide](../docs/knowledge-transfer/) — Expertise mapping
+- [Demo Setup](../docs/DEMO_README.md) — Presentation preparation
 
 ---
 
-**Last Updated**: January 8, 2026
-
+**Last Updated**: March 2026

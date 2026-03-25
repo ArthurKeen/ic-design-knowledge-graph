@@ -171,9 +171,12 @@ class GraphRetriever:
         llm_fn: Optional[Callable] = None,
         repos: list = None,
     ):
-        self.host     = host     or os.getenv("ARANGO_HOST",     "http://localhost:8529")
-        self.db_name  = db_name  or os.getenv("ARANGO_DB",       "dnb-sharded-kg")
-        self.username = username or os.getenv("ARANGO_USER",     "root")
+        self.host     = host     or os.getenv("ARANGO_HOST",
+                                              os.getenv("ARANGO_ENDPOINT", "http://localhost:8530"))
+        self.db_name  = db_name  or os.getenv("ARANGO_DB",
+                                              os.getenv("ARANGO_DATABASE", "ic-knowledge-graph-temporal"))
+        self.username = username or os.getenv("ARANGO_USER",
+                                              os.getenv("ARANGO_USERNAME", "root"))
         self.password = password or os.getenv("ARANGO_PASSWORD", "")
         self.top_k_golden    = top_k_golden
         self.top_k_community = top_k_community

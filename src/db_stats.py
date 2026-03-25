@@ -43,7 +43,7 @@ def generate_db_stats(output_file="data/db_collection_stats.csv"):
         if count > 0:
             # Sample up to 20 documents
             sample_limit = min(count, 20)
-            cursor = db.aql.execute(f"FOR d IN {name} LIMIT @limit RETURN d", bind_vars={'limit': sample_limit})
+            cursor = db.aql.execute("FOR d IN @@col LIMIT @limit RETURN d", bind_vars={'@col': name, 'limit': sample_limit})
             samples = list(cursor)
             
             if samples:

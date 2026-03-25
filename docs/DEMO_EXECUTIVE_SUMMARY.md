@@ -62,7 +62,7 @@ A: SmartGraphs sharding keeps related IP blocks on same shard. Sizing analysis s
 A: Add `valid_from`/`valid_to` attributes on edges, filter in AQL. Straightforward extension of current model.
 
 **Q3: "How accurate is entity resolution?"**  
-A: Hardware domain validation: Precision 0.50→1.00, Recall 0.11→0.78, F1 0.18→0.88. Captured complex matches like `if_insn` and `alu_op`.
+A: Hardware domain validation: Precision 0.50→1.00, Recall 0.11→0.44, F1 0.18→0.62 (validated against 9-question ground-truth set). Captured complex matches like `if_insn` and `alu_op`.
 
 **Q4: "Can we integrate with our Neo4j setup?"**
 A: Yes. Parallel operation or full migration via JSON export/import. ArangoDB unifies graph + document models.
@@ -168,7 +168,7 @@ graph LR
 
 - [ ] Run `python scripts/setup/install_theme.py` (installs 'hardware-design' theme)
 - [ ] Run `python scripts/setup/install_demo_setup.py` (installs queries/actions)
-- [ ] Open ArangoDB web interface → ic-knowledge-graph → IC_Knowledge_Graph
+- [ ] Open ArangoDB web interface → ic-knowledge-graph-temporal → IC_Temporal_Knowledge_Graph
 - [ ] Apply "hardware-design" theme in Legend panel
 - [ ] Test 3 queries: Graph Overview, ALU Entity Resolutions, Top Semantic Links
 - [ ] Have DEMO_SCRIPT.md open for reference

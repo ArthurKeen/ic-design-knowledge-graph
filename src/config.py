@@ -100,7 +100,7 @@ def find_documents(doc_dir: str = None, pattern: str = "*.pdf", recursive: bool 
 OR1200_DOCS = find_documents()
 
 # ArangoDB Schema Constants
-GRAPH_NAME = "IC_Knowledge_Graph"
+GRAPH_NAME = os.getenv("GRAPH_NAME", "IC_Knowledge_Graph")
 COL_MODULE = "RTL_Module"
 COL_PORT = "RTL_Port"
 COL_SIGNAL = "RTL_Signal"

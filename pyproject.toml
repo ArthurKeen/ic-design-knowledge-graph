@@ -1,12 +1,71 @@
-[tool.ruff]
-line-length = 100
-target-version = "py310"
-exclude = [
-  ".venv",
-  "__pycache__",
-  "or1200",
-  "data",
-  "markdown_output",
-  "ic_analysis_output",
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ic-knowledge-graph"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+    "python-arango>=7.5.0",
+    "python-dotenv>=1.0.0",
+    "PyYAML>=6.0",
+    "requests>=2.31.0",
 ]
 
+[project.optional-dependencies]
+embeddings = ["sentence-transformers"]
+entity-resolution = ["arango-entity-resolution==3.1.0"]
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+py-modules = [
+    "audit_all_edges",
+    "audit_collections",
+    "audit_edges",
+    "bridger",
+    "bridger_bulk",
+    "config",
+    "config_temporal",
+    "consolidator",
+    "create_graph",
+    "cross_repo_bridge",
+    "db_stats",
+    "db_utils",
+    "demo_query",
+    "demo_temporal_query",
+    "document_converter",
+    "etl_always",
+    "etl_assertions",
+    "etl_assigns",
+    "etl_authors",
+    "etl_bus",
+    "etl_calls",
+    "etl_clocks",
+    "etl_epoch_detector",
+    "etl_fsm",
+    "etl_functions",
+    "etl_generate",
+    "etl_git",
+    "etl_graphrag",
+    "etl_memory_access",
+    "etl_operators",
+    "etl_params_memory",
+    "etl_rtl",
+    "etl_temporal_git",
+    "graph_retriever",
+    "graphrag_client",
+    "harmonizer",
+    "load_data",
+    "prepare_arango",
+    "purge_collections",
+    "repair_edges",
+    "rtl_semantic_bridge",
+    "situation_detector",
+    "test_connection",
+    "utils",
+    "verify_arango_types",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
