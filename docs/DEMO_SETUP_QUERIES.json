@@ -1,452 +1,328 @@
 [
   {
-    "_comment": "Saved Queries for Integrated Circuit Design Knowledge Graph Demo",
-    "_collection": "_editor_saved_queries",
-    "_note": "Import these documents into the _editor_saved_queries collection",
     "queries": [
       {
-        "title": "Architectural Traceability - High-Level Design Links",
-        "databaseName": "ic-knowledge-graph",
-        "content": "FOR component IN UNION(BusInterface, ClockDomain, FSM_StateMachine, RTL_Memory)\n  FOR entity, edge, path IN 1..1 OUTBOUND component RESOLVED_TO\n    RETURN path",
+        "title": "[0] DB Health Check",
+        "databaseName": "ic-knowledge-graph-temporal",
+        "content": "RETURN {\n  GitCommit: LENGTH(GitCommit),\n  RTL_Module: LENGTH(RTL_Module),\n  DesignEpoch: LENGTH(DesignEpoch),\n  DesignSituation: LENGTH(DesignSituation),\n  BELONGS_TO_EPOCH: LENGTH(BELONGS_TO_EPOCH),\n  CROSS_REPO_SIMILAR_TO: LENGTH(CROSS_REPO_SIMILAR_TO),\n  CROSS_REPO_EVOLVED_FROM: LENGTH(CROSS_REPO_EVOLVED_FROM),\n  OR1200_entities: LENGTH(OR1200_Entities),\n  MOR1KX_entities: LENGTH(MOR1KX_Entities),\n  IBEX_entities: LENGTH(IBEX_Entities),\n  MAROCCHINO_entities: LENGTH(MAROCCHINO_Entities)\n}",
         "bindVariables": {},
-        "description": "Show semantic bridges between high-level architectural design constructs and documentation",
-        "createdAt": "2026-01-08T12:00:00.000Z",
-        "updatedAt": "2026-01-08T12:00:00.000Z"
+        "description": "Pre-demo sanity check. Expected: 3808 commits, 6594 modules, 390 epochs, 723 situations.",
+        "createdAt": "2026-03-25T00:00:00.000Z",
+        "updatedAt": "2026-03-25T00:00:00.000Z"
       },
       {
-        "title": "Graph Overview - Sample From All Collections",
-        "databaseName": "ic-knowledge-graph",
-        "content": "LET modules = (FOR m IN RTL_Module LIMIT 5 RETURN m)\nLET ports = (FOR p IN RTL_Port LIMIT 10 RETURN p)\nLET entities = (FOR e IN OR1200_Golden_Entities LIMIT 10 RETURN e)\nLET commits = (FOR c IN GitCommit SORT c.timestamp DESC LIMIT 3 RETURN c)\nFOR item IN UNION(modules, ports, entities, commits)\n  RETURN item",
+        "title": "[1a] The Living Graph — Scope Overview",
+        "databaseName": "ic-knowledge-graph-temporal",
+        "content": "LET repos = (\n  FOR c IN GitCommit\n    COLLECT r = c.repo WITH COUNT INTO n\n    RETURN {repo: r, commits: n}\n)\nLET epochs = (FOR e IN DesignEpoch COLLECT r = e.repo WITH COUNT INTO n RETURN {repo: r, epochs: n})\nRETURN {\n  total_commits:  SUM(repos[*].commits),\n  total_modules:  LENGTH(RTL_Module),\n  total_epochs:   LENGTH(DesignEpoch),\n  total_situations: LENGTH(DesignSituation),\n  by_repo: repos\n}",
         "bindVariables": {},
-        "description": "Load a representative sample from each major collection type to show graph diversity",
-        "createdAt": "2026-01-02T12:00:00.000Z",
-        "updatedAt": "2026-01-02T12:00:00.000Z"
+        "description": "Scene 1 opener. Shows the scope: 4 repos, 3808 commits, 6594 modules, 390 epochs spanning 30 years.",
+        "createdAt": "2026-03-25T00:00:00.000Z",
+        "updatedAt": "2026-03-25T00:00:00.000Z"
       },
       {
-        "title": "CPU Module Hierarchy",
-        "databaseName": "ic-knowledge-graph",
-        "content": "FOR v, e, p IN 1..3 OUTBOUND\n  \"RTL_Module/or1200_cpu\"\n  GRAPH \"OR1200_Knowledge_Graph\"\n  FILTER e.type == \"CONTAINS\"\n  RETURN p",
+        "title": "[1b] Epoch Timeline — MOR1KX Milestones",
+        "databaseName": "ic-knowledge-graph-temporal",
+        "content": "FOR e IN DesignEpoch\n  FILTER e.repo == \"openrisc/mor1kx.git\"\n  FILTER e.epoch_type == \"milestone_tag\"\n      OR e.epoch_type == \"initial_commit\"\n  SORT e.start_ts ASC\n  RETURN {\n    epoch: e.label,\n    git_tag: e.git_tag,\n    date: DATE_FORMAT(e.start_ts * 1000, \"%yyyy-%mm\"),\n    epoch_type: e.epoch_type\n  }",
         "bindVariables": {},
-        "description": "Show the hierarchical containment tree starting from the main CPU module",
-        "createdAt": "2026-01-02T12:00:00.000Z",
-        "updatedAt": "2026-01-02T12:00:00.000Z"
+        "description": "Scene 1. MOR1KX milestone timeline from initial commit (2012) through v5.2 (2024). Shows release cadence.",
+        "createdAt": "2026-03-25T00:00:00.000Z",
+        "updatedAt": "2026-03-25T00:00:00.000Z"
       },
       {
-        "title": "Top Scoring Semantic Links",
-        "databaseName": "ic-knowledge-graph",
-        "content": "FOR edge IN RESOLVED_TO\n  SORT edge.score DESC\n  LIMIT 20\n  RETURN {\n    vertices: [DOCUMENT(edge._from), DOCUMENT(edge._to)],\n    edges: [edge]\n  }",
+        "title": "[2a] Time Machine — OR1200 at GitHub Migration (2009)",
+        "databaseName": "ic-knowledge-graph-temporal",
+        "content": "LET target_ts = 1243238472\nFOR m IN RTL_Module\n  FILTER m.repo == \"openrisc/or1200.git\"\n  FILTER m.valid_from_ts <= target_ts\n  FILTER m.valid_to_ts > target_ts\n  SORT m.label ASC\n  RETURN {\n    module: m.label,\n    epoch:  m.design_epoch,\n    file:   m.file\n  }",
         "bindVariables": {},
-        "description": "Display the highest-confidence semantic bridges between RTL and specifications",
-        "createdAt": "2026-01-02T12:00:00.000Z",
-        "updatedAt": "2026-01-02T12:00:00.000Z"
+        "description": "Scene 2. Point-in-time query: what 60 modules existed when OR1200 arrived on GitHub (May 2009).",
+        "createdAt": "2026-03-25T00:00:00.000Z",
+        "updatedAt": "2026-03-25T00:00:00.000Z"
       },
       {
-        "title": "Top Scoring Semantic Links (Data View)",
-        "databaseName": "ic-knowledge-graph",
-        "content": "FOR edge IN RESOLVED_TO\n  SORT edge.score DESC\n  LIMIT 20\n  RETURN {\n    rtl_element: DOCUMENT(edge._from).label,\n    doc_entity: DOCUMENT(edge._to).entity_name,\n    score: edge.score,\n    method: edge.method\n  }",
+        "title": "[2b] Time Machine — OR1200 Before/After rel3",
+        "databaseName": "ic-knowledge-graph-temporal",
+        "content": "LET before_ts = 1243238472\nLET after_ts  = 1283211145\n\nLET before = (FOR m IN RTL_Module FILTER m.repo == \"openrisc/or1200.git\"\n  FILTER m.valid_from_ts <= before_ts AND m.valid_to_ts > before_ts\n  RETURN m.label)\n\nLET after = (FOR m IN RTL_Module FILTER m.repo == \"openrisc/or1200.git\"\n  FILTER m.valid_from_ts <= after_ts AND m.valid_to_ts > after_ts\n  RETURN m.label)\n\nRETURN {\n  modules_at_svn_migration: LENGTH(before),\n  modules_after_rel3:        LENGTH(after),\n  new_in_rel3:               MINUS(after, before),\n  removed_in_rel3:           MINUS(before, after)\n}",
         "bindVariables": {},
-        "description": "Analyze semantic bridge quality (returns data, not paths for visualization)",
-        "createdAt": "2026-01-02T12:00:00.000Z",
-        "updatedAt": "2026-01-02T12:00:00.000Z"
+        "description": "Scene 2. Temporal diff: which modules were added/removed between SVN migration and rel3 release.",
+        "createdAt": "2026-03-25T00:00:00.000Z",
+        "updatedAt": "2026-03-25T00:00:00.000Z"
       },
       {
-        "title": "Recent Commits and Modified Modules",
-        "databaseName": "ic-knowledge-graph",
-        "content": "FOR commit IN GitCommit\n  SORT commit.timestamp DESC\n  LIMIT 5\n  FOR v, e, p IN 1..1 OUTBOUND commit\n    GRAPH \"IC_Knowledge_Graph\"\n    FILTER e.type == \"MODIFIED\"\n    RETURN p",
+        "title": "[2c] Time Machine — Ibex Module Growth",
+        "databaseName": "ic-knowledge-graph-temporal",
+        "content": "FOR e IN DesignEpoch\n  FILTER e.repo == \"lowRISC/ibex.git\"\n  LET module_count = LENGTH(\n    FOR m IN RTL_Module\n      FILTER m.repo == \"lowRISC/ibex.git\"\n      FILTER m.valid_from_ts <= (e.end_ts != null ? e.end_ts : 9999999999)\n      FILTER m.valid_to_ts > e.start_ts\n      RETURN 1\n  )\n  FILTER module_count > 0\n  SORT e.start_ts ASC\n  LIMIT 15\n  RETURN {\n    epoch:   SPLIT(e.label, \" — \")[1],\n    date:    DATE_FORMAT(e.start_ts * 1000, \"%yyyy-%mm\"),\n    modules: module_count\n  }",
         "bindVariables": {},
-        "description": "Show recent commits and the modules they affected",
-        "createdAt": "2026-01-02T12:00:00.000Z",
-        "updatedAt": "2026-01-02T12:00:00.000Z"
+        "description": "Scene 2. Ibex growth curve: 14 modules in 2015 → 24+ over hundreds of epochs.",
+        "createdAt": "2026-03-25T00:00:00.000Z",
+        "updatedAt": "2026-03-25T00:00:00.000Z"
       },
       {
-        "title": "Find Module Ports and Signals",
-        "databaseName": "ic-knowledge-graph",
-        "content": "FOR module IN RTL_Module\n  FILTER CONTAINS(LOWER(module.label), LOWER(@moduleName))\n  LIMIT 1\n  FOR v, e, p IN 1..1 OUTBOUND module\n    GRAPH \"IC_Knowledge_Graph\"\n    FILTER e.type IN [\"HAS_PORT\", \"HAS_SIGNAL\"]\n    LIMIT 50\n    RETURN p",
-        "bindVariables": {
-          "moduleName": "alu"
-        },
-        "description": "Display the interface (ports and signals) of a specific module",
-        "createdAt": "2026-01-02T12:00:00.000Z",
-        "updatedAt": "2026-01-02T12:00:00.000Z"
-      },
-      {
-        "title": "Find Entity by Name (Specification Search)",
-        "databaseName": "ic-knowledge-graph",
-        "content": "FOR entity IN OR1200_Golden_Entities\n  FILTER CONTAINS(LOWER(entity.entity_name), LOWER(@searchTerm))\n     OR CONTAINS(LOWER(entity.description), LOWER(@searchTerm))\n  LIMIT 10\n  RETURN entity",
-        "bindVariables": {
-          "searchTerm": "exception"
-        },
-        "description": "Search for specification entities by name or description",
-        "createdAt": "2026-01-02T12:00:00.000Z",
-        "updatedAt": "2026-01-02T12:00:00.000Z"
-      },
-      {
-        "title": "ALU Semantic Network",
-        "databaseName": "ic-knowledge-graph",
-        "content": "FOR alu IN RTL_Module\n  FILTER alu.label == \"or1200_alu\"\n  FOR entity, resEdge, resPath IN 1..1 OUTBOUND alu\n    GRAPH \"IC_Knowledge_Graph\"\n    FILTER resEdge.type == \"RESOLVED_TO\"\n    FOR related, relEdge, relPath IN 1..1 ANY entity\n      OR1200_Golden_Relations\n      FILTER IS_SAME_COLLECTION(\"OR1200_Golden_Entities\", related)\n      LIMIT 10\n      RETURN relPath",
+        "title": "[3a] Design Situations — Inventory",
+        "databaseName": "ic-knowledge-graph-temporal",
+        "content": "FOR s IN DesignSituation\n  COLLECT class = s.situation_class, repo = s.repo WITH COUNT INTO n\n  SORT repo, class\n  RETURN {situation_class: class, repo: repo, count: n}",
         "bindVariables": {},
-        "description": "Show ALU module with connected specification entities and their relationships",
-        "createdAt": "2026-01-02T12:00:00.000Z",
-        "updatedAt": "2026-01-02T12:00:00.000Z"
+        "description": "Scene 3. What kinds of design situations exist across all repos?",
+        "createdAt": "2026-03-25T00:00:00.000Z",
+        "updatedAt": "2026-03-25T00:00:00.000Z"
       },
       {
-        "title": "Commits Affecting a Component",
-        "databaseName": "ic-knowledge-graph",
-        "content": "FOR module IN RTL_Module\n  FILTER CONTAINS(LOWER(module.label), LOWER(@componentName))\n  LIMIT 1\n  FOR commit, edge, path IN 1..1 INBOUND module\n    GRAPH \"IC_Knowledge_Graph\"\n    FILTER edge.type == \"MODIFIED\"\n    SORT commit.timestamp DESC\n    RETURN path",
-        "bindVariables": {
-          "componentName": "decode"
-        },
-        "description": "Show Git commit history for a specific hardware component",
-        "createdAt": "2026-01-02T12:00:00.000Z",
-        "updatedAt": "2026-01-02T12:00:00.000Z"
-      },
-      {
-        "title": "Port Wiring Diagram",
-        "databaseName": "ic-knowledge-graph",
-        "content": "FOR module IN RTL_Module\n  FILTER module.label == \"or1200_cpu\"\n  FOR port IN 1..1 OUTBOUND module HAS_PORT\n    FOR targetPort, wireEdge, wirePath IN 1..1 ANY port WIRED_TO\n      LIMIT 30\n      RETURN wirePath",
+        "title": "[3b] Design Situations — Major Refactor",
+        "databaseName": "ic-knowledge-graph-temporal",
+        "content": "FOR s IN DesignSituation\n  FILTER s.repo == \"lowRISC/ibex.git\"\n  FILTER s.situation_class == \"major_refactor\"\n  SORT s.valid_from_ts ASC\n  LIMIT 1\n  LET affected_modules = (\n    FOR m IN RTL_Module\n      FILTER m.repo == s.repo\n      FILTER m.design_epoch == s.epoch\n      RETURN m.label\n  )\n  RETURN {\n    situation:    s.label,\n    epoch:        s.epoch,\n    date_range:   DATE_FORMAT(s.valid_from_ts * 1000, \"%yyyy-%mm-%dd\"),\n    tags:         s.tags,\n    modules_in_epoch: LENGTH(affected_modules),\n    sample_modules: affected_modules[0..4]\n  }",
         "bindVariables": {},
-        "description": "Show structural wiring connections between CPU ports",
-        "createdAt": "2026-01-02T12:00:00.000Z",
-        "updatedAt": "2026-01-02T12:00:00.000Z"
+        "description": "Scene 3. A dramatic refactor situation in Ibex — what changed and when.",
+        "createdAt": "2026-03-25T00:00:00.000Z",
+        "updatedAt": "2026-03-25T00:00:00.000Z"
       },
       {
-        "title": "Entity Neighborhood (Specification Context)",
-        "databaseName": "ic-knowledge-graph",
-        "content": "FOR entity IN OR1200_Golden_Entities\n  FILTER entity.entity_name == @entityName\n  FOR related, edge, path IN 1..2 ANY entity\n    OR1200_Golden_Relations\n    LIMIT 25\n    RETURN path",
-        "bindVariables": {
-          "entityName": "Instruction Cache"
-        },
-        "description": "Show the relationship context around a specification entity",
-        "createdAt": "2026-01-02T12:00:00.000Z",
-        "updatedAt": "2026-01-02T12:00:00.000Z"
-      },
-      {
-        "title": "Impact Analysis - Commits Affecting ALU Specs",
-        "databaseName": "ic-knowledge-graph",
-        "content": "FOR commit IN GitCommit\n  FILTER commit.author == \"Julius Baxter\"\n  SORT commit.timestamp DESC\n  LIMIT 3\n  FOR module, modEdge IN 1..1 OUTBOUND commit\n    GRAPH \"IC_Knowledge_Graph\"\n    FILTER modEdge.type == \"MODIFIED\"\n    FILTER CONTAINS(LOWER(module.label), \"alu\")\n    FOR entity, resEdge IN 1..1 OUTBOUND module\n      GRAPH \"IC_Knowledge_Graph\"\n      FILTER resEdge.type == \"RESOLVED_TO\"\n      RETURN {\n        commit: commit.hash,\n        date: commit.timestamp,\n        modified_module: module.label,\n        impacted_spec: entity.entity_name,\n        confidence: resEdge.score\n      }",
+        "title": "[3c] Design Situations — Release Preparations",
+        "databaseName": "ic-knowledge-graph-temporal",
+        "content": "FOR s IN DesignSituation\n  FILTER s.situation_class == \"release_prep\"\n  SORT s.valid_from_ts ASC\n  RETURN {\n    repo:    s.repo,\n    release: s.epoch,\n    date:    DATE_FORMAT(s.valid_from_ts * 1000, \"%yyyy-%mm-%dd\"),\n    outcome: s.outcome,\n    tags:    s.tags\n  }",
         "bindVariables": {},
-        "description": "Cross-domain query combining commits, modules, and specifications",
-        "createdAt": "2026-01-02T12:00:00.000Z",
-        "updatedAt": "2026-01-02T12:00:00.000Z"
+        "description": "Scene 3. Every release preparation moment — automatically derived from git tags.",
+        "createdAt": "2026-03-25T00:00:00.000Z",
+        "updatedAt": "2026-03-25T00:00:00.000Z"
       },
       {
-        "title": "Clock Domains and CDC Violations",
-        "databaseName": "ic-knowledge-graph",
-        "content": "FOR domain IN ClockDomain\n  LET crossings = (FOR sig, edge IN 1..1 INBOUND domain CROSSES_DOMAIN RETURN {sig, edge})\n  RETURN {\n    domain: domain.name,\n    crossing_count: LENGTH(crossings),\n    crossings: crossings\n  }",
+        "title": "[4a] Cross-Repo — Structural Bridges",
+        "databaseName": "ic-knowledge-graph-temporal",
+        "content": "FOR e IN CROSS_REPO_SIMILAR_TO\n  LET src = DOCUMENT(e._from)\n  LET tgt = DOCUMENT(e._to)\n  FILTER src != null AND tgt != null\n  SORT e.similarity_score DESC\n  RETURN {\n    from_module: src.label,\n    from_repo:   src.repo,\n    to_module:   tgt.label,\n    to_repo:     tgt.repo,\n    score:       e.similarity_score,\n    type:        e.similarity_type\n  }",
         "bindVariables": {},
-        "description": "Identify clock domains and potential Clock Domain Crossing (CDC) violations",
-        "createdAt": "2026-01-08T12:00:00.000Z",
-        "updatedAt": "2026-01-08T12:00:00.000Z"
+        "description": "Scene 4. Cross-repo structural DNA: modules like cpu, alu, ctrl appear across OR1200, MOR1KX, Ibex.",
+        "createdAt": "2026-03-25T00:00:00.000Z",
+        "updatedAt": "2026-03-25T00:00:00.000Z"
       },
       {
-        "title": "Bus Interface Groups",
-        "databaseName": "ic-knowledge-graph",
-        "content": "FOR bus IN BusInterface\n  SORT bus.port_count DESC\n  LET ports = (FOR p, e IN 1..1 INBOUND bus PART_OF_BUS RETURN p)\n  RETURN {\n    bus: bus.name,\n    type: bus.interface_type,\n    ports: ports[*].label\n  }",
+        "title": "[4b] Cross-Repo — Evolutionary Lineage",
+        "databaseName": "ic-knowledge-graph-temporal",
+        "content": "FOR e IN CROSS_REPO_EVOLVED_FROM\n  LET src = DOCUMENT(e._from)\n  LET tgt = DOCUMENT(e._to)\n  RETURN {\n    evolved:     src.repo,\n    derived_from: tgt.repo,\n    evidence:    e.lineage_type,\n    score:       e.similarity_score\n  }",
         "bindVariables": {},
-        "description": "Show logical bus groupings and their associated hardware ports",
-        "createdAt": "2026-01-08T12:00:00.000Z",
-        "updatedAt": "2026-01-08T12:00:00.000Z"
+        "description": "Scene 4. Architectural lineage: marocchino evolved from mor1kx.",
+        "createdAt": "2026-03-25T00:00:00.000Z",
+        "updatedAt": "2026-03-25T00:00:00.000Z"
       },
       {
-        "title": "Memory Access Analysis",
-        "databaseName": "ic-knowledge-graph",
-        "content": "FOR mem IN RTL_Memory\n  LET accessors = (FOR logic, edge IN 1..1 INBOUND mem ACCESSES RETURN {logic: logic.label, type: edge.metadata.access_type})\n  RETURN {\n    memory: mem.name,\n    width: mem.width,\n    depth: mem.depth,\n    accessors: accessors\n  }",
+        "title": "[5a] Déjà Vu — Fetch Module Situations",
+        "databaseName": "ic-knowledge-graph-temporal",
+        "content": "FOR s IN DesignSituation\n  FILTER s.situation_class == \"subsystem_addition\"\n  FILTER LENGTH(\n    FOR t IN s.tags\n      FILTER CONTAINS(LOWER(t), \"fetch\") OR CONTAINS(LOWER(t), \"if_\")\n      RETURN 1\n  ) > 0\n  SORT s.valid_from_ts ASC\n  RETURN {\n    repo:    s.repo,\n    epoch:   s.epoch,\n    date:    DATE_FORMAT(s.valid_from_ts * 1000, \"%yyyy-%mm-%dd\"),\n    modules: s.tags,\n    outcome: s.outcome\n  }",
         "bindVariables": {},
-        "description": "Analyze memory access patterns and identifying which logic blocks read/write to specific memories",
-        "createdAt": "2026-01-08T12:00:00.000Z",
-        "updatedAt": "2026-01-08T12:00:00.000Z"
+        "description": "Scene 5. The Déjà Vu Index: has anyone added a fetch module before? When and where?",
+        "createdAt": "2026-03-25T00:00:00.000Z",
+        "updatedAt": "2026-03-25T00:00:00.000Z"
       },
       {
-        "title": "Hardware Operator Usage",
-        "databaseName": "ic-knowledge-graph",
-        "content": "FOR op IN Operator\n  COLLECT type = op.operator_type WITH COUNT INTO count\n  SORT count DESC\n  RETURN { operator: type, instances: count }",
+        "title": "[T1] Module Time-Travel — mor1kx_cpu_cappuccino (Graph View)",
+        "databaseName": "ic-knowledge-graph-temporal",
+        "content": "FOR epoch IN DesignEpoch\n  FILTER epoch.repo == 'openrisc/mor1kx.git'\n    AND epoch.epoch_type == 'milestone_tag'\n  SORT epoch.start_ts ASC\n  LET snap = FIRST(\n    FOR mod IN INBOUND epoch BELONGS_TO_EPOCH\n      FILTER mod.label == 'mor1kx_cpu_cappuccino'\n      SORT mod.valid_from_ts DESC\n      LIMIT 1\n      RETURN mod\n  )\n  FILTER snap != null\n  FOR epoch2, e, p IN 1..1 OUTBOUND snap BELONGS_TO_EPOCH\n    FILTER epoch2._id == epoch._id\n    RETURN p",
         "bindVariables": {},
-        "description": "Summary of arithmetic and logical operators used across the design for resource estimation",
-        "createdAt": "2026-01-08T12:00:00.000Z",
-        "updatedAt": "2026-01-08T12:00:00.000Z"
+        "description": "Visualizer: mor1kx_cpu_cappuccino across 4 milestones (2013→2022). Run → Graph tab. Hover nodes for file_hash evolution.",
+        "createdAt": "2026-03-25T00:00:00.000Z",
+        "updatedAt": "2026-03-25T00:00:00.000Z"
+      },
+      {
+        "title": "[T2] Design Snapshot — MOR1KX 5.0.r2 (Graph View)",
+        "databaseName": "ic-knowledge-graph-temporal",
+        "content": "FOR v, e, p IN 1..1 INBOUND 'DesignEpoch/6cb4a54f1b52ca81' BELONGS_TO_EPOCH\n  RETURN p",
+        "bindVariables": {},
+        "description": "Visualizer: all 76 modules active at MOR1KX 5.0.r2 (Dec 2017). Run → Graph tab shows epoch hub with 76 spokes.",
+        "createdAt": "2026-03-25T00:00:00.000Z",
+        "updatedAt": "2026-03-25T00:00:00.000Z"
+      },
+      {
+        "title": "[T3] Commit-Level — Wishbone Interface Refactor (Graph View)",
+        "databaseName": "ic-knowledge-graph-temporal",
+        "content": "FOR v, e, p IN 1..1 OUTBOUND 'GitCommit/f7f7931b3134e0740237242ff874dfb6820f52b4' MODIFIED\n  RETURN p",
+        "bindVariables": {},
+        "description": "Visualizer: 13 modules changed in a single Wishbone Interface commit (Aug 2021). Run → Graph tab.",
+        "createdAt": "2026-03-25T00:00:00.000Z",
+        "updatedAt": "2026-03-25T00:00:00.000Z"
+      },
+      {
+        "title": "[T4] Evolutionary Lineage — OR1200 → MOR1KX (Graph View)",
+        "databaseName": "ic-knowledge-graph-temporal",
+        "content": "FOR p IN UNION(\n  (\n    FOR ev, edge, path IN 1..1 OUTBOUND\n        'MOR1KX_Golden_Entities/MOR1KX_g_2ccb86b96f39'\n        CROSS_REPO_EVOLVED_FROM\n      RETURN path\n  ),\n  (\n    FOR epoch IN DesignEpoch\n      FILTER epoch.repo == 'openrisc/mor1kx.git'\n        AND epoch.epoch_type IN ['initial_commit', 'milestone_tag']\n      SORT epoch.start_ts ASC\n      LIMIT 4\n      LET snap = FIRST(\n        FOR mod IN INBOUND epoch BELONGS_TO_EPOCH\n          FILTER mod.label == 'mor1kx_cpu'\n          SORT mod.valid_from_ts DESC\n          LIMIT 1\n          RETURN mod\n      )\n      FILTER snap != null\n      FOR epoch2, e, path IN 1..1 OUTBOUND snap BELONGS_TO_EPOCH\n        FILTER epoch2._id == epoch._id\n        RETURN path\n  )\n)\nRETURN p",
+        "bindVariables": {},
+        "description": "Visualizer: CROSS_REPO_EVOLVED_FROM bridge + mor1kx_cpu at birth and v1.0. Run → Graph tab.",
+        "createdAt": "2026-03-25T00:00:00.000Z",
+        "updatedAt": "2026-03-25T00:00:00.000Z"
+      },
+      {
+        "title": "[T5] GraphRAG Temporal — 2001 OR1200 Spec → Successors (Graph View)",
+        "databaseName": "ic-knowledge-graph-temporal",
+        "content": "FOR v, e, p IN 3..3\n  ANY 'OR1200_Chunks/OR1200_dee4cc87128f2a9f'\n  GRAPH 'IC_Temporal_Knowledge_Graph'\n  OPTIONS { uniqueVertices: 'path' }\n  FILTER REGEX_REPLACE(p.edges[0]._id, '/.*', '') == 'OR1200_MentionedIn'\n  FILTER REGEX_REPLACE(p.edges[1]._id, '/.*', '') == 'OR1200_Consolidates'\n  FILTER REGEX_REPLACE(p.edges[2]._id, '/.*', '') == 'CROSS_REPO_SIMILAR_TO'\n  LIMIT 20\n  RETURN p",
+        "bindVariables": {},
+        "description": "Visualizer: 2001 OR1200 spec concepts → entities → golden entities → successor repos. 8 surviving concepts across 20+ years.",
+        "createdAt": "2026-03-25T00:00:00.000Z",
+        "updatedAt": "2026-03-25T00:00:00.000Z"
+      },
+      {
+        "title": "[I-A] Interval — Point-in-Time Snapshot (Graph View)",
+        "databaseName": "ic-knowledge-graph-temporal",
+        "content": "LET T = 1378100000\n\nFOR mod IN RTL_Module\n  FILTER mod.repo == 'openrisc/mor1kx.git'\n    AND mod.valid_from_ts <= T\n    AND mod.valid_to_ts   >= T\n  LET best_epoch = FIRST(\n    FOR ep IN OUTBOUND mod BELONGS_TO_EPOCH\n      SORT ABS(ep.start_ts - T) ASC\n      LIMIT 1\n      RETURN ep\n  )\n  FILTER best_epoch != null\n  FOR ep2, e, p IN 1..1 OUTBOUND mod BELONGS_TO_EPOCH\n    FILTER ep2._id == best_epoch._id\n    RETURN p",
+        "bindVariables": {},
+        "description": "Visualizer: change T to any Unix timestamp to visit the design at that moment. Default: MOR1KX just after v1.0 (37 modules).",
+        "createdAt": "2026-03-25T00:00:00.000Z",
+        "updatedAt": "2026-03-25T00:00:00.000Z"
+      },
+      {
+        "title": "[I-B] Interval — Commit Activity Window (Graph View)",
+        "databaseName": "ic-knowledge-graph-temporal",
+        "content": "LET T1 = 1640995200\nLET T2 = 1651276800\n\nFOR c IN GitCommit\n  FILTER c.repo == 'openrisc/mor1kx.git'\n    AND c.valid_from_ts >= T1\n    AND c.valid_from_ts <= T2\n  LET cnt = LENGTH(FOR m IN OUTBOUND c MODIFIED RETURN 1)\n  FILTER cnt >= 2\n  FOR v, e, p IN 1..1 OUTBOUND c MODIFIED\n    RETURN p",
+        "bindVariables": {},
+        "description": "Visualizer: commit activity between two dates. Default: Q1 2022 post-v5.1 refactoring period. Change T1/T2 to explore.",
+        "createdAt": "2026-03-25T00:00:00.000Z",
+        "updatedAt": "2026-03-25T00:00:00.000Z"
+      },
+      {
+        "title": "[I-C] Interval — New Module Arrivals (Graph View)",
+        "databaseName": "ic-knowledge-graph-temporal",
+        "content": "LET T1 = 1327686400\nLET T2 = 1378100000\n\nFOR e IN BELONGS_TO_EPOCH\n  FILTER e.role        == 'introduced_in'\n    AND e.valid_from_ts >= T1\n    AND e.valid_from_ts <= T2\n  LET mod = DOCUMENT(e._from)\n  FILTER mod.repo == 'openrisc/mor1kx.git'\n  COLLECT lbl = mod.label INTO grp KEEP e, mod\n  LET first_e   = grp[0].e\n  LET first_mod = grp[0].mod\n  LET epoch     = DOCUMENT(first_e._to)\n  RETURN {\n    vertices: [first_mod, epoch],\n    edges:    [first_e]\n  }",
+        "bindVariables": {},
+        "description": "Visualizer: modules introduced in a time window. Default: 29 new modules between MOR1KX birth and v1.0 (2012→2013).",
+        "createdAt": "2026-03-25T00:00:00.000Z",
+        "updatedAt": "2026-03-25T00:00:00.000Z"
+      },
+      {
+        "title": "[DT1] Deep Traversal — 4-Hop Semantic Bridge (Graph View)",
+        "databaseName": "ic-knowledge-graph-temporal",
+        "content": "FOR v, e, p IN 4..4\n    ANY 'OR1200_Golden_Entities/OR1200_g_666d09e70959'\n    GRAPH 'IC_Temporal_Knowledge_Graph'\n    OPTIONS { uniqueVertices: 'path', order: 'bfs' }\n    FILTER REGEX_REPLACE(p.edges[0]._id, '/.*', '') == 'OR1200_Golden_Relations'\n    FILTER REGEX_REPLACE(p.edges[1]._id, '/.*', '') == 'CROSS_REPO_SIMILAR_TO'\n    FILTER REGEX_REPLACE(p.edges[2]._id, '/.*', '') == 'RESOLVED_TO'\n    FILTER REGEX_REPLACE(p.edges[3]._id, '/.*', '') == 'HAS_SIGNAL'\n    FILTER p.vertices[1].name == 'Debug unit'\n    RETURN p",
+        "bindVariables": {},
+        "description": "Visualizer: OR1200 spec → Debug unit → IBEX Debug Mode → RTL signal → ibex_core. A single cross-repo semantic bridge path.",
+        "createdAt": "2026-03-25T00:00:00.000Z",
+        "updatedAt": "2026-03-25T00:00:00.000Z"
+      },
+      {
+        "title": "[DT2] Deep Traversal — Cross-Repo Subgraph (Graph View)",
+        "databaseName": "ic-knowledge-graph-temporal",
+        "content": "FOR v, e, p IN 3..4\n    ANY 'OR1200_Golden_Entities/OR1200_g_bd5d34270ec4'\n    GRAPH 'IC_Temporal_Knowledge_Graph'\n    OPTIONS { order: 'bfs', uniqueVertices: 'path' }\n    LET repos = (\n        FOR pv IN p.vertices\n            FILTER pv.repo != null\n            RETURN DISTINCT pv.repo\n    )\n    FILTER LENGTH(repos) >= 2\n    LIMIT 25\n    RETURN p",
+        "bindVariables": {},
+        "description": "Visualizer: 25 cross-repo paths (3–4 hops) from OR1200:Debug unit. Reaches IBEX, MAROCCHINO RTL and spec concepts.",
+        "createdAt": "2026-03-25T00:00:00.000Z",
+        "updatedAt": "2026-03-25T00:00:00.000Z"
       }
     ]
   },
   {
-    "_comment": "Canvas Actions for OR1200 Knowledge Graph Demo",
-    "_collection": "_canvasActions",
-    "_note": "Import these documents into the _canvasActions collection and create edges in _viewpointActions",
     "actions": [
       {
-        "_key": "show_entity_resolutions",
-        "title": "[RTL_*] Show Entity Resolutions",
-        "description": "Select RTL_Module/RTL_Port/RTL_Signal: show linked specification entities",
-        "query": "FOR node IN @nodes\n  FOR v, e, p IN 1..1 OUTBOUND node\n    GRAPH \"IC_Knowledge_Graph\"\n    FILTER IS_SAME_COLLECTION(\"OR1200_Golden_Entities\", v)\n    RETURN p",
-        "createdAt": "2026-01-02T12:00:00.000Z"
+        "_key": "ic_rtl_module_hierarchy",
+        "title": "[RTL_Module] Module hierarchy (ports + signals + params)",
+        "name": "[RTL_Module] Module hierarchy (ports + signals + params)",
+        "description": "Expand an RTL module to show its ports, signals, parameters, and contained sub-modules.",
+        "graphId": "IC_Temporal_Knowledge_Graph",
+        "queryText": "FOR node IN @nodes FOR v, e IN 1..1 OUTBOUND node HAS_PORT, HAS_SIGNAL, HAS_PARAMETER, CONTAINS LIMIT 200 RETURN e",
+        "bindVariables": {"nodes": []},
+        "createdAt": "2026-03-25T00:00:00.000Z"
       },
       {
-        "_key": "show_module_internals",
-        "title": "[RTL_Module] Show Module Internals",
-        "description": "Select RTL_Module: show ports and signals",
-        "query": "FOR node IN @nodes\n  FOR v, e, p IN 1..1 OUTBOUND node\n    GRAPH \"IC_Knowledge_Graph\"\n    FILTER e.type IN [\"HAS_PORT\", \"HAS_SIGNAL\"]\n    LIMIT 30\n    RETURN p",
-        "createdAt": "2026-01-02T12:00:00.000Z"
+        "_key": "ic_rtl_module_dependencies",
+        "title": "[RTL_Module] Instantiation dependencies",
+        "name": "[RTL_Module] Instantiation dependencies",
+        "description": "Show which modules this module instantiates (and vice versa) up to 2 hops.",
+        "graphId": "IC_Temporal_Knowledge_Graph",
+        "queryText": "FOR node IN @nodes FOR v, e IN 1..2 ANY node DEPENDS_ON OPTIONS { uniqueVertices: 'path' } LIMIT 100 RETURN e",
+        "bindVariables": {"nodes": []},
+        "createdAt": "2026-03-25T00:00:00.000Z"
       },
       {
-        "_key": "find_implementing_code",
-        "title": "[OR1200_Golden_Entities] Find Implementing Code",
-        "description": "Select OR1200_Golden_Entities: show implementing RTL nodes",
-        "query": "FOR node IN @nodes\n  FOR v, e, p IN 1..1 INBOUND node\n    GRAPH \"IC_Knowledge_Graph\"\n    FILTER e.type == \"RESOLVED_TO\"\n    FILTER IS_SAME_COLLECTION(\"RTL_Signal\", v) \n       OR IS_SAME_COLLECTION(\"RTL_Port\", v)\n       OR IS_SAME_COLLECTION(\"RTL_Module\", v)\n    RETURN p",
-        "createdAt": "2026-01-02T12:00:00.000Z"
+        "_key": "ic_rtl_module_wiring",
+        "title": "[RTL_Module] Wiring (WIRED_TO from ports/signals)",
+        "name": "[RTL_Module] Wiring (WIRED_TO from ports/signals)",
+        "description": "From a module, find its ports and signals, then follow WIRED_TO edges to see connectivity.",
+        "graphId": "IC_Temporal_Knowledge_Graph",
+        "queryText": "FOR node IN @nodes LET children = (FOR c IN OUTBOUND node HAS_PORT, HAS_SIGNAL RETURN c) FOR child IN children FOR v, e IN 1..1 ANY child WIRED_TO LIMIT 200 RETURN e",
+        "bindVariables": {"nodes": []},
+        "createdAt": "2026-03-25T00:00:00.000Z"
       },
       {
-        "_key": "show_containment_tree",
-        "title": "[RTL_Module] Show Containment Tree",
-        "description": "Select RTL_Module: show containment hierarchy",
-        "query": "FOR node IN @nodes\n  FOR v, e, p IN 1..2 OUTBOUND node\n    GRAPH \"IC_Knowledge_Graph\"\n    FILTER e.type == \"CONTAINS\"\n    LIMIT 40\n    RETURN p",
-        "createdAt": "2026-01-02T12:00:00.000Z"
+        "_key": "ic_resolved_to_golden",
+        "title": "[RTL_Module] Semantic bridge → Golden Entities",
+        "name": "[RTL_Module] Semantic bridge → Golden Entities",
+        "description": "From a module, follow its ports/signals through RESOLVED_TO edges to reach golden entities.",
+        "graphId": "IC_Temporal_Knowledge_Graph",
+        "queryText": "FOR node IN @nodes LET children = (FOR c IN OUTBOUND node HAS_PORT, HAS_SIGNAL RETURN c) FOR child IN children FOR v, e IN 1..1 OUTBOUND child RESOLVED_TO RETURN e",
+        "bindVariables": {"nodes": []},
+        "createdAt": "2026-03-25T00:00:00.000Z"
       },
       {
-        "_key": "show_docs_for_modified_modules",
-        "title": "[GitCommit] Show Documentation for Modified Modules",
-        "description": "Select GitCommit: show affected specification entities",
-        "query": "FOR commitNode IN @nodes\n  FOR module, modEdge IN 1..1 OUTBOUND commitNode\n    GRAPH \"IC_Knowledge_Graph\"\n    FILTER modEdge.type == \"MODIFIED\"\n    FOR entity, resEdge, path IN 1..1 OUTBOUND module\n      GRAPH \"IC_Knowledge_Graph\"\n      FILTER resEdge.type == \"RESOLVED_TO\"\n      RETURN path",
-        "createdAt": "2026-01-02T12:00:00.000Z"
+        "_key": "ic_golden_cross_repo",
+        "title": "[Golden_Entities] Cross-repo bridges",
+        "name": "[Golden_Entities] Cross-repo bridges",
+        "description": "Show cross-repo similarity and evolutionary links between golden entities.",
+        "graphId": "IC_Temporal_Knowledge_Graph",
+        "queryText": "FOR node IN @nodes FOR v, e IN 1..1 ANY node CROSS_REPO_SIMILAR_TO, CROSS_REPO_EVOLVED_FROM RETURN e",
+        "bindVariables": {"nodes": []},
+        "createdAt": "2026-03-25T00:00:00.000Z"
       },
       {
-        "_key": "expand_entity_relationships",
-        "title": "[OR1200_Golden_Entities] Expand Entity Relationships",
-        "description": "Select OR1200_Golden_Entities: expand related entities",
-        "query": "FOR node IN @nodes\n  FOR v, e, p IN 1..1 ANY node\n    OR1200_Golden_Relations\n    FILTER IS_SAME_COLLECTION(\"OR1200_Golden_Entities\", v)\n    LIMIT 20\n    RETURN p",
-        "createdAt": "2026-01-02T12:00:00.000Z"
+        "_key": "ic_golden_full_graphrag",
+        "title": "[Golden_Entities] Full GraphRAG path (→ entities → chunks)",
+        "name": "[Golden_Entities] Full GraphRAG path (→ entities → chunks)",
+        "description": "From a golden entity, traverse up to 2 hops across the full graph to reach related entities and spec chunks.",
+        "graphId": "IC_Temporal_Knowledge_Graph",
+        "queryText": "FOR node IN @nodes FOR v, e IN 1..2 ANY node GRAPH 'IC_Temporal_Knowledge_Graph' OPTIONS { uniqueVertices: 'path' } LIMIT 150 RETURN e",
+        "bindVariables": {"nodes": []},
+        "createdAt": "2026-03-25T00:00:00.000Z"
       },
       {
-        "_key": "show_wiring_connections",
-        "title": "[RTL_Port] Show Wiring Connections",
-        "description": "Select RTL_Port: show wiring connections",
-        "query": "FOR node IN @nodes\n  FOR v, e, p IN 1..1 ANY node\n    GRAPH \"IC_Knowledge_Graph\"\n    FILTER e.type == \"WIRED_TO\"\n    LIMIT 20\n    RETURN p",
-        "createdAt": "2026-01-02T12:00:00.000Z"
+        "_key": "ic_epoch_modules",
+        "title": "[DesignEpoch] Modules at this epoch",
+        "name": "[DesignEpoch] Modules at this epoch",
+        "description": "Show all RTL modules that belong to the selected epoch.",
+        "graphId": "IC_Temporal_Knowledge_Graph",
+        "queryText": "FOR node IN @nodes FOR v, e IN 1..1 INBOUND node BELONGS_TO_EPOCH LIMIT 200 RETURN e",
+        "bindVariables": {"nodes": []},
+        "createdAt": "2026-03-25T00:00:00.000Z"
       },
       {
-        "_key": "find_parent_module",
-        "title": "[RTL_Module/Port/Signal] Find Parent Module",
-        "description": "Select RTL_Port/RTL_Signal/RTL_Module: find parent module",
-        "query": "FOR node IN @nodes\n  FOR v, e, p IN 1..1 INBOUND node\n    GRAPH \"IC_Knowledge_Graph\"\n    FILTER e.type == \"CONTAINS\" OR e.type == \"HAS_PORT\" OR e.type == \"HAS_SIGNAL\"\n    FILTER IS_SAME_COLLECTION(\"RTL_Module\", v)\n    RETURN p",
-        "createdAt": "2026-01-02T12:00:00.000Z"
+        "_key": "ic_commit_modified",
+        "title": "[GitCommit] Modules modified by this commit",
+        "name": "[GitCommit] Modules modified by this commit",
+        "description": "Show which RTL modules were modified by the selected commit.",
+        "graphId": "IC_Temporal_Knowledge_Graph",
+        "queryText": "FOR node IN @nodes FOR v, e IN 1..1 OUTBOUND node MODIFIED RETURN e",
+        "bindVariables": {"nodes": []},
+        "createdAt": "2026-03-25T00:00:00.000Z"
       },
       {
-        "_key": "show_commit_history",
-        "title": "[RTL_Module] Show Commit History",
-        "description": "Select RTL_Module: show commit history",
-        "query": "FOR node IN @nodes\n  FOR v, e, p IN 1..1 INBOUND node\n    GRAPH \"IC_Knowledge_Graph\"\n    FILTER e.type == \"MODIFIED\"\n    FILTER IS_SAME_COLLECTION(\"GitCommit\", v)\n    SORT v.timestamp DESC\n    LIMIT 10\n    RETURN p",
-        "createdAt": "2026-01-02T12:00:00.000Z"
+        "_key": "ic_module_time_travel",
+        "title": "[RTL_Module] Time travel (epochs + commits)",
+        "name": "[RTL_Module] Time travel (epochs + commits)",
+        "description": "Show both the epochs and commits associated with a module — its full temporal context.",
+        "graphId": "IC_Temporal_Knowledge_Graph",
+        "queryText": "FOR node IN @nodes FOR v, e IN 1..1 ANY node BELONGS_TO_EPOCH, MODIFIED RETURN e",
+        "bindVariables": {"nodes": []},
+        "createdAt": "2026-03-25T00:00:00.000Z"
       },
       {
-        "_key": "full_neighborhood",
-        "title": "[Any] Full Neighborhood (2-hop)",
-        "description": "Select any node: show everything connected within 2 hops",
-        "query": "FOR node IN @nodes\n  FOR v, e, p IN 1..2 ANY node\n    GRAPH \"IC_Knowledge_Graph\"\n    LIMIT 50\n    RETURN p",
-        "createdAt": "2026-01-02T12:00:00.000Z"
+        "_key": "ic_deep_traversal",
+        "title": "[RTL_Module] Deep traversal (4 hops, all edges)",
+        "name": "[RTL_Module] Deep traversal (4 hops, all edges)",
+        "description": "Explore up to 4 hops from a module across the entire graph. Use for discovery — may return large subgraphs.",
+        "graphId": "IC_Temporal_Knowledge_Graph",
+        "queryText": "FOR node IN @nodes FOR v, e IN 1..4 ANY node GRAPH 'IC_Temporal_Knowledge_Graph' OPTIONS { uniqueVertices: 'path' } LIMIT 300 RETURN e",
+        "bindVariables": {"nodes": []},
+        "createdAt": "2026-03-25T00:00:00.000Z"
+      },
+      {
+        "_key": "ic_spec_to_successor",
+        "title": "[Chunks] Spec concept → cross-repo successors",
+        "name": "[Chunks] Spec concept → cross-repo successors",
+        "description": "From a spec chunk, traverse 3 hops to find cross-repo successors via entities and golden entities.",
+        "graphId": "IC_Temporal_Knowledge_Graph",
+        "queryText": "FOR node IN @nodes FOR v, e IN 1..3 ANY node GRAPH 'IC_Temporal_Knowledge_Graph' OPTIONS { uniqueVertices: 'path' } LIMIT 100 RETURN e",
+        "bindVariables": {"nodes": []},
+        "createdAt": "2026-03-25T00:00:00.000Z"
+      },
+      {
+        "_key": "ic_snapshot_internals",
+        "title": "[RTL_Module] Show deep-RTL internals (temporal → HEAD)",
+        "name": "[RTL_Module] Show deep-RTL internals (temporal → HEAD)",
+        "description": "From a temporal module snapshot, follow SNAPSHOT_OF to the deep-RTL HEAD version and show its ports, signals, logic chunks, and parameters.",
+        "graphId": "IC_Temporal_Knowledge_Graph",
+        "queryText": "FOR node IN @nodes FOR v, e IN 1..2 OUTBOUND node SNAPSHOT_OF, HAS_PORT, HAS_SIGNAL, CONTAINS, HAS_PARAMETER LIMIT 200 RETURN e",
+        "bindVariables": {"nodes": []},
+        "createdAt": "2026-03-25T00:00:00.000Z"
       }
     ]
-  },
-  {
-    "_comment": "Theme Configuration for Integrated Circuit Design Knowledge Graph Demo",
-    "_collection": "_viewpointThemes",
-    "_note": "Import this document into the _viewpointThemes collection",
-    "theme": {
-      "graphId": "OR1200_Knowledge_Graph",
-      "name": "Cadence Demo Theme",
-      "description": "Optimized colors and icons for hardware design visualization",
-      "nodeConfigMap": {
-        "RTL_Module": {
-          "background": {
-            "color": "#667eea",
-            "iconName": "mdi:chip"
-          },
-          "labelAttribute": "label",
-          "hoverInfoAttributes": [
-            "type",
-            "metadata.summary"
-          ],
-          "rules": []
-        },
-        "RTL_Port": {
-          "background": {
-            "color": "#319795",
-            "iconName": "mdi:electric-switch"
-          },
-          "labelAttribute": "label",
-          "hoverInfoAttributes": [
-            "metadata.direction"
-          ],
-          "rules": []
-        },
-        "RTL_Signal": {
-          "background": {
-            "color": "#805ad5",
-            "iconName": "mdi:sine-wave"
-          },
-          "labelAttribute": "label",
-          "hoverInfoAttributes": [
-            "metadata.signal_type"
-          ],
-          "rules": []
-        },
-        "RTL_LogicChunk": {
-          "background": {
-            "color": "#ecc94b",
-            "iconName": "mdi:code-braces"
-          },
-          "labelAttribute": "label",
-          "hoverInfoAttributes": [
-            "metadata.chunk_type"
-          ],
-          "rules": []
-        },
-        "OR1200_Golden_Entities": {
-          "background": {
-            "color": "#38a169",
-            "iconName": "mdi:file-document"
-          },
-          "labelAttribute": "entity_name",
-          "hoverInfoAttributes": [
-            "entity_type",
-            "description"
-          ],
-          "rules": []
-        },
-        "GitCommit": {
-          "background": {
-            "color": "#e53e3e",
-            "iconName": "mdi:source-commit"
-          },
-          "labelAttribute": "hash",
-          "hoverInfoAttributes": [
-            "author",
-            "timestamp",
-            "message"
-          ],
-          "rules": []
-        }
-      },
-      "edgeConfigMap": {
-        "RESOLVED_TO": {
-          "lineStyle": {
-            "color": "#d69e2e",
-            "thickness": 1.2
-          },
-          "labelStyle": {
-            "color": "#1d2531"
-          },
-          "arrowStyle": {
-            "sourceArrowShape": "none",
-            "targetArrowShape": "triangle"
-          },
-          "labelAttribute": "score",
-          "hoverInfoAttributes": [
-            "method",
-            "score"
-          ],
-          "rules": []
-        },
-        "CONTAINS": {
-          "lineStyle": {
-            "color": "#a0aec0",
-            "thickness": 0.7
-          },
-          "labelStyle": {
-            "color": "#1d2531"
-          },
-          "arrowStyle": {
-            "sourceArrowShape": "none",
-            "targetArrowShape": "triangle"
-          },
-          "labelAttribute": "type",
-          "hoverInfoAttributes": [],
-          "rules": []
-        },
-        "HAS_PORT": {
-          "lineStyle": {
-            "color": "#4299e1",
-            "thickness": 0.7
-          },
-          "labelStyle": {
-            "color": "#1d2531"
-          },
-          "arrowStyle": {
-            "sourceArrowShape": "none",
-            "targetArrowShape": "triangle"
-          },
-          "labelAttribute": "type",
-          "hoverInfoAttributes": [],
-          "rules": []
-        },
-        "HAS_SIGNAL": {
-          "lineStyle": {
-            "color": "#9f7aea",
-            "thickness": 0.7
-          },
-          "labelStyle": {
-            "color": "#1d2531"
-          },
-          "arrowStyle": {
-            "sourceArrowShape": "none",
-            "targetArrowShape": "triangle"
-          },
-          "labelAttribute": "type",
-          "hoverInfoAttributes": [],
-          "rules": []
-        },
-        "MODIFIED": {
-          "lineStyle": {
-            "color": "#fc8181",
-            "thickness": 0.9
-          },
-          "labelStyle": {
-            "color": "#1d2531"
-          },
-          "arrowStyle": {
-            "sourceArrowShape": "none",
-            "targetArrowShape": "triangle"
-          },
-          "labelAttribute": "type",
-          "hoverInfoAttributes": [
-            "timestamp"
-          ],
-          "rules": []
-        },
-        "WIRED_TO": {
-          "lineStyle": {
-            "color": "#2d3748",
-            "thickness": 0.5
-          },
-          "labelStyle": {
-            "color": "#1d2531"
-          },
-          "arrowStyle": {
-            "sourceArrowShape": "none",
-            "targetArrowShape": "triangle"
-          },
-          "labelAttribute": "_id",
-          "hoverInfoAttributes": [],
-          "rules": []
-        },
-        "OR1200_Golden_Relations": {
-          "lineStyle": {
-            "color": "#48bb78",
-            "thickness": 0.7
-          },
-          "labelStyle": {
-            "color": "#1d2531"
-          },
-          "arrowStyle": {
-            "sourceArrowShape": "none",
-            "targetArrowShape": "triangle"
-          },
-          "labelAttribute": "type",
-          "hoverInfoAttributes": [
-            "type"
-          ],
-          "rules": []
-        }
-      },
-      "createdAt": "2026-01-02T12:00:00.000Z",
-      "updatedAt": "2026-01-02T12:00:00.000Z"
-    }
   }
 ]

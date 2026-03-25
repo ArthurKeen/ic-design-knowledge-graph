@@ -4,22 +4,24 @@ Demo Setup Script: Install Saved Queries and Canvas Actions
 ============================================================
 
 This script installs the demonstration queries and canvas actions into
-the ArangoDB instance for the Integrated Circuit (IC) Design Knowledge Graph visualizer.
+the ArangoDB instance for the IC Temporal Knowledge Graph visualizer.
 
 NOTE: This script does NOT install the theme. Run install_theme.py separately.
 
 Requirements:
 - python-arango library
-- Access to ic-knowledge-graph database
+- Access to ic-knowledge-graph-temporal database
 - .env file with database credentials
 
 Usage:
     python install_demo_setup.py
+    python install_demo_setup.py --db ic-knowledge-graph-temporal
+    python install_demo_setup.py --graph IC_Temporal_Knowledge_Graph
 
 The script will:
 1. Load queries and actions from DEMO_SETUP_QUERIES.json
-2. Insert them into the appropriate collections
-3. Create necessary _viewpoint edges
+2. Insert/update them into _editor_saved_queries and _canvasActions
+3. Create necessary _viewpointActions edges
 4. Verify installation
 
 For theme installation, run: python install_theme.py
@@ -35,39 +37,30 @@ from datetime import datetime
 # Add src to path
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
 
-DEFAULT_GRAPH_NAME = "IC_Knowledge_Graph"
+DEFAULT_GRAPH_NAME = "IC_Temporal_Knowledge_Graph"
 
 
 def _rewrite_graph_refs(text: str, graph_name: str) -> str:
     """Rewrite any hard-coded GRAPH \"...\" reference to the target graph."""
     if not isinstance(text, str):
         return text
-    # Support legacy names found in assets
-    text = text.replace('GRAPH "OR1200_Knowledge_Graph"', f'GRAPH "{graph_name}"')
-    text = text.replace('GRAPH "IC_Knowledge_Graph"', f'GRAPH "{graph_name}"')
+    for legacy in ('OR1200_Knowledge_Graph', 'IC_Knowledge_Graph', 'IC_Temporal_Knowledge_Graph'):
+        text = text.replace(f"GRAPH '{legacy}'", f"GRAPH '{graph_name}'")
+        text = text.replace(f'GRAPH "{legacy}"', f'GRAPH "{graph_name}"')
     return text
 
 
 def _normalize_assets(data: list, database_name: str, graph_name: str) -> list:
     """Ensure assets are scoped to the target DB and graph."""
-    # Saved queries
     for q in data[0].get("queries", []):
         q["databaseName"] = database_name
         if "content" in q:
             q["content"] = _rewrite_graph_refs(q["content"], graph_name)
-        if "queryText" in q:
-            q["queryText"] = _rewrite_graph_refs(q["queryText"], graph_name)
 
-    # Canvas actions
     for a in data[1].get("actions", []):
-        # Actions in our JSON use `query` (Graph Visualizer), but keep compatibility
-        if "query" in a:
-            a["query"] = _rewrite_graph_refs(a["query"], graph_name)
         if "queryText" in a:
             a["queryText"] = _rewrite_graph_refs(a["queryText"], graph_name)
-        # Ensure consistent graphId if present/used
-        if "graphId" in a:
-            a["graphId"] = graph_name
+        a["graphId"] = graph_name
 
     return data
 
@@ -76,70 +69,82 @@ def install_saved_queries(db, queries_data):
     """Install saved queries into _editor_saved_queries collection."""
     print("\n[1/3] Installing Saved Queries...")
 
-    # Ensure collection exists in current database
     if not db.has_collection("_editor_saved_queries"):
         try:
-            db.create_collection("_editor_saved_queries")
-            print("  Created collection: _editor_saved_queries")
+            db.create_collection("_editor_saved_queries", system=True)
+            print("  Created system collection: _editor_saved_queries")
         except Exception as e:
             print(f"  Warning: Could not create _editor_saved_queries: {e}")
-    
-    query_col = db.collection("_editor_saved_queries")
+            print("  Trying non-system fallback...")
+            try:
+                db.create_collection("editor_saved_queries")
+                print("  Created collection: editor_saved_queries (without underscore)")
+            except Exception as e2:
+                print(f"  Error: {e2}")
+                return 0
+
+    col_name = "_editor_saved_queries" if db.has_collection("_editor_saved_queries") else "editor_saved_queries"
+    query_col = db.collection(col_name)
     installed = 0
-    
+
     for query in queries_data[0]["queries"]:
-        # Check if query already exists
         existing = list(query_col.find({"title": query["title"]}))
-        
+
         if existing:
-            # Update existing
             doc_key = existing[0]["_key"]
             query["updatedAt"] = datetime.utcnow().isoformat() + "Z"
             query_col.update({"_key": doc_key}, query)
             print(f"  Updated: {query['title']}")
         else:
-            # Insert new
             query_col.insert(query)
             print(f"  Installed: {query['title']}")
-        
+
         installed += 1
-    
+
     print(f"\n  Total queries processed: {installed}")
     return installed
 
 
 def install_canvas_actions(db, actions_data):
-    """Install canvas actions into _canvasActions collection."""
+    """Install canvas actions into _canvasActions collection.
+
+    The ArangoDB Graph Visualizer requires canvas actions to use `queryText`
+    (not `query`) and the bind variable `@nodes` (array, not `@startNode`).
+    """
     print("\n[2/3] Installing Canvas Actions...")
 
-    # _canvasActions is a Visualizer metadata collection created by the UI.
     if not db.has_collection("_canvasActions"):
         print("  [PREREQ] Collection _canvasActions not found in this database.")
-        print("  Action: Open Graph Visualizer for this DB (Graphs → IC_Knowledge_Graph) once, then rerun this script.")
+        print("  Action: Open Graph Visualizer for this DB once, then rerun this script.")
         return 0
 
     action_col = db.collection("_canvasActions")
     installed = 0
-    
+
     for action in actions_data[1]["actions"]:
-        # Check if action already exists
         key = action["_key"]
-        
-        # Ensure 'name' field exists (UI requires it)
+
         if 'title' in action and 'name' not in action:
             action['name'] = action['title']
-        
+
+        # Migrate legacy `query` field → `queryText` for Visualizer compat
+        if 'query' in action and 'queryText' not in action:
+            action['queryText'] = action.pop('query')
+        elif 'query' in action:
+            del action['query']
+
+        if 'bindVariables' not in action:
+            action['bindVariables'] = {"nodes": []}
+
         if action_col.has(key):
-            # Update existing
             action_col.update({"_key": key}, action)
             print(f"  Updated: {action.get('title', action.get('name', key))}")
         else:
-            # Insert new
             action_col.insert(action)
             print(f"  Installed: {action.get('title', action.get('name', key))}")
-        
+
         installed += 1
-    
+
     print(f"\n  Total actions processed: {installed}")
     return installed
 
@@ -218,46 +223,42 @@ def verify_installation(db):
     print("="*60)
 
     checks = []
-    
-    # Check saved queries
+
     if db.has_collection("_editor_saved_queries"):
         query_count = db.collection("_editor_saved_queries").count()
-        checks.append(("Saved Queries", query_count, query_count >= 12))
+        checks.append(("Saved Queries", query_count, query_count >= 20))
     else:
         checks.append(("Saved Queries", 0, False))
-    
-    # Check canvas actions
+
     if db.has_collection("_canvasActions"):
         action_count = db.collection("_canvasActions").count()
-        checks.append(("Canvas Actions", action_count, action_count >= 10))
+        checks.append(("Canvas Actions", action_count, action_count >= 12))
     else:
         checks.append(("Canvas Actions", 0, False))
-    
-    # Check action links
+
     if db.has_collection("_viewpointActions"):
         link_count = db.collection("_viewpointActions").count()
-        checks.append(("Action Links", link_count, link_count >= 10))
+        checks.append(("Action Links", link_count, link_count >= 12))
     else:
         checks.append(("Action Links", 0, False))
-    
-    # Print results
+
     all_passed = True
     for name, count, passed in checks:
         status = "[PASS]" if passed else "[FAIL]"
         print(f"  {status} {name}: {count} documents")
         if not passed:
             all_passed = False
-    
+
     print("\n" + "="*60)
     if all_passed:
         print("Installation successful! All components verified.")
         print("\nNext steps:")
         print("1. Make sure you've run: python scripts/setup/install_theme.py")
         print("2. Open ArangoDB web interface")
-        print("3. Navigate to Graphs → IC_Knowledge_Graph")
-        print("4. Select 'hardware-design' theme in Legend panel")
-        print("5. Click 'Queries' to see saved queries")
-        print("6. Right-click canvas → Canvas Action to use actions")
+        print("3. Navigate to Graphs → IC_Temporal_Knowledge_Graph")
+        print("4. Select 'Integrated Circuit' theme in Legend panel")
+        print("5. Open Queries tab → select saved queries by [scene] prefix")
+        print("6. Right-click nodes → Canvas Action to use actions")
     else:
         print("Installation incomplete. Please check errors above.")
     
@@ -285,7 +286,7 @@ def main():
         sys.exit(1)
 
     print("="*60)
-    print("OR1200 Knowledge Graph - Demo Setup Installer")
+    print("IC Temporal Knowledge Graph - Demo Setup Installer")
     print("="*60)
     print("\nNote: This installs queries and actions only.")
     print("For theme installation, run: python scripts/setup/install_theme.py")

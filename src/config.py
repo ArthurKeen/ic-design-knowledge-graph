@@ -1,4 +1,6 @@
 import os
+from typing import Optional
+
 from dotenv import load_dotenv
 
 # Load .env file from project root
@@ -198,6 +200,20 @@ else:
     ARANGO_USERNAME = os.getenv("LOCAL_ARANGO_USERNAME", "root")
     ARANGO_PASSWORD = os.getenv("LOCAL_ARANGO_PASSWORD", "")
     ARANGO_DATABASE = os.getenv("LOCAL_ARANGO_DATABASE", "ic-knowledge-graph")
+
+
+def _optional_positive_int(name: str) -> Optional[int]:
+    """Parse optional env var as int; empty or unset → None."""
+    raw = os.getenv(name)
+    if raw is None or raw.strip() == "":
+        return None
+    return int(raw)
+
+
+# Cluster / OneShard: optional defaults when creating databases via API (Enterprise cluster).
+# replication_factor > 1 places follower shards on other DB-Servers (HA). write_concern ≤ replication_factor.
+ARANGO_REPLICATION_FACTOR = _optional_positive_int("ARANGO_REPLICATION_FACTOR")
+ARANGO_WRITE_CONCERN = _optional_positive_int("ARANGO_WRITE_CONCERN")
 
 # Output files
 RTL_NODES_FILE = os.path.join(DATA_DIR, "rtl_nodes.json")

@@ -51,7 +51,7 @@ def _python(script_path: str, env_overrides: Dict[str, str], extra: Optional[Lis
 def _create_db_if_missing(db_name: str) -> None:
     # Avoid importing config/db_utils at module import time to keep errors clean.
     sys.path.insert(0, os.path.join(REPO_ROOT, "src"))
-    from db_utils import get_system_db
+    from db_utils import get_system_db, create_oneshard_database_or_fallback
 
     sys_db = get_system_db()
 
@@ -70,9 +70,9 @@ def _create_db_if_missing(db_name: str) -> None:
         _print(f"[OK] Database exists: {db_name}")
         return
 
-    _print(f"[INFO] Creating database via API: {db_name}")
+    _print(f"[INFO] Creating OneShard database via API: {db_name} (sharding=single)")
     try:
-        sys_db.create_database(db_name)  # type: ignore[attr-defined]
+        create_oneshard_database_or_fallback(db_name)
         _print(f"[OK] Created database: {db_name}")
     except Exception as e:
         _print(f"[WARN] Failed to create database via API: {e}")

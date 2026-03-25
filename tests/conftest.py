@@ -91,7 +91,11 @@ def arango_docker():
         sys_db = client.db("_system", username="root", password=TEST_ROOT_PASSWORD)
 
         if not sys_db.has_database(TEST_DB_NAME):
-            sys_db.create_database(TEST_DB_NAME)
+            # OneShard on cluster; single-server Docker may ignore or reject — fallback.
+            try:
+                sys_db.create_database(TEST_DB_NAME, sharding="single")
+            except Exception:
+                sys_db.create_database(TEST_DB_NAME)
 
         db = client.db(TEST_DB_NAME, username="root", password=TEST_ROOT_PASSWORD)
 

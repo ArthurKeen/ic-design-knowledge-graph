@@ -1,7 +1,7 @@
 {
-  "graphId": "IC_Knowledge_Graph",
+  "graphId": "IC_Temporal_Knowledge_Graph",
   "name": "hardware-design",
-  "description": "Optimized theme for OR1200 hardware design visualization demo",
+  "description": "Multi-repo IC Knowledge Graph theme: per-repo color coding, RTL structure, semantic bridges",
   "nodeConfigMap": {
     "RTL_Module": {
       "background": {
@@ -222,14 +222,173 @@
     },
     "OR1200_Communities": {
       "background": {
-        "color": "#7057ff",
+        "color": "#FCD34D",
         "iconName": "mdi:account-group"
       },
+      "labelAttribute": "title",
+      "hoverInfoAttributes": ["title", "level", "summary", "size"],
+      "rules": []
+    },
+    "OR1200_Documents": {
+      "background": {
+        "color": "#B45309",
+        "iconName": "mdi:file-document-outline"
+      },
       "labelAttribute": "_id",
-      "hoverInfoAttributes": [
-        "title",
-        "level"
-      ],
+      "hoverInfoAttributes": ["content"],
+      "rules": []
+    },
+    "IBEX_Golden_Entities": {
+      "background": {
+        "color": "#2563EB",
+        "iconName": "mdi:alien"
+      },
+      "labelAttribute": "name",
+      "hoverInfoAttributes": ["name", "type", "description", "aliases"],
+      "rules": []
+    },
+    "IBEX_Entities": {
+      "background": {
+        "color": "#1E40AF",
+        "iconName": "mdi:layers"
+      },
+      "labelAttribute": "name",
+      "hoverInfoAttributes": ["name", "type", "description"],
+      "rules": []
+    },
+    "IBEX_Chunks": {
+      "background": {
+        "color": "#1E3A8A",
+        "iconName": "mdi:text-box-outline"
+      },
+      "labelAttribute": "_key",
+      "hoverInfoAttributes": ["content", "tokens"],
+      "rules": []
+    },
+    "IBEX_Communities": {
+      "background": {
+        "color": "#93C5FD",
+        "iconName": "mdi:account-group"
+      },
+      "labelAttribute": "title",
+      "hoverInfoAttributes": ["title", "level", "summary", "size"],
+      "rules": []
+    },
+    "IBEX_Documents": {
+      "background": {
+        "color": "#1D4ED8",
+        "iconName": "mdi:file-document-outline"
+      },
+      "labelAttribute": "_id",
+      "hoverInfoAttributes": ["content"],
+      "rules": []
+    },
+    "MAROCCHINO_Golden_Entities": {
+      "background": {
+        "color": "#7C3AED",
+        "iconName": "mdi:alien"
+      },
+      "labelAttribute": "name",
+      "hoverInfoAttributes": ["name", "type", "description", "aliases"],
+      "rules": []
+    },
+    "MAROCCHINO_Entities": {
+      "background": {
+        "color": "#5B21B6",
+        "iconName": "mdi:layers"
+      },
+      "labelAttribute": "name",
+      "hoverInfoAttributes": ["name", "type", "description"],
+      "rules": []
+    },
+    "MAROCCHINO_Chunks": {
+      "background": {
+        "color": "#4C1D95",
+        "iconName": "mdi:text-box-outline"
+      },
+      "labelAttribute": "_key",
+      "hoverInfoAttributes": ["content", "tokens"],
+      "rules": []
+    },
+    "MAROCCHINO_Communities": {
+      "background": {
+        "color": "#C4B5FD",
+        "iconName": "mdi:account-group"
+      },
+      "labelAttribute": "title",
+      "hoverInfoAttributes": ["title", "level", "summary", "size"],
+      "rules": []
+    },
+    "MAROCCHINO_Documents": {
+      "background": {
+        "color": "#6D28D9",
+        "iconName": "mdi:file-document-outline"
+      },
+      "labelAttribute": "_id",
+      "hoverInfoAttributes": ["content"],
+      "rules": []
+    },
+    "MOR1KX_Golden_Entities": {
+      "background": {
+        "color": "#059669",
+        "iconName": "mdi:alien"
+      },
+      "labelAttribute": "name",
+      "hoverInfoAttributes": ["name", "type", "description", "aliases"],
+      "rules": []
+    },
+    "MOR1KX_Entities": {
+      "background": {
+        "color": "#065F46",
+        "iconName": "mdi:layers"
+      },
+      "labelAttribute": "name",
+      "hoverInfoAttributes": ["name", "type", "description"],
+      "rules": []
+    },
+    "MOR1KX_Chunks": {
+      "background": {
+        "color": "#064E3B",
+        "iconName": "mdi:text-box-outline"
+      },
+      "labelAttribute": "_key",
+      "hoverInfoAttributes": ["content", "tokens"],
+      "rules": []
+    },
+    "MOR1KX_Communities": {
+      "background": {
+        "color": "#6EE7B7",
+        "iconName": "mdi:account-group"
+      },
+      "labelAttribute": "title",
+      "hoverInfoAttributes": ["title", "level", "summary", "size"],
+      "rules": []
+    },
+    "MOR1KX_Documents": {
+      "background": {
+        "color": "#047857",
+        "iconName": "mdi:file-document-outline"
+      },
+      "labelAttribute": "_id",
+      "hoverInfoAttributes": ["content"],
+      "rules": []
+    },
+    "DesignEpoch": {
+      "background": {
+        "color": "#6366F1",
+        "iconName": "mdi:timeline-clock"
+      },
+      "labelAttribute": "name",
+      "hoverInfoAttributes": ["name", "version", "timestamp", "doc_version"],
+      "rules": []
+    },
+    "DesignSituation": {
+      "background": {
+        "color": "#EC4899",
+        "iconName": "mdi:map-marker-multiple"
+      },
+      "labelAttribute": "name",
+      "hoverInfoAttributes": ["name", "description"],
       "rules": []
     },
     "Author": {
@@ -475,21 +634,155 @@
       "rules": []
     },
     "OR1200_Relations": {
-      "lineStyle": {
-        "color": "#787878",
-        "thickness": 0.7
-      },
-      "labelStyle": {
-        "color": "#1d2531"
-      },
-      "arrowStyle": {
-        "sourceArrowShape": "none",
-        "targetArrowShape": "triangle"
-      },
+      "lineStyle": { "color": "#D97706", "thickness": 0.6 },
+      "labelStyle": { "color": "#1d2531" },
+      "arrowStyle": { "sourceArrowShape": "none", "targetArrowShape": "triangle" },
       "labelAttribute": "type",
-      "hoverInfoAttributes": [
-        "type"
-      ],
+      "hoverInfoAttributes": ["type"],
+      "rules": []
+    },
+    "OR1200_Consolidates": {
+      "lineStyle": { "color": "#D97706", "thickness": 0.4 },
+      "labelStyle": { "color": "#1d2531" },
+      "arrowStyle": { "sourceArrowShape": "none", "targetArrowShape": "triangle" },
+      "labelAttribute": "type",
+      "hoverInfoAttributes": ["type"],
+      "rules": []
+    },
+    "OR1200_MentionedIn": {
+      "lineStyle": { "color": "#FCD34D", "thickness": 0.4 },
+      "labelStyle": { "color": "#1d2531" },
+      "arrowStyle": { "sourceArrowShape": "none", "targetArrowShape": "triangle" },
+      "labelAttribute": "type",
+      "hoverInfoAttributes": ["type"],
+      "rules": []
+    },
+    "IBEX_Golden_Relations": {
+      "lineStyle": { "color": "#2563EB", "thickness": 0.8 },
+      "labelStyle": { "color": "#1d2531" },
+      "arrowStyle": { "sourceArrowShape": "none", "targetArrowShape": "triangle" },
+      "labelAttribute": "type",
+      "hoverInfoAttributes": ["type", "provenance"],
+      "rules": []
+    },
+    "IBEX_Relations": {
+      "lineStyle": { "color": "#3B82F6", "thickness": 0.6 },
+      "labelStyle": { "color": "#1d2531" },
+      "arrowStyle": { "sourceArrowShape": "none", "targetArrowShape": "triangle" },
+      "labelAttribute": "type",
+      "hoverInfoAttributes": ["type"],
+      "rules": []
+    },
+    "IBEX_Consolidates": {
+      "lineStyle": { "color": "#1E40AF", "thickness": 0.4 },
+      "labelStyle": { "color": "#1d2531" },
+      "arrowStyle": { "sourceArrowShape": "none", "targetArrowShape": "triangle" },
+      "labelAttribute": "type",
+      "hoverInfoAttributes": ["type"],
+      "rules": []
+    },
+    "IBEX_MentionedIn": {
+      "lineStyle": { "color": "#93C5FD", "thickness": 0.4 },
+      "labelStyle": { "color": "#1d2531" },
+      "arrowStyle": { "sourceArrowShape": "none", "targetArrowShape": "triangle" },
+      "labelAttribute": "type",
+      "hoverInfoAttributes": ["type"],
+      "rules": []
+    },
+    "MAROCCHINO_Golden_Relations": {
+      "lineStyle": { "color": "#7C3AED", "thickness": 0.8 },
+      "labelStyle": { "color": "#1d2531" },
+      "arrowStyle": { "sourceArrowShape": "none", "targetArrowShape": "triangle" },
+      "labelAttribute": "type",
+      "hoverInfoAttributes": ["type", "provenance"],
+      "rules": []
+    },
+    "MAROCCHINO_Relations": {
+      "lineStyle": { "color": "#8B5CF6", "thickness": 0.6 },
+      "labelStyle": { "color": "#1d2531" },
+      "arrowStyle": { "sourceArrowShape": "none", "targetArrowShape": "triangle" },
+      "labelAttribute": "type",
+      "hoverInfoAttributes": ["type"],
+      "rules": []
+    },
+    "MAROCCHINO_Consolidates": {
+      "lineStyle": { "color": "#5B21B6", "thickness": 0.4 },
+      "labelStyle": { "color": "#1d2531" },
+      "arrowStyle": { "sourceArrowShape": "none", "targetArrowShape": "triangle" },
+      "labelAttribute": "type",
+      "hoverInfoAttributes": ["type"],
+      "rules": []
+    },
+    "MAROCCHINO_MentionedIn": {
+      "lineStyle": { "color": "#C4B5FD", "thickness": 0.4 },
+      "labelStyle": { "color": "#1d2531" },
+      "arrowStyle": { "sourceArrowShape": "none", "targetArrowShape": "triangle" },
+      "labelAttribute": "type",
+      "hoverInfoAttributes": ["type"],
+      "rules": []
+    },
+    "MOR1KX_Golden_Relations": {
+      "lineStyle": { "color": "#059669", "thickness": 0.8 },
+      "labelStyle": { "color": "#1d2531" },
+      "arrowStyle": { "sourceArrowShape": "none", "targetArrowShape": "triangle" },
+      "labelAttribute": "type",
+      "hoverInfoAttributes": ["type", "provenance"],
+      "rules": []
+    },
+    "MOR1KX_Relations": {
+      "lineStyle": { "color": "#10B981", "thickness": 0.6 },
+      "labelStyle": { "color": "#1d2531" },
+      "arrowStyle": { "sourceArrowShape": "none", "targetArrowShape": "triangle" },
+      "labelAttribute": "type",
+      "hoverInfoAttributes": ["type"],
+      "rules": []
+    },
+    "MOR1KX_Consolidates": {
+      "lineStyle": { "color": "#065F46", "thickness": 0.4 },
+      "labelStyle": { "color": "#1d2531" },
+      "arrowStyle": { "sourceArrowShape": "none", "targetArrowShape": "triangle" },
+      "labelAttribute": "type",
+      "hoverInfoAttributes": ["type"],
+      "rules": []
+    },
+    "MOR1KX_MentionedIn": {
+      "lineStyle": { "color": "#6EE7B7", "thickness": 0.4 },
+      "labelStyle": { "color": "#1d2531" },
+      "arrowStyle": { "sourceArrowShape": "none", "targetArrowShape": "triangle" },
+      "labelAttribute": "type",
+      "hoverInfoAttributes": ["type"],
+      "rules": []
+    },
+    "CROSS_REPO_SIMILAR_TO": {
+      "lineStyle": { "color": "#F97316", "thickness": 2.5 },
+      "labelStyle": { "color": "#F97316" },
+      "arrowStyle": { "sourceArrowShape": "none", "targetArrowShape": "triangle" },
+      "labelAttribute": "similarity_score",
+      "hoverInfoAttributes": ["similarity_score", "similarity_type", "method"],
+      "rules": []
+    },
+    "CROSS_REPO_EVOLVED_FROM": {
+      "lineStyle": { "color": "#EF4444", "thickness": 2.0, "lineType": "dashed" },
+      "labelStyle": { "color": "#EF4444" },
+      "arrowStyle": { "sourceArrowShape": "none", "targetArrowShape": "triangle" },
+      "labelAttribute": "type",
+      "hoverInfoAttributes": ["type", "similarity_score"],
+      "rules": []
+    },
+    "BELONGS_TO_EPOCH": {
+      "lineStyle": { "color": "#6366F1", "thickness": 0.5, "lineType": "dashed" },
+      "labelStyle": { "color": "#1d2531" },
+      "arrowStyle": { "sourceArrowShape": "none", "targetArrowShape": "triangle" },
+      "labelAttribute": "doc_version",
+      "hoverInfoAttributes": ["doc_version", "type"],
+      "rules": []
+    },
+    "DEPENDS_ON": {
+      "lineStyle": { "color": "#9CA3AF", "thickness": 0.8, "lineType": "dashed" },
+      "labelStyle": { "color": "#1d2531" },
+      "arrowStyle": { "sourceArrowShape": "none", "targetArrowShape": "triangle" },
+      "labelAttribute": "type",
+      "hoverInfoAttributes": ["type"],
       "rules": []
     },
     "REFERENCES": {

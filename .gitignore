@@ -20,3 +20,10 @@ ic_analysis_output/
 # Testing
 .coverage
 .pytest_cache/
+
+# Local throwaway Arango dump dirs
+.tmp_oneshard_dump/
+arangodump_*/
+
+# Cloned source repos (large, re-cloneable)
+data/repos/

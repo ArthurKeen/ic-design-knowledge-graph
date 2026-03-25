@@ -79,6 +79,12 @@ def create_graph(db):
             "from_vertex_collections": [c for c in ["RTL_Module"] if c in cols],
             "to_vertex_collections":   [c for c in ["RTL_Module"] if c in cols],
         },
+        # ── Temporal snapshot → deep-RTL HEAD link ─────────────────────
+        {
+            "edge_collection": "SNAPSHOT_OF",
+            "from_vertex_collections": [c for c in ["RTL_Module"] if c in cols],
+            "to_vertex_collections":   [c for c in ["RTL_Module"] if c in cols],
+        },
         {
             "edge_collection": "WIRED_TO",
             "from_vertex_collections": [c for c in ["RTL_Port", "RTL_Signal"] if c in cols],
