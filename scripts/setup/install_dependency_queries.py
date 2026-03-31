@@ -21,7 +21,7 @@ def install_dependency_queries(db):
     if not sys_db.has_collection('_editor_saved_queries'):
         try:
              sys_db.create_collection('_editor_saved_queries')
-        except: pass
+        except Exception: pass
         
     queries_col = sys_db.collection('_editor_saved_queries')
     
@@ -224,7 +224,7 @@ def install_dependency_actions(db):
     if not sys_db.has_collection('_canvasActions'):
         try:
             sys_db.create_collection('_canvasActions')
-        except: pass
+        except Exception: pass
         
     actions_col = sys_db.collection('_canvasActions')
     

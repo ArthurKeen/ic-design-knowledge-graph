@@ -138,7 +138,7 @@ def is_active(last_seen_timestamp, threshold_days=180):
         now = datetime.now(last_seen.tzinfo)
         days_since = (now - last_seen).days
         return days_since <= threshold_days
-    except:
+    except Exception:
         return False
 
 
@@ -356,7 +356,7 @@ def create_maintains_edges(db):
         try:
             last_commit_dt = datetime.fromisoformat(rel['last_commit'].replace('Z', '+00:00'))
             days_since = (now - last_commit_dt).days
-        except:
+        except Exception:
             days_since = 999
         
         # Calculate maintenance score

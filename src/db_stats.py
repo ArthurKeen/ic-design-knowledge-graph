@@ -2,12 +2,12 @@ import csv
 import json
 import sys
 import os
-from arango import ArangoClient
 from dotenv import load_dotenv
 
 # Add src to path to import config
 sys.path.append(os.path.join(os.getcwd(), "src"))
-from config import ARANGO_ENDPOINT, ARANGO_USERNAME, ARANGO_PASSWORD, ARANGO_DATABASE
+from config import ARANGO_DATABASE
+from db_utils import get_db
 
 def get_doc_size_no_system(doc):
     """Calculate the size of a document excluding properties starting with '_'."""
@@ -15,11 +15,9 @@ def get_doc_size_no_system(doc):
     return len(json.dumps(filtered_doc).encode('utf-8'))
 
 def generate_db_stats(output_file="data/db_collection_stats.csv"):
-    # Load connection details
     load_dotenv()
-    
-    client = ArangoClient(hosts=ARANGO_ENDPOINT)
-    db = client.db(ARANGO_DATABASE, username=ARANGO_USERNAME, password=ARANGO_PASSWORD)
+
+    db = get_db()
 
     stats = []
     total_vertex_count = 0

@@ -243,6 +243,7 @@ class TestSaveSituations(unittest.TestCase):
     def _make_mock_db(self):
         db = MagicMock()
         db.collections.return_value = []
+        db.has_collection.return_value = False
         col = MagicMock()
         col.insert.return_value = None
         db.collection.return_value = col

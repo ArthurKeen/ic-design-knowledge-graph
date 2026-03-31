@@ -32,83 +32,15 @@ from config import (
     COL_CLOCK, COL_BUS
 )
 from db_utils import get_db
+from bridger_shared import TYPE_COMPATIBILITY, create_or_update_search_view
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Type Compatibility Matrix (same as bridger.py)
-TYPE_COMPATIBILITY = {
-    COL_MODULE: ['processor_component', 'architecture_feature', 'memory_unit', 'hardware_interface', 'configuration', 'UNKNOWN', None],
-    COL_PORT: ['register', 'signal', 'hardware_interface', 'architecture_feature', 'UNKNOWN', None],
-    COL_SIGNAL: ['register', 'signal', 'architecture_feature', 'UNKNOWN', None],
-    COL_LOGIC: ['instruction', 'architecture_feature', 'configuration', 'exception_type', 'UNKNOWN', None],
-    COL_BUS: ['hardware_interface', 'bus_protocol', 'architecture_feature', 'processor_component', 'UNKNOWN', None],
-    COL_CLOCK: ['architecture_feature', 'clock_domain', 'processor_component', 'UNKNOWN', None],
-    COL_FSM: ['architecture_feature', 'state_machine', 'processor_component', 'UNKNOWN', None],
-    COL_PARAMETER: ['configuration', 'UNKNOWN', None],
-    COL_MEMORY: ['memory_unit', 'processor_component', 'UNKNOWN', None]
-}
-
-
 def create_search_view(db):
-    """Create or update ArangoSearch view for bridging"""
-    view_name = "harmonized_search_view"
-    
-    # Check if view exists
-    existing_views = [v['name'] for v in db.views()]
-    
-    base_links = {
-            COL_MODULE: {
-                "fields": {
-                    "label": {"analyzers": ["text_en", "identity"]},
-                    "metadata": {"fields": {"summary": {"analyzers": ["text_en"]}}}
-                }
-            },
-            COL_PORT: {
-                "fields": {
-                    "label": {"analyzers": ["text_en", "identity"]},
-                    "metadata": {"fields": {"description": {"analyzers": ["text_en"]}}}
-                }
-            },
-            COL_SIGNAL: {
-                "fields": {
-                    "label": {"analyzers": ["text_en", "identity"]},
-                    "metadata": {"fields": {"description": {"analyzers": ["text_en"]}}}
-                }
-            },
-            COL_LOGIC: {"fields": {"label": {"analyzers": ["text_en", "identity"]}, "metadata": {"fields": {"code": {"analyzers": ["text_en"]}}}}},
-            COL_BUS: {"fields": {"name": {"analyzers": ["text_en", "identity"]}, "interface_type": {"analyzers": ["text_en", "identity"]}}},
-            COL_CLOCK: {"fields": {"name": {"analyzers": ["text_en", "identity"]}}},
-            COL_FSM: {"fields": {"name": {"analyzers": ["text_en", "identity"]}}},
-            COL_PARAMETER: {"fields": {"name": {"analyzers": ["text_en", "identity"]}}},
-            COL_MEMORY: {"fields": {"name": {"analyzers": ["text_en", "identity"]}}},
-            COL_ENTITIES: {
-            "fields": {
-                "label": {"analyzers": ["text_en", "identity"]},
-                "entity_name": {"analyzers": ["text_en", "identity"]},
-                "description": {"analyzers": ["text_en"]}
-            }
-        },
-            COL_CHUNKS: {"fields": {"content": {"analyzers": ["text_en"]}}}
-    }
-
-    # Only link collections that exist in the current database.
-    links = {name: cfg for name, cfg in base_links.items() if db.has_collection(name)}
-    properties = {"links": links}
-
-    if view_name in existing_views:
-        logger.info(f"Updating ArangoSearch View '{view_name}'...")
-        db.update_view(name=view_name, properties=properties)
-        return view_name
-
-    logger.info(f"Creating ArangoSearch View '{view_name}'...")
-    db.create_view(
-        name=view_name,
-        view_type="arangosearch",
-        properties=properties
-    )
-    return view_name
+    """Delegate to shared helper, filtering out missing collections."""
+    return create_or_update_search_view(db, filter_missing=True)
 
 
 def normalize_name_aql(name_var):
@@ -149,7 +81,7 @@ def bulk_bridge_collection(db, col_name, view_name, threshold, method, truncate=
     logger.info(f"Bulk bridging {col_name} to {COL_ENTITIES}...")
     
     # Get compatible types for this collection
-    compatible_types = TYPE_COMPATIBILITY.get(col_name, [])
+    compatible_types = list(TYPE_COMPATIBILITY.get(col_name, set()))
     
     # For RTL_Module, require minimum name-based similarity so we don't bridge
     # generic cells (FLIPFLOP, DECODER, BLOCK0) to doc-only entities (e.g. "Physical Address").

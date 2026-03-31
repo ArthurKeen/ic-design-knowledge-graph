@@ -145,7 +145,7 @@ class FunctionExtractor:
                 low = int(parts[1].strip())
                 return abs(high - low) + 1
             return int(width_expr)
-        except:
+        except Exception:
             return 1
     
     def _find_function_calls(self, body: str) -> List[str]:

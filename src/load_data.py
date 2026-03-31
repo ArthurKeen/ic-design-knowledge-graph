@@ -1,6 +1,9 @@
 import os
 import sys
 import json
+import re
+
+_VALID_COLLECTION_RE = re.compile(r'^[A-Za-z_][A-Za-z0-9_]*$')
 
 # Add repo root to path so we can import src.*
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
@@ -28,6 +31,8 @@ def load_nodes(db, filepath, id_map):
     for item in data:
         col_name = item.get('type')
         if not col_name: continue
+        if not _VALID_COLLECTION_RE.match(col_name):
+            raise ValueError(f"Invalid collection name from data: {col_name!r}")
         
         # Populate ID map
         item_id = item.get('id')
@@ -72,13 +77,15 @@ def load_edges(db, filepath, id_map):
     try:
         with open(filepath, 'r') as f:
             data = json.load(f)
-    except:
+    except Exception:
         return
 
     grouped = {}
     for item in data:
         col_name = item.get('type')
         if not col_name: continue
+        if not _VALID_COLLECTION_RE.match(col_name):
+            raise ValueError(f"Invalid collection name from data: {col_name!r}")
         
         # Fix _from / _to
         src_id = item.get('from')

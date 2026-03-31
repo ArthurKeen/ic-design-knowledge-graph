@@ -12,7 +12,7 @@ def verify_types():
     url = f"{ARANGO_ENDPOINT}/_db/{ARANGO_DATABASE}/_api/collection"
     
     try:
-        response = requests.get(url, auth=HTTPBasicAuth(ARANGO_USERNAME, ARANGO_PASSWORD))
+        response = requests.get(url, auth=HTTPBasicAuth(ARANGO_USERNAME, ARANGO_PASSWORD), timeout=30)
         if response.status_code == 200:
             collections = response.json().get('result', [])
             print(f"{'Collection':<20} | {'Type':<10}")

@@ -22,14 +22,9 @@ from datetime import datetime
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from arango import ArangoClient
-from config import ARANGO_ENDPOINT, ARANGO_USERNAME, ARANGO_PASSWORD
+from config import ARANGO_ENDPOINT
 from config_temporal import ARANGO_DATABASE
-
-
-def get_db():
-    client = ArangoClient(hosts=ARANGO_ENDPOINT)
-    return client.db(ARANGO_DATABASE, username=ARANGO_USERNAME, password=ARANGO_PASSWORD)
+from db_utils import get_temporal_db
 
 
 def _ts_human(ts: int) -> str:
@@ -259,7 +254,7 @@ def main():
                         help="Module label for cross-repo analog query")
     args = parser.parse_args()
 
-    db = get_db()
+    db = get_temporal_db()
     print(f"\n[demo] Database: {ARANGO_DATABASE} @ {ARANGO_ENDPOINT}")
 
     to_run = [args.query] if args.query else list(QUERIES.keys())

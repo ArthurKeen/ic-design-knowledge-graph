@@ -144,7 +144,7 @@ class TestRelatedEntities:
         assert result == set()
     
     def test_query_uses_correct_collection(self, mock_db):
-        """Test: Query traverses Golden_Relations"""
+        """Test: Query traverses Golden_Relations via bind variable"""
         parent_ids = ['Golden_Entities/1']
         mock_db.aql.execute = Mock(return_value=[])
         
@@ -152,9 +152,10 @@ class TestRelatedEntities:
         
         call_args = mock_db.aql.execute.call_args
         query = call_args[0][0]
+        bind_vars = call_args[1].get("bind_vars", call_args[0][1] if len(call_args[0]) > 1 else {})
         
-        # Should traverse Golden_Relations
-        assert COL_RELATIONS in query
+        # Collection passed via @@rel_col bind variable (AQL injection safe)
+        assert bind_vars.get("@rel_col") == COL_RELATIONS
         
         # Should use ANY direction (bidirectional)
         assert 'ANY' in query

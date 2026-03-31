@@ -161,6 +161,10 @@ def get_local_path(repo_config: dict) -> str:
 CROSS_REPO_MIN_SIMILARITY = float(os.getenv("CROSS_REPO_MIN_SIMILARITY", "0.70"))
 CROSS_REPO_BRIDGE_BATCH_SIZE = int(os.getenv("CROSS_REPO_BRIDGE_BATCH_SIZE", "500"))
 
+# Sentinel timestamp for open-ended validity (node is still current / not yet expired).
+# Used in temporal nodes (valid_to_ts) and AQL filters.
+OPEN_VALIDITY_TS = int(os.getenv("OPEN_VALIDITY_TS", "9999999999"))
+
 # Lineage rules for CROSS_REPO_EVOLVED_FROM edges (rule-based, no ML needed)
 LINEAGE_RULES = [
     {

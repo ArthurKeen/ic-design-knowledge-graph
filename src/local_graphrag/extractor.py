@@ -31,6 +31,11 @@ from config_temporal import (
     ARANGO_DATABASE,
 )
 
+_LOCAL_GRAPHRAG_MODEL = os.getenv("LOCAL_GRAPHRAG_MODEL", "gpt-4o")
+_MAX_CHUNK_TEXT = int(os.getenv("LOCAL_GRAPHRAG_MAX_CHUNK_TEXT", "4000"))
+_LOCAL_GRAPHRAG_MAX_TOKENS = int(os.getenv("LOCAL_GRAPHRAG_MAX_TOKENS", "4096"))
+_LOCAL_GRAPHRAG_TIMEOUT = int(os.getenv("LOCAL_GRAPHRAG_TIMEOUT", "120"))
+
 
 # ---------------------------------------------------------------------------
 # Prompt template
@@ -77,7 +82,7 @@ def _build_messages(chunk_text: str, entity_types: list[str], relation_types: li
         entity_types=entity_types_str,
         relation_types=relation_types_str,
     )
-    user = USER_PROMPT.format(chunk_text=chunk_text[:4000])  # hard cap to stay in context
+    user = USER_PROMPT.format(chunk_text=chunk_text[:_MAX_CHUNK_TEXT])
     return [
         {"role": "system", "content": system},
         {"role": "user",   "content": user},
@@ -150,7 +155,7 @@ def _parse_llm_response(raw: str, chunk_key: str) -> tuple[list[dict], list[dict
 # Backend-specific callers
 # ---------------------------------------------------------------------------
 
-def _call_openai(messages: list[dict], model: str = "gpt-4o") -> str:
+def _call_openai(messages: list[dict], model: str = _LOCAL_GRAPHRAG_MODEL) -> str:
     try:
         import openai
         client = openai.OpenAI(api_key=OPENAI_API_KEY)
@@ -158,7 +163,7 @@ def _call_openai(messages: list[dict], model: str = "gpt-4o") -> str:
             model=model,
             messages=messages,
             temperature=0.0,
-            max_tokens=4096,
+            max_tokens=_LOCAL_GRAPHRAG_MAX_TOKENS,
             response_format={"type": "json_object"},
         )
         return resp.choices[0].message.content or ""
@@ -182,7 +187,7 @@ def _call_ollama(messages: list[dict], model: str = None,
                 "options":  {"temperature": 0.0},
                 "format":   "json",
             },
-            timeout=120,
+            timeout=_LOCAL_GRAPHRAG_TIMEOUT,
         )
         resp.raise_for_status()
         return resp.json().get("message", {}).get("content", "")
@@ -219,7 +224,7 @@ class EntityExtractor:
     def _call_llm(self, messages: list[dict]) -> str:
         for attempt in range(self.retry_attempts + 1):
             if self.backend == "openai":
-                raw = _call_openai(messages, model=self.model or "gpt-4o")
+                raw = _call_openai(messages, model=self.model or _LOCAL_GRAPHRAG_MODEL)
             elif self.backend == "ollama":
                 raw = _call_ollama(messages, model=self.model)
             else:

@@ -31,6 +31,11 @@ import warnings
 from typing import Dict, Optional, List
 from pathlib import Path
 
+_GRAPHRAG_CHUNK_SIZE = int(os.getenv("GRAPHRAG_CHUNK_SIZE", "1200"))
+_GRAPHRAG_MAX_RETRIES = int(os.getenv("GRAPHRAG_MAX_RETRIES", "5"))
+_GRAPHRAG_RETRY_DELAY = int(os.getenv("GRAPHRAG_RETRY_DELAY", "10"))
+
+
 class GraphRAGClient:
     """Client for ArangoDB GraphRAG GenAI API services"""
     
@@ -331,7 +336,7 @@ class GraphRAGClient:
                        file_path: str, 
                        partition_id: str, 
                        entity_types: List[str],
-                       chunk_size: int = 1200,
+                       chunk_size: int = _GRAPHRAG_CHUNK_SIZE,
                        enable_embeddings: bool = True) -> Dict:
         """
         Import a document via the Importer service
@@ -400,8 +405,8 @@ class GraphRAGClient:
         # Construct full service ID for logging/checking
         full_service_id = f"arangodb-graphrag-retriever-{service_id}"
         
-        max_retries = 5
-        retry_delay = 10
+        max_retries = _GRAPHRAG_MAX_RETRIES
+        retry_delay = _GRAPHRAG_RETRY_DELAY
         
         for attempt in range(max_retries):
             try:

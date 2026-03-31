@@ -138,19 +138,20 @@ class TestSemanticBridgeLocal:
         from local_graphrag.loader import _ensure_collection
         _ensure_collection(db, "OR1200_Golden_Entities")
         col = db.collection("OR1200_Golden_Entities")
+        _stub_emb = [0.1] * 384
         col.import_bulk([
             {"_key": "OR1200_g_sr",   "name": "SR",   "type": "REGISTER",
              "labels": ["GoldenEntity", "REGISTER", "OR1200"], "repo": "OR1200",
              "layer": "golden", "aliases": ["Status Register"],
-             "description": "Supervisor register", "embedding": None},
+             "description": "Supervisor register", "embedding": _stub_emb},
             {"_key": "OR1200_g_epcr", "name": "EPCR", "type": "REGISTER",
              "labels": ["GoldenEntity", "REGISTER", "OR1200"], "repo": "OR1200",
              "layer": "golden", "aliases": ["Exception Program Counter Register"],
-             "description": "Exception program counter", "embedding": None},
+             "description": "Exception program counter", "embedding": _stub_emb},
             {"_key": "OR1200_g_pc",   "name": "PC",   "type": "REGISTER",
              "labels": ["GoldenEntity", "REGISTER", "OR1200"], "repo": "OR1200",
              "layer": "golden", "aliases": ["Program Counter"],
-             "description": "Program counter register", "embedding": None},
+             "description": "Program counter register", "embedding": _stub_emb},
         ], on_duplicate="replace")
 
         # Ensure RTL nodes exist (run extraction if not already done)
@@ -160,7 +161,7 @@ class TestSemanticBridgeLocal:
 
         # Run exact-match bridge only (no embeddings needed)
         from rtl_semantic_bridge import (
-            load_golden_entities, load_rtl_nodes, match_exact, import_bulk,
+            load_golden_entities, load_rtl_nodes, match_exact,
         )
         goldens = load_golden_entities(db, "OR1200_")
         ports, signals = load_rtl_nodes(db, "OR1200_")

@@ -9,19 +9,8 @@ parameterization and design scalability.
 import os
 import re
 import json
-import hashlib
 from typing import List, Dict, Tuple, Set
-
-def get_edge_key(from_id, to_id, edge_type):
-    """Generate deterministic key for edges"""
-    raw = f"{from_id}:{to_id}:{edge_type}"
-    return hashlib.md5(raw.encode()).hexdigest()
-
-def sanitize_id(raw_id):
-    """Sanitize ID for ArangoDB _key requirements"""
-    clean = re.sub(r'[\s\t\n\r]+', '', raw_id)
-    clean = re.sub(r'[^a-zA-Z0-9_\-:\.]', '_', clean)
-    return clean.strip('_')
+from utils import get_edge_key, sanitize_id
 
 def extract_generate_blocks(rtl_dir: str, data_dir: str):
     print("="*60)

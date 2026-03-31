@@ -62,7 +62,7 @@ See [GRAPHRAG_STATUS.md](GRAPHRAG_STATUS.md) for a detailed description of the i
 ## Setup & Usage
 
 ### 1. Prerequisites
-- Python 3.8+
+- Python 3.10+
 - ArangoDB instance (local Docker or remote)
 - **Cluster users:** if you see collection shards spread across many DB-Servers (one shard per collection, different leaders), graph-heavy queries pay extra network cost. See **[docs/arangodb-cluster-sharding.md](docs/arangodb-cluster-sharding.md)** for OneShard vs SmartGraph, **`scripts/setup/create_oneshard_database.py`** (new DB), and **`scripts/setup/migrate_to_oneshard.sh`** (dump → drop → OneShard → restore).
 

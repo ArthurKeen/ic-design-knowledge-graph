@@ -192,7 +192,7 @@ class ParameterExtractor:
             
             # Simple decimal
             return int(value)
-        except:
+        except Exception:
             return None
 
 
@@ -282,7 +282,7 @@ class MemoryExtractor:
                 low = int(parts[1].strip())
                 return abs(high - low) + 1
             return int(width_expr)
-        except:
+        except Exception:
             return 1
     
     def _calculate_depth(self, depth_expr: str) -> int:
@@ -294,7 +294,7 @@ class MemoryExtractor:
                 low = int(parts[1].strip())
                 return abs(high - low) + 1
             return int(depth_expr)
-        except:
+        except Exception:
             return 0
     
     def _infer_memory_type(self, name: str) -> str:

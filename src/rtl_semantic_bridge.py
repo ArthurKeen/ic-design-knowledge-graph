@@ -209,6 +209,7 @@ def load_golden_entities(db, prefix: str) -> list[dict]:
         return []
 
     types_aql = "[" + ",".join(f'"{t}"' for t in RTL_RELEVANT_TYPES) + "]"
+    # col is derived from prefix, which is validated as alphanumeric/underscore in main()
     results = list(db.aql.execute(f"""
         FOR g IN {col}
           FILTER g.type IN {types_aql}
@@ -573,6 +574,9 @@ def main():
                         default="sentence_transformers",
                         help="Embedding backend")
     args = parser.parse_args()
+
+    if args.repo and not re.match(r'^[A-Za-z0-9_]+$', args.repo):
+        parser.error(f"Invalid repo prefix: {args.repo!r} — must be alphanumeric/underscore only")
 
     if not args.repo and not args.all:
         parser.error("Specify --repo PREFIX or --all")

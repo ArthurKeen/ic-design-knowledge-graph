@@ -25,9 +25,12 @@ if _pkg_root not in sys.path:
 from config import OPENAI_API_KEY
 
 # Default ST model — 384-dim, very fast on CPU
-_DEFAULT_ST_MODEL = "all-MiniLM-L6-v2"
+_DEFAULT_ST_MODEL = os.getenv("EMBEDDER_ST_MODEL", "all-MiniLM-L6-v2")
 # OpenAI model — 1536-dim
-_DEFAULT_OAI_MODEL = "text-embedding-3-small"
+_DEFAULT_OAI_MODEL = os.getenv("EMBEDDER_OAI_MODEL", "text-embedding-3-small")
+
+_EMBEDDER_BATCH_SIZE = int(os.getenv("EMBEDDER_BATCH_SIZE", "256"))
+_MAX_TEXT_LENGTH = int(os.getenv("EMBEDDER_MAX_TEXT_LENGTH", "512"))
 
 
 def _embed_sentence_transformers(
@@ -55,7 +58,7 @@ def _embed_openai(texts: list[str], model: str = _DEFAULT_OAI_MODEL) -> list[lis
     client = openai.OpenAI(api_key=OPENAI_API_KEY)
     # OpenAI supports up to 2048 inputs per call; chunk to be safe
     results: list[list[float]] = []
-    batch_size = 256
+    batch_size = _EMBEDDER_BATCH_SIZE
     for i in range(0, len(texts), batch_size):
         batch = texts[i:i + batch_size]
         response = client.embeddings.create(input=batch, model=model)
@@ -104,7 +107,7 @@ def embed_entities(
     for e in needs_embed:
         name = e.get("name", "")
         detail = e.get(text_field, "") or ""
-        texts.append(f"{name}: {detail}"[:512])  # cap to avoid over-long inputs
+        texts.append(f"{name}: {detail}"[:_MAX_TEXT_LENGTH])
 
     # Call selected backend
     if backend == "sentence_transformers":

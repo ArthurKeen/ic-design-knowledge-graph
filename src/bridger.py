@@ -17,6 +17,7 @@ from config import (
 )
 from db_utils import get_db
 from utils import normalize_hardware_name
+from bridger_shared import TYPE_COMPATIBILITY, create_or_update_search_view
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -42,75 +43,11 @@ SIMILARITY = WeightedFieldSimilarity(
     algorithm='jaro_winkler'
 )
 
-# Type Compatibility Matrix (Phase 2 Action Plan)
-# Maps RTL collection types to sets of compatible Golden Entity types.
-TYPE_COMPATIBILITY = {
-    COL_MODULE: {'processor_component', 'architecture_feature', 'memory_unit', 'hardware_interface', 'configuration', 'UNKNOWN', None},
-    COL_PORT: {'register', 'signal', 'hardware_interface', 'architecture_feature', 'UNKNOWN', None},
-    COL_SIGNAL: {'register', 'signal', 'architecture_feature', 'UNKNOWN', None},
-    COL_LOGIC: {'instruction', 'architecture_feature', 'configuration', 'exception_type', 'UNKNOWN', None},
-    COL_BUS: {'hardware_interface', 'bus_protocol', 'architecture_feature', 'processor_component', 'UNKNOWN', None},
-    COL_CLOCK: {'architecture_feature', 'clock_domain', 'processor_component', 'UNKNOWN', None},
-    COL_FSM: {'architecture_feature', 'state_machine', 'processor_component', 'UNKNOWN', None},
-    COL_PARAMETER: {'configuration', 'UNKNOWN', None},
-    COL_MEMORY: {'memory_unit', 'processor_component', 'UNKNOWN', None}
-}
+_BRIDGER_MAX_WORKERS = int(os.environ.get("BRIDGER_MAX_WORKERS", "10"))
 
 def create_search_view(db):
-    view_name = "harmonized_search_view"
-    
-    # Check if view exists
-    existing_views = [v['name'] for v in db.views()]
-    
-    properties = {
-        "links": {
-            COL_MODULE: {
-                "fields": {
-                    "label": {"analyzers": ["text_en", "identity"]},
-                    "metadata": {"fields": {"summary": {"analyzers": ["text_en"]}}}
-                }
-            },
-            COL_PORT: {
-                "fields": {
-                    "label": {"analyzers": ["text_en", "identity"]},
-                    "metadata": {"fields": {"description": {"analyzers": ["text_en"]}}}
-                }
-            },
-            COL_SIGNAL: {
-                "fields": {
-                    "label": {"analyzers": ["text_en", "identity"]},
-                    "metadata": {"fields": {"description": {"analyzers": ["text_en"]}}}
-                }
-            },
-            COL_LOGIC: {"fields": {"label": {"analyzers": ["text_en", "identity"]}, "metadata": {"fields": {"code": {"analyzers": ["text_en"]}}}}},
-            COL_BUS: {"fields": {"name": {"analyzers": ["text_en", "identity"]}, "interface_type": {"analyzers": ["text_en", "identity"]}}},
-            COL_CLOCK: {"fields": {"name": {"analyzers": ["text_en", "identity"]}}},
-            COL_FSM: {"fields": {"name": {"analyzers": ["text_en", "identity"]}}},
-            COL_PARAMETER: {"fields": {"name": {"analyzers": ["text_en", "identity"]}}},
-            COL_MEMORY: {"fields": {"name": {"analyzers": ["text_en", "identity"]}}},
-            COL_ENTITIES: {
-            "fields": {
-                "label": {"analyzers": ["text_en", "identity"]},
-                "entity_name": {"analyzers": ["text_en", "identity"]},
-                "description": {"analyzers": ["text_en"]}
-            }
-        },
-            COL_CHUNKS: {"fields": {"content": {"analyzers": ["text_en"]}}}
-        }
-    }
-
-    if view_name in existing_views:
-        print(f"Updating ArangoSearch View '{view_name}'...")
-        db.update_view(name=view_name, properties=properties)
-        return view_name
-
-    print(f"Creating ArangoSearch View '{view_name}'...")
-    db.create_view(
-        name=view_name,
-        view_type="arangosearch",
-        properties=properties
-    )
-    return view_name
+    """Delegate to shared helper (keeps existing call-sites working)."""
+    return create_or_update_search_view(db)
 
 def get_parent_module_context(db, item, col_name):
     """
@@ -448,7 +385,7 @@ def bridge_collection_parallel(db, col_name, view_name, threshold, method, trunc
             logger.warning(f"Could not fetch module resolved entities: {e}")
             
     # We use a ThreadPool to parallelize remote AQL calls
-    with ThreadPoolExecutor(max_workers=10) as executor:
+    with ThreadPoolExecutor(max_workers=_BRIDGER_MAX_WORKERS) as executor:
         futures = {}
         for item in items:
             context = ""
@@ -543,7 +480,7 @@ def bridge_logic_parallel(db, view_name):
 
     referenced_edges = []
     
-    with ThreadPoolExecutor(max_workers=10) as executor:
+    with ThreadPoolExecutor(max_workers=_BRIDGER_MAX_WORKERS) as executor:
         futures = {executor.submit(process_logic_chunk, db, chunk, view_name): chunk for chunk in chunks}
         
         for future in as_completed(futures):

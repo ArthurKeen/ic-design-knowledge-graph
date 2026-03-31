@@ -21,7 +21,9 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(__file__)), 'src
 from utils import expand_acronym
 
 # Add ER Library to path
-sys.path.insert(0, '/Users/arthurkeen/code/arango-entity-resolution/src')
+_ER_LIB_PATH = os.environ.get("ER_LIBRARY_PATH", os.path.join(os.path.dirname(__file__), "..", "..", "..", "arango-entity-resolution", "src"))
+if os.path.isdir(_ER_LIB_PATH):
+    sys.path.insert(0, _ER_LIB_PATH)
 
 # Jaro-Winkler for baseline
 def jaro_winkler_similarity(s1: str, s2: str) -> float:

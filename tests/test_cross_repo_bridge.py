@@ -14,6 +14,7 @@ from unittest.mock import MagicMock, patch
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 import cross_repo_bridge as bridge
+from utils import cosine_similarity as _cosine
 
 
 # ---------------------------------------------------------------------------
@@ -43,8 +44,8 @@ def _mock_db(src_entities: list[dict], tgt_entities: list[dict],
 
     # aql.execute — return different lists depending on query content
     def aql_side_effect(query, bind_vars=None):
-        query_lower = query.lower()
-        if "or1200" in query_lower or (bind_vars and "or1200" in str(bind_vars.get("r", ""))):
+        col = str(bind_vars.get("@col", "")) if bind_vars else ""
+        if "or1200" in query.lower() or "or1200" in col.lower():
             return iter(src_entities)
         return iter(tgt_entities)
 
@@ -59,35 +60,35 @@ def _mock_db(src_entities: list[dict], tgt_entities: list[dict],
 class TestCosineSimilarity(unittest.TestCase):
     def test_identical_vectors(self):
         v = [1.0, 0.0, 0.0]
-        self.assertAlmostEqual(bridge._cosine(v, v), 1.0, places=5)
+        self.assertAlmostEqual(_cosine(v, v), 1.0, places=5)
 
     def test_orthogonal_vectors(self):
         a = [1.0, 0.0]
         b = [0.0, 1.0]
-        self.assertAlmostEqual(bridge._cosine(a, b), 0.0, places=5)
+        self.assertAlmostEqual(_cosine(a, b), 0.0, places=5)
 
     def test_opposite_vectors(self):
         a = [1.0, 0.0]
         b = [-1.0, 0.0]
-        self.assertAlmostEqual(bridge._cosine(a, b), -1.0, places=5)
+        self.assertAlmostEqual(_cosine(a, b), -1.0, places=5)
 
     def test_zero_vector(self):
         """Zero vector should return 0.0 safely without division error."""
         a = [0.0, 0.0]
         b = [1.0, 0.5]
-        self.assertEqual(bridge._cosine(a, b), 0.0)
+        self.assertEqual(_cosine(a, b), 0.0)
 
     def test_empty_vectors(self):
-        self.assertEqual(bridge._cosine([], []), 0.0)
+        self.assertEqual(_cosine([], []), 0.0)
 
     def test_mismatched_lengths(self):
-        self.assertEqual(bridge._cosine([1.0], [1.0, 2.0]), 0.0)
+        self.assertEqual(_cosine([1.0], [1.0, 2.0]), 0.0)
 
     def test_similar_embeddings(self):
         """High-similarity embeddings should yield score > 0.9."""
         a = [0.9, 0.1, 0.0]
         b = [0.85, 0.15, 0.0]
-        score = bridge._cosine(a, b)
+        score = _cosine(a, b)
         self.assertGreater(score, 0.9)
 
 

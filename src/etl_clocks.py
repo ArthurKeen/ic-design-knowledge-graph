@@ -12,20 +12,8 @@ This module:
 import os
 import re
 import json
-import hashlib
 from typing import List, Dict, Tuple, Set, Optional
-from utils import NodeResolver
-
-def get_edge_key(from_id, to_id, edge_type):
-    """Generate deterministic key for edges"""
-    raw = f"{from_id}:{to_id}:{edge_type}"
-    return hashlib.md5(raw.encode()).hexdigest()
-
-def sanitize_id(raw_id):
-    """Sanitize ID for ArangoDB _key requirements"""
-    clean = re.sub(r'[\s\t\n\r]+', '', raw_id)
-    clean = re.sub(r'[^a-zA-Z0-9_\-:\.]', '_', clean)
-    return clean.strip('_')
+from utils import NodeResolver, get_edge_key, sanitize_id
 
 def extract_signals_from_code(code: str) -> Tuple[Set[str], Set[str]]:
     """Extract LHS (driven) and RHS (read) signals from Verilog code"""

@@ -188,6 +188,7 @@ EDGE_USES_OPERATOR = "USES_OPERATOR" # Logic/Signal → Operator
 
 # ArangoDB Configuration
 ARANGO_MODE = os.getenv("ARANGO_MODE", "LOCAL")
+ARANGO_DEFAULT_PORT = int(os.getenv("ARANGO_PORT", "8529"))
 
 if ARANGO_MODE == "REMOTE":
     ARANGO_ENDPOINT = os.getenv("ARANGO_ENDPOINT")
@@ -195,7 +196,8 @@ if ARANGO_MODE == "REMOTE":
     ARANGO_PASSWORD = os.getenv("ARANGO_PASSWORD")
     ARANGO_DATABASE = os.getenv("ARANGO_DATABASE", "ic-knowledge-graph")
 else:
-    # Local Docker
+    # Local Docker — port 8530 differs from the default production port (8529)
+    # because the Docker Compose mapping exposes ArangoDB on 8530 to avoid conflicts.
     ARANGO_ENDPOINT = os.getenv("LOCAL_ARANGO_ENDPOINT", "http://localhost:8530")
     ARANGO_USERNAME = os.getenv("LOCAL_ARANGO_USERNAME", "root")
     ARANGO_PASSWORD = os.getenv("LOCAL_ARANGO_PASSWORD", "")

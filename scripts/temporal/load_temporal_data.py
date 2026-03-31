@@ -21,13 +21,12 @@ from collections import defaultdict
 SRC_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "src")
 sys.path.insert(0, SRC_DIR)
 
-from arango import ArangoClient
-
 from config import (
-    ARANGO_ENDPOINT, ARANGO_USERNAME, ARANGO_PASSWORD, ARANGO_DATABASE,
+    ARANGO_ENDPOINT, ARANGO_DATABASE,
     COL_MODULE, COL_PORT, COL_SIGNAL, COL_COMMIT,
     EDGE_MODIFIED,
 )
+from db_utils import get_temporal_db
 from config_temporal import (
     TEMPORAL_NODES_FILE, TEMPORAL_EDGES_FILE,
     COL_DESIGN_EPOCH, COL_DESIGN_SITUATION,
@@ -93,11 +92,6 @@ MDI_VERTEX_INDEXES = [
     {"col": COL_DESIGN_SITUATION, "fields": ["valid_from_ts", "valid_to_ts"],
      "name": "idx_situation_mdi"},
 ]
-
-
-def get_db():
-    client = ArangoClient(hosts=ARANGO_ENDPOINT)
-    return client.db(ARANGO_DATABASE, username=ARANGO_USERNAME, password=ARANGO_PASSWORD)
 
 
 def ensure_collections(db, dry_run: bool = False) -> None:
@@ -348,7 +342,7 @@ def main():
 
     # Connect
     if not args.dry_run:
-        db = get_db()
+        db = get_temporal_db()
         ensure_collections(db, dry_run=False)
     else:
         db = None

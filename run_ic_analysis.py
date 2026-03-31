@@ -29,6 +29,9 @@ from pathlib import Path
 from typing import Any, Optional
 from urllib.parse import urlparse, urlunparse
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "src"))
+from config import ARANGO_DEFAULT_PORT
+
 
 def _require_platform():
     try:
@@ -82,8 +85,8 @@ def _require_platform():
         raise SystemExit(1) from e
 
 
-def _ensure_endpoint_has_port(url: str, default_port: int = 8529) -> str:
-    """Append :8529 to endpoint if no port is present (cluster URLs often need it)."""
+def _ensure_endpoint_has_port(url: str, default_port: int = ARANGO_DEFAULT_PORT) -> str:
+    """Append default port to endpoint if no port is present (cluster URLs often need it)."""
     if not url:
         return url
     try:

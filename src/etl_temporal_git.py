@@ -31,6 +31,7 @@ from config import COL_MODULE, COL_PORT, COL_SIGNAL, EDGE_MODIFIED, COL_COMMIT
 from config_temporal import (
     TEMPORAL_NODES_FILE, TEMPORAL_EDGES_FILE, EPOCHS_FILE,
     INGESTION_LOG_FILE, COL_DESIGN_EPOCH, EDGE_BELONGS_TO_EPOCH,
+    OPEN_VALIDITY_TS,
 )
 from etl_epoch_detector import detect_epochs, save_epochs
 
@@ -187,7 +188,7 @@ def make_rtl_module_node(
         "valid_from_commit":  valid_from_commit,
         "valid_from_ts":      valid_from_ts,
         "valid_to_commit":    None,
-        "valid_to_ts":        9999999999,   # sentinel: open-ended validity (ts > 9e9 in AQL)
+        "valid_to_ts":        OPEN_VALIDITY_TS,
         "design_epoch":       epoch,
         "metadata": {
             "file": file_info.get("file", ""),
@@ -203,7 +204,7 @@ def make_commit_node(commit: dict, repo_name: str, design_epoch: str = "developm
         "repo":         repo_name,
         "design_epoch": design_epoch,
         "valid_from_ts": commit["ts"],
-        "valid_to_ts":   9999999999,   # sentinel: open-ended validity
+        "valid_to_ts":   OPEN_VALIDITY_TS,
         "metadata": {
             "author":       commit["author"],
             "author_email": commit["author_email"],

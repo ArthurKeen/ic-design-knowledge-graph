@@ -21,9 +21,11 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from config_temporal import (
     ARANGO_DATABASE,
+    CROSS_REPO_BRIDGE_BATCH_SIZE,
     CROSS_REPO_MIN_SIMILARITY,
     EDGE_CROSS_REPO_SIMILAR, EDGE_CROSS_REPO_EVOLVED,
     LINEAGE_RULES, REPO_REGISTRY,
+    OPEN_VALIDITY_TS,
 )
 from db_utils import get_temporal_db, ensure_collection
 from utils import cosine_similarity, get_edge_key
@@ -163,8 +165,9 @@ def build_structural_bridges(
     # AMP cluster planner bug (ERR 4). Workaround: fetch all open-ended modules
     # then filter by repo in Python.
     all_open = list(db.aql.execute(
-        "FOR m IN RTL_Module FILTER m.valid_to_ts > 9000000000 "
-        "RETURN {id: m._id, label: m.label, file_hash: m.file_hash, repo: m.repo}"
+        "FOR m IN RTL_Module FILTER m.valid_to_ts >= @open_validity "
+        "RETURN {id: m._id, label: m.label, file_hash: m.file_hash, repo: m.repo}",
+        bind_vars={"open_validity": OPEN_VALIDITY_TS}
     ))
     src_modules = [m for m in all_open if src_repo in (m.get("repo") or "").lower()]
     tgt_modules = [m for m in all_open if tgt_repo in (m.get("repo") or "").lower()]
@@ -269,9 +272,8 @@ def write_bridges(db, edges: list[dict], collection: str) -> int:
     ensure_collection(db, collection, edge=True)
     col = db.collection(collection)
     written = 0
-    batch_size = 500
-    for i in range(0, len(edges), batch_size):
-        batch = edges[i:i + batch_size]
+    for i in range(0, len(edges), CROSS_REPO_BRIDGE_BATCH_SIZE):
+        batch = edges[i:i + CROSS_REPO_BRIDGE_BATCH_SIZE]
         try:
             result = col.import_bulk(batch, on_duplicate="replace")
             written += result.get("created", 0) + result.get("updated", 0)

@@ -15,6 +15,9 @@ COL_GOLDEN_RELATIONS = COL_RELATIONS
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+_EMBEDDING_DIMENSION = int(os.getenv("EMBEDDING_DIMENSION", "512"))
+_INVERTED_INDEX_NLISTS = int(os.getenv("INVERTED_INDEX_NLISTS", "278"))
+
 def _ensure_collection(db, name: str, edge: bool = False) -> None:
     if db.has_collection(name):
         return
@@ -40,7 +43,7 @@ def apply_indexes(db):
             'type': 'vector', 
             'fields': ['embedding'], 
             'name': 'vector_cosine', 
-            'params': {'dimension': 512, 'metric': 'cosine', 'nLists': 278}
+            'params': {'dimension': _EMBEDDING_DIMENSION, 'metric': 'cosine', 'nLists': _INVERTED_INDEX_NLISTS}
         })
     except Exception:
         pass

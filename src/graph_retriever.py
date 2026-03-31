@@ -41,6 +41,9 @@ try:
 except ImportError:
     _ANTHROPIC_AVAILABLE = False
 
+_EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "all-MiniLM-L6-v2")
+_LLM_MODEL = os.getenv("LLM_MODEL", "gpt-4o-mini")
+_LLM_MAX_TOKENS = int(os.getenv("LLM_MAX_TOKENS", "1024"))
 
 # ---------------------------------------------------------------------------
 # AQL templates
@@ -149,8 +152,10 @@ class GraphRetriever:
         Which repo collections to search (default: all four).
     """
 
+    # TODO: Load from config_temporal.REPO_REGISTRY
     REPOS = ["OR1200", "MOR1KX", "MAROCCHINO", "IBEX"]
     GOLDEN_SUFFIX = "_Golden_Entities"
+    # TODO: Load from config_temporal.REPO_REGISTRY
     MENTION_EDGES = {
         "OR1200":     "OR1200_MentionedIn",
         "MOR1KX":     "MOR1KX_MentionedIn",
@@ -164,7 +169,7 @@ class GraphRetriever:
         db_name: str = None,
         username: str = None,
         password: str = None,
-        embedding_model: str = "all-MiniLM-L6-v2",
+        embedding_model: str = _EMBEDDING_MODEL,
         top_k_golden: int = 5,
         top_k_community: int = 4,
         top_k_chunks: int = 3,
@@ -414,18 +419,19 @@ class GraphRetriever:
             client = _OpenAI()
             def _openai(prompt: str) -> str:
                 resp = client.chat.completions.create(
-                    model="gpt-4o-mini",
+                    model=_LLM_MODEL,
                     messages=[{"role": "user", "content": prompt}],
                     temperature=0,
                 )
                 return resp.choices[0].message.content
             return _openai
         if _ANTHROPIC_AVAILABLE and os.getenv("ANTHROPIC_API_KEY"):
+            # Fallback when OpenAI is unavailable
             client = _anthropic.Anthropic()
             def _claude(prompt: str) -> str:
                 resp = client.messages.create(
                     model="claude-3-5-haiku-20241022",
-                    max_tokens=1024,
+                    max_tokens=_LLM_MAX_TOKENS,
                     messages=[{"role": "user", "content": prompt}],
                 )
                 return resp.content[0].text

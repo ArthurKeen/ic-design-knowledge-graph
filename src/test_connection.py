@@ -34,7 +34,7 @@ def check_or_create_db():
     
     try:
         # Check if DB exists
-        response = requests.get(system_url, auth=HTTPBasicAuth(ARANGO_USERNAME, ARANGO_PASSWORD))
+        response = requests.get(system_url, auth=HTTPBasicAuth(ARANGO_USERNAME, ARANGO_PASSWORD), timeout=30)
         if ARANGO_DATABASE in response.json().get('result', []):
             print(f"Database '{ARANGO_DATABASE}' already exists.")
             return True
@@ -42,7 +42,7 @@ def check_or_create_db():
         # Create DB
         print(f"Creating database '{ARANGO_DATABASE}'...")
         payload = {"name": ARANGO_DATABASE}
-        create_response = requests.post(system_url, auth=HTTPBasicAuth(ARANGO_USERNAME, ARANGO_PASSWORD), json=payload)
+        create_response = requests.post(system_url, auth=HTTPBasicAuth(ARANGO_USERNAME, ARANGO_PASSWORD), json=payload, timeout=30)
         if create_response.status_code in [201, 200]:
             print(f"Database '{ARANGO_DATABASE}' created successfully.")
             return True

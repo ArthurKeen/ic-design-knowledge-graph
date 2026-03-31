@@ -274,23 +274,23 @@ def create_graph():
     try:
         # Check if our graph exists
         check_url = f"{url}/{GRAPH_NAME}"
-        response = requests.get(check_url, auth=auth)
+        response = requests.get(check_url, auth=auth, timeout=30)
         
         if response.status_code == 200:
             print(f"Graph '{GRAPH_NAME}' already exists. Re-creating to update definitions...")
             # dropCollections=false is the default for Gharial, but we are explicit here for safety
-            requests.delete(f"{check_url}?dropCollections=false", auth=auth)
+            requests.delete(f"{check_url}?dropCollections=false", auth=auth, timeout=30)
             
         # Also check for the existing GraphRAG graph which might be using the same edge collections
         conflict_graph = f"{GRAPHRAG_PREFIX}kg"
         conflict_url = f"{url}/{conflict_graph}"
-        conflict_response = requests.get(conflict_url, auth=auth)
+        conflict_response = requests.get(conflict_url, auth=auth, timeout=30)
         if conflict_response.status_code == 200:
             print(f"Graph '{conflict_graph}' found. Deleting to avoid edge collection conflicts...")
-            requests.delete(f"{conflict_url}?dropCollections=false", auth=auth)
+            requests.delete(f"{conflict_url}?dropCollections=false", auth=auth, timeout=30)
         
         # Create Graph
-        create_response = requests.post(url, auth=auth, json=graph_data)
+        create_response = requests.post(url, auth=auth, json=graph_data, timeout=30)
         if create_response.status_code in [201, 202]:
             print(f"Successfully created graph '{GRAPH_NAME}'!")
             return True

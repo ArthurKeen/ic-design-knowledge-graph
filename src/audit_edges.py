@@ -1,5 +1,20 @@
 from db_utils import get_db
 
+
+_DANGLING_AQL = """
+FOR e IN @@col
+  LET fromExists = (DOCUMENT(e._from) != null)
+  LET toExists = (DOCUMENT(e._to) != null)
+  FILTER !fromExists OR !toExists
+  RETURN { id: e._id, f: e._from, fe: fromExists, t: e._to, te: toExists }
+"""
+
+
+def find_dangling_edges(db, collection_name: str) -> list:
+    """Return dangling edges (missing _from or _to targets) in a collection."""
+    return list(db.aql.execute(_DANGLING_AQL, bind_vars={"@col": collection_name}))
+
+
 def audit_edges():
     db = get_db()
     graph_edges = [
@@ -15,23 +30,9 @@ def audit_edges():
         if not db.has_collection(col):
             print(f'[SKIP] {col} (Collection missing)')
             continue
-            
-        q = f"""
-        FOR e IN {col}
-        LET fromExists = (DOCUMENT(e._from) != null)
-        LET toExists = (DOCUMENT(e._to) != null)
-        FILTER !fromExists OR !toExists
-        RETURN {{
-            id: e._id,
-            f: e._from,
-            fe: fromExists,
-            t: e._to,
-            te: toExists
-        }}
-        """
-        
+
         try:
-            dangling = list(db.aql.execute(q))
+            dangling = find_dangling_edges(db, col)
             if dangling:
                 print(f'[FAIL] {col}: {len(dangling)} dangling edges found.')
                 for d in dangling[:5]:
