@@ -40,7 +40,7 @@ def get_db(
 def ensure_collection(db, name: str, *, edge: bool = False) -> None:
     if db.has_collection(name):
         return
-    db.create_collection(name, edge=edge)
+    db.create_collection(name, edge=edge, system=name.startswith("_"))
 
 
 def upsert_by_fields(col, match_fields: dict[str, Any], doc: dict[str, Any]) -> str:
@@ -55,8 +55,8 @@ def upsert_by_fields(col, match_fields: dict[str, Any], doc: dict[str, Any]) -> 
     existing = list(col.find(match_fields))
     if existing:
         key = existing[0]["_key"]
-        doc = {**doc, "_key": key}
-        col.update(doc)
+        doc = {**doc, "_key": key, "createdAt": existing[0].get("createdAt", doc.get("createdAt"))}
+        col.replace(doc, check_rev=False)
         return f"{col.name}/{key}"
     res = col.insert(doc)
     return res["_id"]
@@ -65,29 +65,33 @@ def upsert_by_fields(col, match_fields: dict[str, Any], doc: dict[str, Any]) -> 
 def upsert_by_key(col, key: str, doc: dict[str, Any]) -> str:
     doc = {**doc, "_key": key}
     if col.has(key):
-        col.update(doc)
+        existing = col.get(key)
+        doc["createdAt"] = existing.get("createdAt", doc.get("createdAt"))
+        col.replace(doc, check_rev=False)
         return f"{col.name}/{key}"
     res = col.insert(doc)
     return res["_id"]
 
 
-def get_viewpoint_id_for_graph(target_db, *, graph_id: str) -> str:
+def ensure_default_viewpoint(db, graph_name: str) -> str:
     """
-    Canvas actions appear only after linking them to a viewpoint.
-    Viewpoints are created when a user opens the graph in the UI at least once.
+    Create a default viewpoint programmatically so the graph can be automated
+    without requiring the user to open it in the UI first.
     """
-    if not target_db.has_collection("_viewpoints"):
-        raise RuntimeError(
-            "No _viewpoints collection found. Open the graph once in the Visualizer UI, then retry."
-        )
-    vp_col = target_db.collection("_viewpoints")
-    vps = list(vp_col.find({"graphId": graph_id}))
-    if not vps:
-        # fallback: use first viewpoint if graphId not stored consistently
-        vps = list(vp_col.all())
-    if not vps:
-        raise RuntimeError("No viewpoints found. Open the graph in the Visualizer UI, then retry.")
-    return vps[0]["_id"]
+    ensure_collection(db, "_viewpoints")
+    vp_col = db.collection("_viewpoints")
+    existing = list(vp_col.find({"graphId": graph_name, "name": "Default"}))
+    if existing:
+        return existing[0]["_id"]
+    now = now_iso()
+    res = vp_col.insert({
+        "graphId": graph_name,
+        "name": "Default",
+        "description": f"Default viewpoint for {graph_name}",
+        "createdAt": now,
+        "updatedAt": now,
+    })
+    return res["_id"]
 
 
 def ensure_action_link(target_db, *, viewpoint_id: str, action_id: str) -> None:
@@ -109,12 +113,12 @@ def install_theme(target_db, *, graph_id: str, theme_path: Path) -> str:
     theme.setdefault("description", "")
     theme.setdefault("nodeConfigMap", {})
     theme.setdefault("edgeConfigMap", {})
+    theme.setdefault("isDefault", True)
 
     ts = now_iso()
-    theme.setdefault("createdAt", ts)
     theme["updatedAt"] = ts
 
-    # Upsert by (graphId, name)
+    # Upsert by (graphId, name) — preserves createdAt on update
     return upsert_by_fields(col, {"graphId": theme["graphId"], "name": theme["name"]}, theme)
 
 
@@ -130,11 +134,15 @@ def install_saved_queries(
 
     processed = 0
     for q in queries:
-        # Normalize
+        # Normalize display fields
         if "title" not in q and "name" in q:
             q["title"] = q["name"]
         q.setdefault("name", q.get("title") or "Untitled query")
-        q.setdefault("queryText", "")
+        # CRITICAL: The query editor reads `content` (and `value` for older versions),
+        # NOT `queryText`. `queryText` is only for canvas actions.
+        aql = q.pop("queryText", None)
+        q.setdefault("content", aql or "")
+        q.setdefault("value", q["content"])  # cross-version compatibility
         q.setdefault("bindVariables", {})
         q["updatedAt"] = ts
         q.setdefault("createdAt", ts)
@@ -160,7 +168,7 @@ def install_canvas_actions(
     ensure_collection(actions_db, "_canvasActions")
     action_col = actions_db.collection("_canvasActions")
 
-    viewpoint_id = get_viewpoint_id_for_graph(target_db, graph_id=graph_id)
+    viewpoint_id = ensure_default_viewpoint(target_db, graph_id)
 
     processed = 0
     for a in actions:
@@ -175,8 +183,10 @@ def install_canvas_actions(
 
         key = a.get("_key")
         if not key:
-            # stable key suggestion: snake_case your title/name
-            raise ValueError("Canvas action missing stable `_key` (required).")
+            # Derive a stable key from graph_id + name (snake_case)
+            import re
+            slug = re.sub(r"[^a-z0-9]+", "_", f"{graph_id}_{a['name']}".lower()).strip("_")
+            key = slug
 
         action_id = upsert_by_key(action_col, key, a)
 
@@ -200,7 +210,7 @@ def main() -> None:
     # If your deployment stores these in the target DB, set VIS_META_DB=target.
     meta_db_mode = (os.environ.get("VIS_META_DB", "system") or "system").lower()
 
-    # Load assets (replace with your repo’s JSON layout)
+    # Load assets (replace with your repo's JSON layout)
     queries = json.loads(Path("docs/saved_queries.json").read_text(encoding="utf-8"))
     actions = json.loads(Path("docs/canvas_actions.json").read_text(encoding="utf-8"))
 
@@ -224,10 +234,9 @@ if __name__ == "__main__":
     main()
 ```
 
-### Notes you’ll almost certainly need to adjust
+### Notes you'll almost certainly need to adjust
 
-- **Asset loading**: replace `docs/saved_queries.json` and `docs/canvas_actions.json` with your repo’s actual files (or embed lists inline).
+- **Asset loading**: replace `docs/saved_queries.json` and `docs/canvas_actions.json` with your repo's actual files (or embed lists inline).
 - **Graph ID**: set `VIS_GRAPH_ID` to the actual graph name in ArangoDB (must match what the Visualizer uses).
 - **Metadata DB**: if your environment stores `_editor_saved_queries` and `_canvasActions` in the target DB, set `VIS_META_DB=target`.
-- **Viewpoint requirement**: if the script errors “No viewpoints found”, open the graph once in the Visualizer UI and re-run.
-
+- **Viewpoint**: created programmatically by `ensure_default_viewpoint()` — no manual UI step required.
