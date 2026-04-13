@@ -60,7 +60,7 @@ We have implemented a hierarchical consolidation layer to address GraphRAG fragm
 | **Semantic Bridges** | 193 | RESOLVED_TO (code ↔ specifications) |
 | **Cross-Repo Similarity** | 61 | CROSS_REPO_SIMILAR_TO edges |
 | **Architectural Lineage** | 8 | CROSS_REPO_EVOLVED_FROM edges |
-| **Unit Tests** | 198 | CI on Python 3.10 and 3.11 |
+| **Unit Tests** | 213 | CI on Python 3.10 and 3.11 |
 
 ## 4. Verification & Exploration
 Run this AQL query in ArangoDB to explore the top architectural links:

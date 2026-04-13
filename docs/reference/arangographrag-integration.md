@@ -3,10 +3,10 @@ Output: A plan for adapting this code base to work with the graphRAG imported el
 
 The ArangoGraphRAG implementation divides documents into chunks (..._Chunks), identifies entities (..._Entities) in the chunks, performs entity resolution on the imported entities, identifies relationships (...Relationships), and identifies communities (..._Communities) using the Leiden algorithm. Embeddings are added to Entities and are optional on Chunks. The entities and relationships are represented using an LPG pattern with a type field on entity and relationship collections. The collections stored in the database are prepended with the project name (currently 'OR1200_'). The _Relations collection also represents the edges from Documents to Chunks and from Entities to Communities.
 
-![alt text](image-2.png)
+[Screenshot: ArangoGraphRAG pipeline — chunks, entities, relations, communities, and prefixed collections]
 
 
-![alt text](image-1.png)
+[Screenshot: Entity resolution and semantic bridge between RTL modules and GraphRAG entities]
 
 # Entity Resolution - semantic bridge
 Output An analysis of options and a plan for developing a semantic bridge between the RTL_Modules and the GraphRAG imported entities.

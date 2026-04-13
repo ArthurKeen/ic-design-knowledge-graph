@@ -647,7 +647,7 @@ The system is compatible with existing:
 
 - Main README: `/path/to/project/README.md`
 - Schema reference: `/path/to/project/docs/project/SCHEMA.md`
-- Bridging guide: `/path/to/project/docs/project/CONSOLIDATION_BRIDGING_IMPROVEMENTS.md`
+- Bridging guide: `/path/to/project/docs/project/BRIDGING_TECHNICAL_DETAILS.md`
 
 ### Source Code
 

@@ -78,7 +78,7 @@ class GraphRAGClient:
         
         try:
             self.logger.info("Authenticating with GenAI API...")
-            response = requests.post(auth_url, json=payload, verify=self.verify_ssl)
+            response = requests.post(auth_url, json=payload, verify=self.verify_ssl, timeout=30)
             response.raise_for_status()
             self.jwt_token = response.json().get("jwt")
             
@@ -127,7 +127,7 @@ class GraphRAGClient:
         
         try:
             self.logger.info(f"Creating project '{project_name}' in database '{db_name}'...")
-            response = requests.post(url, json=payload, headers=headers, verify=self.verify_ssl)
+            response = requests.post(url, json=payload, headers=headers, verify=self.verify_ssl, timeout=30)
             
             # Check if project already exists (don't fail)
             if response.status_code == 400:
@@ -173,7 +173,7 @@ class GraphRAGClient:
         
         try:
             self.logger.debug(f"Sending {method} request to {suffix}")
-            response = requests.request(method, url, json=payload, headers=headers, verify=self.verify_ssl)
+            response = requests.request(method, url, json=payload, headers=headers, verify=self.verify_ssl, timeout=60)
             response.raise_for_status()
             return response.json()
             

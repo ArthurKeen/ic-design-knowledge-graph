@@ -1,6 +1,6 @@
 # Temporal IC Knowledge Graph — Implementation Reference
 
-**Branch:** `feature/temporal-kg`  
+**Branch:** `main` (merged from `feature/temporal-kg`)  
 **Database:** `ic-knowledge-graph-temporal`  
 **Last Updated:** 2026-03-10
 
@@ -36,7 +36,7 @@ ic-knowledge-graph-temporal
   ├── DesignSituation (722)
   ├── MODIFIED edges (6,594, with VCI indexes)
   ├── BELONGS_TO_EPOCH edges (6,794)
-  └── CROSS_REPO_SIMILAR_TO edges (17)
+  └── CROSS_REPO_SIMILAR_TO edges (61)
          │
          ├─[situation_detector.py]  ← auto-generate DesignSituation nodes
          └─[cross_repo_bridge.py]   ← CROSS_REPO_SIMILAR_TO edges
@@ -207,7 +207,7 @@ Three heuristics, all using **pre-fetched data** (O(1) AQL queries per repo):
 | OR1200 ↔ IBEX | 4 |
 | MOR1KX ↔ MAROCCHINO | 1 |
 | MOR1KX ↔ IBEX | 2 |
-| **Total** | **17** |
+| **Total** | **61** |
 
 ---
 
@@ -333,5 +333,5 @@ Start with `asyncio` task loop (zero new dependencies). Migrate to LangGraph mul
 1. **Run local GraphRAG on doc directories** (`src/local_graphrag/`) to populate `{PREFIX}Entities` / `{PREFIX}Communities` and enable `CROSS_REPO_EVOLVED_FROM` lineage edges
 2. **Lower `CROSS_REPO_MIN_SIMILARITY`** from 0.70 to test broader bridge coverage, especially for ibex ↔ marocchino (currently 0 edges)
 3. **Port extractor from Verilog** — parse module port declarations during ETL to enable port-signature structural bridges (replaces label-suffix heuristic)
-4. **Merge `feature/temporal-kg` → `main`** after acceptance testing
+4. ~~Merge `feature/temporal-kg` → `main`~~ (completed)
 5. **Phase 5** — implement agentic swarm if continuous monitoring is required

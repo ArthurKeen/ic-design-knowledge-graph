@@ -67,7 +67,7 @@ See [GRAPHRAG_STATUS.md](GRAPHRAG_STATUS.md) for a detailed description of the i
 - `docs/`: Comprehensive documentation (see [docs/README.md](docs/README.md))
     - `project/`: Core project docs (Walkthrough, Schema, TEMPORAL_IMPLEMENTATION.md)
     - `reference/`: Technical references
-- `tests/`: 198 unit tests for parsing, normalization, and pipeline logic.
+- `tests/`: 213 unit tests for parsing, normalization, and pipeline logic.
 - `validation/`: Ground truth datasets and validation scripts.
 
 ## Setup & Usage
@@ -146,11 +146,11 @@ Ensure `.env` has valid ArangoDB credentials—the workflow uses JWT for GRAL; t
 
 **Or step-by-step:**
 ```bash
-python scripts/multi_repo/ingest_repo.py --all      # Ingest all four repos
+python scripts/multi_repo/ingest_repo.py             # Ingest all four repos (default)
 python scripts/temporal/create_temporal_graph.py     # Create named graph (28 edge definitions)
+python src/situation_detector.py --all               # Detect design situations
 python src/rtl_semantic_bridge.py --all              # Build RESOLVED_TO edges
-python src/cross_repo_bridge.py                      # Build cross-repo similarity edges
-python src/situation_detector.py --all-repos         # Detect design situations
+python src/cross_repo_bridge.py --all                # Build cross-repo similarity edges
 ```
 
 **Author Expertise Mapping** (included in rebuild):
@@ -193,7 +193,7 @@ Complete demonstration materials are available:
 1. **Full Setup**: Run `./scripts/rebuild_database.sh` to create the database and ingest all repos
 2. **Quick Start**: Read `docs/DEMO_EXECUTIVE_SUMMARY.md` (5-minute overview)
 3. **Setup Theme**: Run `python scripts/setup/install_ic_theme.py` to install the 'hardware-design' visualization theme
-4. **Setup Queries**: Run `python scripts/setup/install_demo_setup.py` to install 22 saved queries and canvas actions
+4. **Setup Queries**: Run `python scripts/setup/install_demo_setup.py` to install 24 saved queries and canvas actions
 5. **Demo Guide**: Follow `docs/TEMPORAL_DEMO_SCRIPT.md` for a comprehensive demonstration
 6. **Preparation**: Use `docs/DEMO_README.md` for setup checklist and troubleshooting
 

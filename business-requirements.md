@@ -90,7 +90,7 @@
 - **193 Semantic Bridge links** (RESOLVED_TO: RTL → documentation)
 - **61 cross-repo similarity edges**, **8 architectural lineage edges**
 - **Sub-200ms** traversal queries for multi-hop traversals
-- **198 unit tests**, CI on Python 3.10 and 3.11
+- **213 unit tests**, CI on Python 3.10 and 3.11
 
 ---
 

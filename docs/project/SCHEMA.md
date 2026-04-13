@@ -4,7 +4,7 @@ This document defines the structure of the **Integrated Circuit (IC) Design Know
 
 ## 1. Schema Diagram
 
-![Knowledge Graph Schema](knowledge_graph_schema.png)
+[Schema diagram — see Mermaid diagram above or open IC_Temporal_Knowledge_Graph in ArangoDB Visualizer]
 
 <details>
 <summary>View Mermaid Source</summary>
@@ -282,7 +282,7 @@ GraphRAG collections are created by the ArangoDB GraphRAG importer service and c
 | `OR1200_Documents` | Vertex | 3 | Source PDF documents (spec, supplementary, Japanese spec) |
 | `OR1200_Chunks` | Vertex | ~200 | Text chunks from documents (1200 tokens each) |
 | `OR1200_Entities` | Vertex | ~5,800 | Raw extracted entities (before consolidation) |
-| `OR1200_Golden_Entities` | Vertex | ~3,500 | Consolidated canonical entities |
+| `OR1200_Golden_Entities` | Vertex | 4,045 | Consolidated canonical entities |
 | `OR1200_Relations` | Edge | ~17,700 | Entity relationships and document links |
 | `OR1200_Golden_Relations` | Edge | ~17,700 | Consolidated relationships |
 | `OR1200_Communities` | Vertex | ~50 | Entity clusters identified by Leiden algorithm |

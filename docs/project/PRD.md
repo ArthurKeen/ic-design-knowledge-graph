@@ -180,7 +180,7 @@ Each commit is assigned to a named epoch by `etl_epoch_detector.py` using four r
 | Design situation index | Auto-generated `DesignSituation` nodes | ✅ 721 situations across 381 epochs |
 | Local GraphRAG | Full pipeline without AMP | ✅ `src/local_graphrag/` |
 | Temporal query correctness | State-as-of-commit AQL templates | ✅ Validated (see `docs/project/TEMPORAL_IMPLEMENTATION.md §7`) |
-| Test suite | Comprehensive unit tests | ✅ 198 tests, CI on Python 3.10 and 3.11 |
+| Test suite | Comprehensive unit tests | ✅ 213 tests, CI on Python 3.10 and 3.11 |
 | Merged to main | `feature/temporal-kg` merged | ✅ |
 
 ### Next Steps

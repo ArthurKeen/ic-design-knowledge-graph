@@ -38,7 +38,7 @@ collections with its own prefix. All reside in the shared `ic-knowledge-graph-te
 For environments without ArangoDB AMP / GenAI API access, the `src/local_graphrag/`
 module provides a fully offline GraphRAG pipeline that runs entity extraction and
 community detection locally using an LLM API (e.g. OpenRouter) without requiring AMP
-services. See `src/local_graphrag/README.md` for usage.
+services. See `src/local_graphrag/` for usage.
 
 ---
 

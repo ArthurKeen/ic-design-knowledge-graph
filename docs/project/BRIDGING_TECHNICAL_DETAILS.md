@@ -12,7 +12,7 @@
 
 ## Overview
 
-This document describes the improvements implemented based on the recommendations in `BRIDGING_CONSOLIDATION_ASSESSMENT.md`. These enhancements focus on improving precision, recall, and performance of the entity resolution and bridging system.
+This document describes the improvements implemented based on an earlier bridging/consolidation assessment (that material is now folded into this document). These enhancements focus on improving precision, recall, and performance of the entity resolution and bridging system.
 
 ## Implemented Improvements
 
@@ -359,7 +359,7 @@ This compares:
 
 ### Expected Improvements
 
-Based on the assessment document:
+Based on the original assessment (folded into this document):
 
 | Improvement | Expected Gain | Metric |
 |-------------|---------------|--------|
@@ -445,7 +445,7 @@ Based on the assessment document:
 
 ## References
 
-- **Assessment Document:** `docs/project/BRIDGING_CONSOLIDATION_ASSESSMENT.md`
+- **Assessment:** Standalone `BRIDGING_CONSOLIDATION_ASSESSMENT.md` was removed; its substance is covered here.
 - **Schema Documentation:** `docs/project/SCHEMA.md`
 - **Arango ER Library:** https://pypi.org/project/arango-entity-resolution/
 - **Validation Framework:** `validation/README.md`
@@ -488,4 +488,4 @@ After re-running bridging, only modules with a real lexical or semantic tie to a
 
 ## Contact
 
-For questions or issues with these improvements, refer to the assessment document or validation results.
+For questions or issues with these improvements, refer to this document or validation results.

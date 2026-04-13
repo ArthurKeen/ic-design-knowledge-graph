@@ -11,6 +11,7 @@ dependencies = [
     "python-dotenv>=1.0.0",
     "PyYAML>=6.0",
     "requests>=2.31.0",
+    "numpy>=1.24.0",
 ]
 
 [project.optional-dependencies]
@@ -25,6 +26,7 @@ py-modules = [
     "audit_edges",
     "bridger",
     "bridger_bulk",
+    "bridger_shared",
     "config",
     "config_temporal",
     "consolidator",
