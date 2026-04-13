@@ -59,28 +59,27 @@ Think of the current validation as 'developer testing' - it proves the approach 
 
 ---
 
-### Q: "How do I know the 2,202 bridges you created are actually correct?"
+### Q: "How do I know the bridges you created are actually correct?"
 
 **Answer**:
 "That's the right question to ask. Here's our multi-layer quality assurance:
 
-1. **Automated quality**: All 2,202 bridges passed our type compatibility filter - meaning they're structurally plausible (e.g., no RTL signals linked to instruction entities).
+1. **Automated quality**: All 193 RESOLVED_TO bridges and 61 CROSS_REPO_SIMILAR_TO edges passed our type compatibility filter — meaning they're structurally plausible (e.g., no RTL signals linked to instruction entities).
 
 2. **Scoring threshold**: All bridges have similarity scores above 0.6-0.7, with 53.9% scoring above 0.7 (high confidence).
 
-3. **Spot checking**: We manually inspected high-confidence bridges (top 50) and found them accurate. Detailed quality validation showed 100% precision on tested samples.
+3. **Cross-repo validation**: The 61 CROSS_REPO_SIMILAR_TO edges link structurally similar modules across OR1200, IBEX, MOR1KX, and Marocchino — verified by comparing module interfaces and functionality.
 
-4. **Verifiable in demo**: You can inspect any bridge interactively in the Graph Visualizer. Click on any RESOLVED_TO edge to see:
+4. **Verifiable in demo**: You can inspect any bridge interactively in the Graph Visualizer. Click on any RESOLVED_TO or CROSS_REPO_SIMILAR_TO edge to see:
  - The similarity score
  - The matching method used
- - The source RTL code
- - The target specification text
+ - The source and target nodes across repos
 
 5. **Production validation plan**: For your IP, we'd work with your hardware architects to create a 'gold standard' validation set specific to your designs and documentation.
 
-The key insight: we're not claiming all 2,202 are perfect - we're claiming the methodology is sound based on our test set, and the bridges are inspectable/verifiable."
+The key insight: we're not claiming every bridge is perfect — we're claiming the methodology is sound, bridges are inspectable/verifiable, and cross-repo links are a new capability that wasn't possible before."
 
-**Key message**: Quality comes from type filtering + threshold + spot checking. All bridges are inspectable.
+**Key message**: Quality comes from type filtering + threshold + cross-repo verification. All bridges are inspectable.
 
 ---
 
@@ -252,6 +251,45 @@ TYPE_COMPATIBILITY = {
 The type system is data-driven - we're not hardcoding hardware concepts, we're encoding your specific design methodology."
 
 **Key message**: System is extensible. We work with your team to define your types.
+
+---
+
+### Q: "How does the temporal model work across multiple repos?"
+
+**Answer**:
+"Each processor repo is versioned independently through temporal epochs — 381 epochs total across our four repos. Within each epoch, we capture design situations (721 total) that represent point-in-time snapshots of module state.
+
+The temporal model uses an immutable-proxy pattern:
+- **ProxyIn / ProxyOut** nodes bracket each versioned entity
+- **hasVersion** edges connect proxies to the concrete entity state
+- **created / expired** timestamps on edges enable time-travel queries
+
+This means you can ask questions like:
+- 'What did the ALU look like in epoch 50 vs. epoch 200?'
+- 'When did module X first appear in the IBEX repo?'
+- 'Which cross-repo similarities existed at a given point in time?'
+
+The 61 CROSS_REPO_SIMILAR_TO edges connect structurally similar modules across OR1200, IBEX, MOR1KX, and Marocchino, enabling cross-pollination analysis."
+
+**Key message**: Temporal epochs + design situations enable time-travel across all four repos.
+
+---
+
+### Q: "What are CROSS_REPO_SIMILAR_TO edges and how are they computed?"
+
+**Answer**:
+"These are 61 edges that link modules with similar structure or function across different processor repos. For example, an ALU module in OR1200 might be linked to a comparable ALU in IBEX.
+
+The similarity is computed by comparing:
+1. Module interface signatures (port names, widths, directions)
+2. Internal signal patterns
+3. Functional descriptions from documentation bridges
+
+This enables questions like 'Show me all ALU implementations across our processor portfolio' or 'Which IBEX modules have equivalents in MOR1KX?'
+
+These edges are distinct from RESOLVED_TO (which links RTL to documentation within a repo). CROSS_REPO_SIMILAR_TO links RTL to RTL across repos."
+
+**Key message**: Cross-repo edges enable portfolio-wide design comparison.
 
 ---
 

@@ -2,17 +2,17 @@
 
 **Duration**: 30-45 minutes  
 **Audience**: Technical Stakeholders & Engineering Teams  
-**Objective**: Demonstrate ArangoDB Knowledge Graph for Integrated Circuit (IC) Design (using OR1200 RISC processor as sample data)
+**Objective**: Demonstrate ArangoDB Knowledge Graph for Integrated Circuit (IC) Design across four open-source RISC-V / OpenRISC processors (OR1200, IBEX, MOR1KX, Marocchino)
 
 ---
 
 ## What We're Showing
 
-**The OR1200 RISC Processor** transformed into an integrated knowledge graph that combines:
-- **Hardware Structure** (RTL): 104 modules, 1,491 ports, 1,441 signals, 1,513 logic blocks
-- **Specifications** (Documentation): 4,045 canonical entities from technical docs
-- **Version History** (Git): 48 commits tracking design evolution
-- **Semantic Bridges**: 2,202 high-confidence links between code and specifications
+**Four RISC processors** (OR1200, IBEX, MOR1KX, Marocchino) transformed into a unified temporal knowledge graph that combines:
+- **Hardware Structure** (RTL): ~6,400 modules across four repos
+- **Version History** (Git): ~3,800 commits, 381 temporal epochs
+- **Temporal Snapshots**: 721 design situations capturing point-in-time state
+- **Semantic Bridges**: 193 RESOLVED_TO edges, 61 CROSS_REPO_SIMILAR_TO edges linking designs across repositories
 
 ---
 
@@ -41,6 +41,8 @@
 ---
 
 ## Demo Flow (6 Parts, 30 minutes)
+
+> See [TEMPORAL_DEMO_SCRIPT.md](TEMPORAL_DEMO_SCRIPT.md) for the full step-by-step guide.
 
 | Part | Topic | Key Action | Time |
 |------|-------|------------|------|
@@ -107,9 +109,9 @@ graph LR
 
 ### Key Statistics
 - **Query Performance**: Sub-200ms for multi-hop traversals
-- **Semantic Bridge Coverage**: 573 ports, 475 signals resolved to specs
-- **Data Growth**: 17,323 nodes, 58,900 edges in OR1200 POC
-- **Precision**: 100% validated accuracy on semantic links (zero false positives)
+- **Scope**: 4 processors, ~6,400 modules, ~3,800 commits
+- **Temporal Coverage**: 381 epochs, 721 design situations
+- **Cross-Repo Bridges**: 193 RESOLVED_TO, 61 CROSS_REPO_SIMILAR_TO
 
 ### Technology Stack
 - **Database**: ArangoDB (multi-model: graph + document + search)
@@ -154,7 +156,8 @@ graph LR
 
 | File | Purpose | Location |
 |------|---------|----------|
-| **DEMO_SCRIPT.md** | Complete demo guide with queries, actions, Q&A | `docs/` |
+| **TEMPORAL_DEMO_SCRIPT.md** | Current multi-repo temporal demo guide | `docs/` |
+| **DEMO_SCRIPT.md** | Legacy single-repo demo (deprecated) | `docs/` |
 | **DEMO_SETUP_QUERIES.json** | Pre-configured queries/actions/theme | `docs/` |
 | **install_demo_setup.py** | Automated installer script | `scripts/setup/` |
 | **install_theme.py** | Visualization theme installer | `scripts/setup/` |
@@ -166,19 +169,19 @@ graph LR
 
 ## Pre-Demo Checklist (30 min before)
 
-- [ ] Run `python scripts/setup/install_theme.py` (installs 'hardware-design' theme)
+- [ ] Run `python scripts/setup/install_ic_theme.py` (installs 'hardware-design' theme)
 - [ ] Run `python scripts/setup/install_demo_setup.py` (installs queries/actions)
 - [ ] Open ArangoDB web interface → ic-knowledge-graph-temporal → IC_Temporal_Knowledge_Graph
 - [ ] Apply "hardware-design" theme in Legend panel
 - [ ] Test 3 queries: Graph Overview, ALU Entity Resolutions, Top Semantic Links
-- [ ] Have DEMO_SCRIPT.md open for reference
+- [ ] Have TEMPORAL_DEMO_SCRIPT.md open for reference
 - [ ] Clear canvas to start fresh
 
 ---
 
 ## Opening Line
 
-> "We've transformed the OR1200 processor into a living knowledge graph that answers questions like 'Where is the Exception Status Register implemented?' in seconds—not by searching documents, but by traversing semantic bridges between specifications and code. Let me show you how this works."
+> "We've transformed four open-source RISC processors—OR1200, IBEX, MOR1KX, and Marocchino—into a temporal knowledge graph that lets you time-travel through design evolution and discover cross-repo similarities. Let me show you how it works."
 
 ---
 
@@ -189,6 +192,6 @@ graph LR
 ---
 
 **Prepared by**: Project Team  
-**Last Updated**: January 8, 2026  
-**Version**: 1.0
+**Last Updated**: March 31, 2026  
+**Version**: 2.0 (multi-repo temporal)
 

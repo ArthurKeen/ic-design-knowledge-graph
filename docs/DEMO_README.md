@@ -50,7 +50,7 @@ Follow the step-by-step guide in [`docs/CUSTOMER_EXERCISE_WORKFLOW.md`](CUSTOMER
 
 ```bash
 # Ensure ArangoDB is running and accessible
-# Check that the OR1200 graph exists
+# Check that the IC_Temporal_Knowledge_Graph exists
 cd /Users/arthurkeen/code/ic-knowledge-graph
 python -c "from src.db_utils import get_db; db = get_db(); print('Database:', db.name); print('Graph exists:', db.has_graph('IC_Temporal_Knowledge_Graph'))"
 ```
@@ -61,57 +61,19 @@ Database: ic-knowledge-graph-temporal
 Graph exists: True
 ```
 
-If the graph doesn't exist, run the full ETL pipeline:
+If the graph doesn't exist, run the full rebuild:
 ```bash
-cd src
-python etl_rtl.py
-python etl_git.py
-python bridger.py
-python create_graph.py
+bash scripts/rebuild_database.sh
 ```
 
-### Step 2: Install Demo Theme
+### Step 2: Install Visualization Theme
 
 ```bash
-python scripts/setup/install_theme.py
+python scripts/setup/install_ic_theme.py
 ```
 
-**Expected output**:
-```
-============================================================
-OR1200 Theme Installer
-============================================================
-
-Connecting to database...
-Connected to: ic-knowledge-graph-temporal
-
-Installing OR1200 Theme...
-============================================================
-
- [SUCCESS] Installed new theme: 'hardware-design'
- Theme ID: _graphThemeStore/...
-
- Graph: IC_Temporal_Knowledge_Graph
- Description: Optimized theme for OR1200 hardware design visualization demo
-
- Node Collections Configured: 10
- - GitCommit: #9f7aea (mdi:source-commit)
- - OR1200_Golden_Entities: #e5ce3e (mdi:alien)
- - RTL_LogicChunk: #667eea (mdi:code-braces)
- - RTL_Module: #24761e (fa6-solid:microchip)
- - RTL_Port: #ed64a6 (mdi:usb-c-port)
- - RTL_Signal: #48bb78 (mdi:signal-variant)
- ...
-
- Edge Collections Configured: 10
- - RESOLVED_TO: #d69e2e (thickness: 1.2)
- - WIRED_TO: #d53f8c (thickness: 1.2)
- ...
-
-============================================================
-Installation successful!
-============================================================
-```
+This installs the `hardware-design` theme into `_graphThemeStore`. The theme
+configures node colors, icons, and edge styling for all processor collections.
 
 ### Step 3: Install Demo Queries and Actions
 
@@ -119,44 +81,9 @@ Installation successful!
 python scripts/setup/install_demo_setup.py
 ```
 
-**Expected output**:
-```
-============================================================
-OR1200 Knowledge Graph - Demo Setup Installer
-============================================================
-
-[1/4] Installing Saved Queries...
- Installed: Graph Overview - Sample From All Collections
- Installed: CPU Module Hierarchy
- ...
- Total queries processed: 12
-
-[2/4] Installing Canvas Actions...
- Installed: Show Entity Resolutions
- Installed: Show Module Internals
- ...
- Total actions processed: 10
-
-[3/4] Linking Canvas Actions to Graph...
- Linked: Show Entity Resolutions
- ...
- Total actions linked: 10
-
-[4/4] Installing Visualization Theme...
- Installed theme: Integrated Circuit Design Knowledge Graph Demo Theme
-
-============================================================
-VERIFICATION
-============================================================
- [PASS] Saved Queries: 12 documents
- [PASS] Canvas Actions: 10 documents
- [PASS] Action Links: 10 documents
- [PASS] Themes: 1 documents
-
-============================================================
-Installation successful! All components verified.
-============================================================
-```
+This installs saved queries, canvas actions, and viewpoint links. It does
+**not** install the visualization theme — that is handled separately by
+`install_ic_theme.py` (Step 2).
 
 ### Step 4: Configure Visualizer
 
@@ -225,10 +152,9 @@ If all tests pass, you're ready for the demo!
 - [ ] Review the "Overview & Context" section in the demo script
 - [ ] Have the schema diagram ready: `docs/project/SCHEMA.md`
 - [ ] Know the key stats:
- - 104 modules, 1,491 ports, 1,439 signals, 1,515 logic chunks
- - 4,045 canonical entities
- - 48 Git commits
- - 2,202 semantic bridges (RESOLVED_TO edges)
+ - 4 processors (OR1200, IBEX, MOR1KX, Marocchino), ~6,400 modules
+ - ~3,800 commits across repos, 381 temporal epochs, 721 design situations
+ - 193 RESOLVED_TO bridges, 61 CROSS_REPO_SIMILAR_TO edges
 
 ### Demo Flow Bookmarks
 Have these queries ready to access quickly:
@@ -253,17 +179,13 @@ If live demo fails (network, database, etc.):
 ### Issue: "Graph IC_Temporal_Knowledge_Graph not found"
 **Solution**: Run the graph creation script:
 ```bash
-cd src
-python create_graph.py
+python src/create_temporal_graph.py
 ```
 
 ### Issue: "No data returned from queries"
-**Solution**: Collections may be empty. Re-run ETL pipeline:
+**Solution**: Collections may be empty. Re-run the full rebuild:
 ```bash
-cd src
-python etl_rtl.py
-python etl_git.py
-python bridger.py
+bash scripts/rebuild_database.sh
 ```
 
 ### Issue: "Canvas actions not appearing in context menu"
@@ -276,7 +198,7 @@ If count is 0, re-run the installer: `python scripts/setup/install_demo_setup.py
 ### Issue: "Theme not applying colors"
 **Solution**: 
 1. Verify theme was installed: `python -c "from src.db_utils import get_db; db = get_db(); print('hardware-design theme:', len(list(db.collection('_graphThemeStore').find({'name': 'hardware-design'}))))"`
-2. If count is 0, run: `python scripts/setup/install_theme.py`
+2. If count is 0, run: `python scripts/setup/install_ic_theme.py`
 3. In visualizer, manually select "hardware-design" from theme dropdown
 4. If still broken, refresh the browser page
 
@@ -316,7 +238,7 @@ If count is 0, re-run the installer: `python scripts/setup/install_demo_setup.py
 
 ```bash
 # Install theme
-python scripts/setup/install_theme.py
+python scripts/setup/install_ic_theme.py
 
 # Install queries and actions
 python scripts/setup/install_demo_setup.py
@@ -324,15 +246,14 @@ python scripts/setup/install_demo_setup.py
 # Verify setup
 python -c "from src.db_utils import get_db; db = get_db(); print('Theme installed:', len(list(db.collection('_graphThemeStore').find({'name': 'hardware-design'}))) > 0)"
 
-# Re-run ETL if needed
-cd /path/to/project/src
-python etl_rtl.py && python etl_git.py && python bridger.py
+# Full rebuild (all processors, temporal graph, bridges)
+bash scripts/rebuild_database.sh
 
 # Check database status
-python -c "from db_utils import get_db; db = get_db(); print('Collections:', len(db.collections())); print('Graph:', db.has_graph('IC_Temporal_Knowledge_Graph'))"
+python -c "from src.db_utils import get_db; db = get_db(); print('Collections:', len(db.collections())); print('Graph:', db.has_graph('IC_Temporal_Knowledge_Graph'))"
 
 # Count semantic bridges
-python -c "from db_utils import get_db; db = get_db(); print('RESOLVED_TO edges:', db.collection('RESOLVED_TO').count())"
+python -c "from src.db_utils import get_db; db = get_db(); print('RESOLVED_TO edges:', db.collection('RESOLVED_TO').count())"
 ```
 
 ---

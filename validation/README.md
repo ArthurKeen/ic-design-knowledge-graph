@@ -22,5 +22,5 @@ This directory contains rigorous validation of the IC Enrichment Pack claims usi
 
 ## Results
 
-See `validation_results.md` for detailed findings.
+See `validation_results.json` and `validation_results_hardware.json` for detailed findings.
 

@@ -4,16 +4,20 @@
 
 This demo supports two modes:
 
-1. **Read-only exploration** (no code): use the preloaded database `ic-knowledge-graph` in the ArangoDB Dashboard/Visualizer.
+1. **Read-only exploration** (no code): use the preloaded database `ic-knowledge-graph-temporal` in the ArangoDB Dashboard/Visualizer.
 2. **Hands-on exercise** (recommended): create a numbered database `ic-knowledge-graph-1`, `ic-knowledge-graph-2`, …, import documents via the **GraphRAG UI**, then run a **single script** to perform ETL, consolidation, bridging, and Visualizer setup.
+
+> **Flagship vs. sandbox databases:**
+> - The flagship demo database is **`ic-knowledge-graph-temporal`** with graph **`IC_Temporal_Knowledge_Graph`** (multi-repo: OR1200, IBEX, MOR1KX, Marocchino). To rebuild it from scratch, run `./scripts/rebuild_database.sh`.
+> - The numbered sandbox databases (`ic-knowledge-graph-1`, `ic-knowledge-graph-2`, …) use the legacy single-repo schema with graph `IC_Knowledge_Graph`.
 
 ---
 
 ## Part A — Read-only exploration (preloaded demo DB)
 
 1. Open the ArangoDB web UI.
-2. Select database **`ic-knowledge-graph`**.
-3. Navigate to **Graphs → `IC_Knowledge_Graph`**.
+2. Select database **`ic-knowledge-graph-temporal`**.
+3. Navigate to **Graphs → `IC_Temporal_Knowledge_Graph`**.
 4. In Graph Visualizer:
    - Apply the **`hardware-design`** theme (Legend → theme dropdown).
    - Run saved queries and canvas actions provided in the demo setup.

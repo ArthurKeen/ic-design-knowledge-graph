@@ -1,5 +1,5 @@
 # Semantic Bridging and Entity Consolidation for Integrated Circuit (IC) Design Knowledge Graphs
-**Application: OR1200 Processor Documentation**  
+**Application: Multi-Repo IC Design (OR1200, IBEX, MOR1KX, Marocchino)**  
 **Technology: ArangoDB Graph Database + Entity Resolution**  
 **Date:** January 2026
 
@@ -7,12 +7,12 @@
 
 ## Executive Summary
 
-We have developed and validated an advanced semantic bridging system that connects structured hardware design (RTL Verilog) with unstructured documentation, creating a unified knowledge graph for the OpenRISC OR1200 processor. The system uses graph-aware entity resolution and fuzzy consolidation to achieve production-grade precision and recall.
+We have developed and validated an advanced semantic bridging system that connects structured hardware design (RTL Verilog) with unstructured documentation, creating a unified temporal knowledge graph spanning four open-source RISC processors: OR1200, IBEX, MOR1KX, and Marocchino. The system uses graph-aware entity resolution, temporal versioning, and cross-repo similarity detection.
 
-**Key Results on OR1200:**
-- **87.6% increase** in RTL-to-documentation bridges (1,174 → 2,202 edges)
-- **75% coverage** of ports (up from 38%), **66% coverage** of signals (up from 33%)
-- **12.9% reduction** in duplicate entities through intelligent consolidation
+**Key Results (multi-repo temporal graph):**
+- **4 processors**, ~6,400 modules, ~3,800 commits
+- **381 temporal epochs**, 721 design situations
+- **193 RESOLVED_TO** semantic bridges, **61 CROSS_REPO_SIMILAR_TO** edges
 - **10.4% quality improvement** using graph-aware contextual matching
 
 ---
@@ -746,17 +746,17 @@ python src/bridger.py
 
 We have demonstrated a production-grade semantic bridging system that achieves:
 
-✅ **87.6% increase** in RTL-documentation bridges  
-✅ **75% port coverage**, **66% signal coverage** (near-doubling)  
+✅ **Multi-repo scope**: 4 processors, ~6,400 modules, ~3,800 commits  
+✅ **Temporal versioning**: 381 epochs, 721 design situations  
+✅ **Cross-repo bridges**: 193 RESOLVED_TO, 61 CROSS_REPO_SIMILAR_TO  
 ✅ **10.4% quality boost** using graph-aware context  
 ✅ **12x performance** improvement with bulk processing  
-✅ **Production validation** on real hardware design (OR1200)  
 
-The system successfully solves the fundamental challenge of connecting structured hardware design with unstructured documentation, creating a unified knowledge graph that enables intelligent queries, better verification, and faster onboarding.
+The system successfully solves the fundamental challenge of connecting structured hardware design with unstructured documentation across multiple repositories, creating a temporal knowledge graph that enables time-travel queries, cross-repo similarity detection, and faster onboarding.
 
-**Innovation:** Graph-aware contextual matching represents a significant advance over traditional entity resolution, leveraging topology to disambiguate generic terms and improve precision.
+**Innovation:** Graph-aware contextual matching combined with temporal epoch versioning and cross-repo similarity detection.
 
-**Scalability:** Validated on OR1200 (104 modules), architecture supports 10,000+ elements with linear scaling.
+**Scalability:** Validated across four processors (~6,400 modules), architecture supports 10,000+ elements with linear scaling.
 
 **Quality:** 53.9% high-confidence bridges (≥0.7 score), no false positives detected in validation.
 
@@ -766,17 +766,17 @@ The system successfully solves the fundamental challenge of connecting structure
 
 **Implementation:** Complete codebase available  
 **Documentation:** 8 comprehensive technical documents  
-**Tests:** 91 unit tests, 100% passing  
+**Tests:** 198 tests, 100% passing  
 **Validation:** Quality metrics on real hardware design  
 
 **Key Documents:**
-- Technical Implementation: `CONSOLIDATION_BRIDGING_IMPROVEMENTS.md`
-- Quality Validation: `QUALITY_VALIDATION_REPORT.md`
-- Integration Guide: `DATABASE_INTEGRATION_VALIDATION.md`
-- Test Coverage: `TEST_COVERAGE_SUMMARY.md`
+- Bridging Technical Details: `docs/project/BRIDGING_TECHNICAL_DETAILS.md`
+- Project Walkthrough & Stats: `docs/project/WALKTHROUGH.md`
+- Temporal Implementation: `docs/project/TEMPORAL_IMPLEMENTATION.md`
+- Schema Reference: `docs/project/SCHEMA.md`
 
 ---
 
 **Project:** Semantic Knowledge Graphs for Hardware Design  
 **Technology:** ArangoDB + Entity Resolution  
-**Status:** Production-Ready, Validated on OR1200
+**Status:** Production-Ready, Validated on OR1200 / IBEX / MOR1KX / Marocchino

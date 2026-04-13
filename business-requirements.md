@@ -14,7 +14,7 @@
 
 **Business Model:** Internal tooling and knowledge management for hardware engineering teams. The graph supports design traceability, verification, compliance, and knowledge transfer—reducing design cycle time, rework, and documentation drift.
 
-**Organizational Context:** The current implementation uses the **OR1200 RISC processor** (open-source OpenRISC reference design) as sample data. The architecture is designed to scale to proprietary IP blocks, SoC designs, and multi-project portfolios.
+**Organizational Context:** The current implementation ingests **four open-source RISC processors** — OR1200 (OpenRISC), MOR1KX (OpenRISC successor), Marocchino (OpenRISC OOO w/ 64-bit FPU), and IBEX (RISC-V 32, OpenTitan core) — as a multi-repo temporal knowledge graph. The architecture is designed to scale to proprietary IP blocks, SoC designs, and multi-project portfolios.
 
 **What We Do:** We harmonize three disparate data silos—structured RTL (Verilog) code, temporal Git version history, and unstructured technical specifications (PDFs)—into a single queryable knowledge graph. The core value is the **Semantic Bridge** that links implementation (code) to design intent (specifications), enabling traceability, impact analysis, and AI-assisted design exploration.
 
@@ -26,7 +26,7 @@
 
 **Nodes (Vertex Collections):**
 
-- **RTL_Module** (~100): Verilog modules representing hardware blocks (e.g., or1200_cpu, or1200_alu, or1200_dc_fsm). Hierarchical structure with top-level and sub-modules.
+- **RTL_Module** (~6,400): Temporal module versions across four repos representing hardware blocks (e.g., or1200_cpu, ibex_core, mor1kx_cpu). Hierarchical structure with top-level and sub-modules; each version carries `valid_from`/`valid_to` epoch metadata.
 - **RTL_Port** (~1.5K): Module interface pins (input/output/inout). External connectivity points.
 - **RTL_Signal** (~1.4K): Internal wires and registers. Dataflow and control paths within modules.
 - **RTL_LogicChunk** (~1.5K): Behavioral units—always blocks, assign statements. Implements combinational and sequential logic.
@@ -39,13 +39,15 @@
 - **ClockDomain** (few): Clock domains and timing boundaries. CDC (Clock Domain Crossing) analysis.
 - **BusInterface** (~20): Logical bus groupings (Wishbone, SPR, LSU). Protocol interfaces.
 - **Operator** (~200): Arithmetic and logical operators (adders, multiplexers). Resource usage.
-- **GitCommit** (~50): Version history nodes. Design evolution over time.
-- **Author** (few): Hardware engineers/contributors. Expertise and ownership.
-- **OR1200_Golden_Entities** (~4K): Canonical documentation entities (deduplicated). Spec concepts, registers, instructions, interfaces.
-- **OR1200_Entities** (~6K): Raw entities from GraphRAG extraction (before consolidation into Golden).
-- **OR1200_Chunks** (~200): Text blocks from specifications. Source documentation paragraphs.
-- **OR1200_Documents** (few): Source PDF file references. Specification documents.
-- **OR1200_Communities** (~500): Entity clusters from Leiden algorithm. Related spec concepts.
+- **GitCommit** (~3,800): Version history nodes across all repos. Design evolution over time.
+- **Author** (varies): Hardware engineers/contributors. Expertise and ownership.
+- **DesignEpoch** (381): Named design phases (milestones, refactors, periods) per repo.
+- **DesignSituation** (721): Cross-referenceable structural patterns (subsystem additions, major refactors, release preps) auto-detected across repos.
+- **{PREFIX}_Golden_Entities** (per repo, e.g., `OR1200_Golden_Entities` ~4K): Canonical documentation entities (deduplicated). Spec concepts, registers, instructions, interfaces. Per-repo prefixes: `OR1200_`, `IBEX_`, `MOR1KX_`, `MAROCCHINO_`.
+- **{PREFIX}_Entities** (per repo, e.g., `OR1200_Entities` ~6K): Raw entities from GraphRAG extraction (before consolidation into Golden).
+- **{PREFIX}_Chunks** (per repo): Text blocks from specifications. Source documentation paragraphs.
+- **{PREFIX}_Documents** (per repo): Source PDF file references. Specification documents.
+- **{PREFIX}_Communities** (per repo): Entity clusters from Leiden algorithm. Related spec concepts.
 
 **Edges (Edge Collections):**
 
@@ -56,8 +58,12 @@
 - **MODIFIED**: GitCommit → RTL_Module (which modules changed per commit)
 - **AUTHORED**: Author → GitCommit (commit authorship)
 - **MAINTAINS**: Author → RTL_Module (derived expertise: ≥3 commits or ≥20% of module commits)
-- **RESOLVED_TO**: RTL_Module, RTL_Port, RTL_Signal → OR1200_Golden_Entities (**Semantic Bridge**—code-to-spec links)
-- **REFERENCES**: RTL_LogicChunk → OR1200_Chunks (direct spec paragraph references)
+- **RESOLVED_TO**: RTL_Module, RTL_Port, RTL_Signal → {PREFIX}_Golden_Entities (**Semantic Bridge**—code-to-spec links, 193 total)
+- **REFERENCES**: RTL_LogicChunk → {PREFIX}_Chunks (direct spec paragraph references)
+- **BELONGS_TO_EPOCH**: RTL_Module → DesignEpoch (links module versions to their design epoch)
+- **SNAPSHOT_OF**: GitCommit → RTL_Module (temporal snapshot linking commits to module versions)
+- **CROSS_REPO_SIMILAR_TO**: RTL_Module → RTL_Module (structural similarity across repos, score ≥ 0.7; 61 edges)
+- **CROSS_REPO_EVOLVED_FROM**: RTL_Module → RTL_Module (architectural lineage across repos; 8 edges)
 - **HAS_FSM**, **HAS_STATE**, **TRANSITIONS_TO**: FSM structure and control flow (FSM_StateMachine → FSM_State → FSM_State)
 - **STATE_REGISTER**: FSM_StateMachine → RTL_Signal (which signal holds state)
 - **IMPLEMENTED_BY**: FSM_StateMachine → RTL_LogicChunk (implementing always block)
@@ -70,21 +76,21 @@
 - **ACCESSES**: RTL_LogicChunk → RTL_Memory (memory read/write)
 - **MEMORY_PORT**: RTL_Memory → MemoryPort (memory interface)
 - **USES_OPERATOR**: RTL_LogicChunk, RTL_Signal → Operator (resource usage)
-- **OR1200_Golden_Relations**: OR1200_Golden_Entities ↔ OR1200_Golden_Entities (consolidated entity-to-entity relationships in documentation)
-- **OR1200_Relations**: OR1200_Entities ↔ OR1200_Entities, OR1200_Chunks, OR1200_Communities (raw entity relationships before consolidation)
-- **CONSOLIDATES**: OR1200_Golden_Entities → OR1200_Entities (entity resolution: Golden merges raw entities)
+- **{PREFIX}_Golden_Relations**: Golden_Entities ↔ Golden_Entities (consolidated entity-to-entity relationships in documentation, per-repo prefixed)
+- **{PREFIX}_Relations**: Entities ↔ Entities, Chunks, Communities (raw entity relationships before consolidation, per-repo prefixed)
+- **CONSOLIDATES**: Golden_Entities → Entities (entity resolution: Golden merges raw entities)
 
-**Graph & Database:** `IC_Temporal_Knowledge_Graph` in database `ic-knowledge-graph-temporal`. Collection names are exact (e.g., `OR1200_Golden_Entities` not `Golden_Entities`). GraphRAG prefix `OR1200_` is configurable via `GRAPHRAG_PREFIX`.
+**Graph & Database:** `IC_Temporal_Knowledge_Graph` (28 edge definitions) in database `ic-knowledge-graph-temporal` (OneShard). GraphRAG collections use per-repo prefixes (`OR1200_`, `IBEX_`, `MOR1KX_`, `MAROCCHINO_`), configurable via `GRAPHRAG_PREFIX`.
 
-**Scale (approximate):**
+**Scale (approximate, multi-repo temporal):**
 
-- **~17K vertices** total
-- **~59K edges** total
-- **~2.2K Semantic Bridge links** (RTL → documentation)
-- **~75% port coverage**, **~66% signal coverage** (RTL elements resolved to specs)
+- **~6,400 RTL module versions** across 4 processors
+- **~3,800 commits** of design history across all repos
+- **381 design epochs**, **721 design situations**
+- **193 Semantic Bridge links** (RESOLVED_TO: RTL → documentation)
+- **61 cross-repo similarity edges**, **8 architectural lineage edges**
 - **Sub-200ms** traversal queries for multi-hop traversals
-- **~50 commits** of design history (OR1200)
-- **~7 specification documents** (PDFs) ingested via GraphRAG
+- **198 unit tests**, CI on Python 3.10 and 3.11
 
 ---
 
@@ -140,15 +146,15 @@ Hardware design cycles are long and expensive. Rework from spec-code mismatch, l
 
 ### 5. Data Characteristics
 
-- **Historical Depth:** Full Git history for OR1200 (48 commits). Design evolution from initial implementation through refinements.
+- **Historical Depth:** Full Git history for four processors (~3,800 commits total). Temporal module versions with `valid_from`/`valid_to` epoch metadata track design evolution commit-by-commit.
 - **Update Frequency:** Batch ETL from RTL repository and documentation. Pipeline: import → create graph → bridge → author/FSM extraction. Suitable for daily or on-demand refresh.
 - **Data Quality:** High structural quality from Verilog parsing. Entity resolution achieves ~100% precision on validated samples; recall improved via acronym expansion and parent context.
 - **Documentation Source:** PDF specifications converted to markdown chunks via Docling/pymupdf4llm. GraphRAG extracts entities and relations. OR1200 uses 7 PDFs (main spec, supplementary, Japanese spec).
 - **Compliance:** No patient/financial PII. Hardware design data may be proprietary; graph supports air-gapped or restricted deployments.
 - **Known Limitations:**
-  - OR1200 is a reference design; production graphs may have 10–100x more nodes
-  - FSM transition extraction is partial (9 transitions extracted; some case-based logic not fully parsed)
-  - GraphRAG prefix (OR1200_) is configurable for multi-project use
+  - Current four-repo dataset is representative; production graphs with proprietary IP may have 10–100x more nodes
+  - FSM transition extraction is partial (some case-based logic not fully parsed)
+  - GraphRAG prefix is per-repo (`OR1200_`, `IBEX_`, `MOR1KX_`, `MAROCCHINO_`)
 - **Integration:** Feeds into ArangoDB Graph Visualizer, AI agents (LangGraph, etc.), and custom AQL queries. Exports support migration and reporting.
 
 ---
@@ -282,7 +288,27 @@ The following use cases should be supported by graph analytics and reporting. Ea
 
 ---
 
-**Document Version:** 1.0  
-**Last Updated:** February 13, 2026  
+### 11. Cross-Repo Structural Comparison
+
+**Business Need:** When designing a new subsystem (e.g., a cache controller or bus interface), engineers benefit from understanding how analogous subsystems were implemented in other processor projects. Cross-repo structural similarity surfaces reusable patterns and known pitfalls.
+
+**Analytical Approach:** Traverse `CROSS_REPO_SIMILAR_TO` and `CROSS_REPO_EVOLVED_FROM` edges. Compare structurally similar modules across OR1200, MOR1KX, Marocchino, and IBEX. Correlate with `DesignSituation` nodes to identify what happened next in each project (solution, bug, rework, release).
+
+**Expected Output:** Cross-repo module comparison table. Structural similarity scores. Lineage chains showing architectural evolution across projects. Recommendations based on historical outcomes of analogous design decisions.
+
+---
+
+### 12. Temporal Epoch & Design Situation Analytics
+
+**Business Need:** Understanding design evolution at a higher level than individual commits. DesignEpochs group commits into named phases (milestones, refactors, periods); DesignSituations identify structural patterns (subsystem additions, major refactors, release preps). Analyzing these enables proactive risk detection and architectural trend analysis across repos.
+
+**Analytical Approach:** Traverse `BELONGS_TO_EPOCH` and `SNAPSHOT_OF` edges. Aggregate module churn per epoch, compare situation types across repos, and identify recurring patterns (e.g., "subsystem addition followed by major refactor"). Use temporal range queries with `valid_from_ts`/`valid_to_ts` for point-in-time graph state.
+
+**Expected Output:** Epoch timeline per repo. Design situation heatmap. Cross-repo pattern correlation (Déjà Vu detection). Trend analysis of design complexity over epochs. Risk alerts when current commit patterns match historically problematic situations.
+
+---
+
+**Document Version:** 2.0  
+**Last Updated:** March 31, 2026  
 **Project:** ic-knowledge-graph-temporal  
 **Target Platform:** agentic-graph-analytics

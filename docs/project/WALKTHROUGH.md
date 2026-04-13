@@ -1,55 +1,66 @@
 # Project Walkthrough: Integrated Circuit (IC) Design Knowledge Graph
 
-This report documents the final state of the **Integrated Circuit (IC) Design Knowledge Graph** project, encompassing structured RTL data, temporal Git history, and high-precision documentation bridges.
+This report documents the current state of the **Integrated Circuit (IC) Design Knowledge Graph** project, encompassing multi-repo temporal RTL data, commit-by-commit design history, and high-precision documentation bridges across four open-source RISC processors.
 
-## 1. Structured RTL Ingestion
-The ETL process transforms Verilog source code into a fine-grained graph representation.
-- **RTL_Module**: 104 nodes (Top-level and sub-modules like `or1200_cpu`)
-- **RTL_Port**: 1,491 nodes
-- **RTL_Signal**: 1,441 nodes
-- **RTL_LogicChunk**: 1,513 nodes
-- **FSM_StateMachine**: 4 state machines (DC, IC, Exception, Queue)
-- **ClockDomain**: 6 timing domains with CDC detection
-- **BusInterface**: 22 logical bus groupings (Wishbone, SPR, LSU)
-- **RTL_Memory**: 8 memory arrays extracted
-- **Operator**: 200 arithmetic and logic resource mappings
-- **GitCommit**: 48 nodes
-- **WIRED_TO**: 753 edges (Structural pin-to-pin wiring)
-- **RESOLVED_TO**: 2,202 high-confidence links between code and specifications.
+## 1. Multi-Repo Temporal RTL Ingestion
+
+The ETL pipeline ingests Verilog source code from four processor repositories and transforms it into a fine-grained temporal graph representation, tracking design evolution commit-by-commit.
+
+### Ingested Repositories
+
+| Repo | Architecture | Commits | Epochs | Situations |
+|---|---|---|---|---|
+| `openrisc/or1200` | OpenRISC 1000 (primary) | 10 | 5 | 2 |
+| `openrisc/mor1kx` | OpenRISC 1000 successor | 819 | 100 | 179 |
+| `openrisc/or1k_marocchino` | OpenRISC OOO w/ 64-bit FPU | 68 | 12 | 20 |
+| `lowRISC/ibex` | RISC-V 32 (OpenTitan core) | 2,908 | 268 | 521 |
+
+### Aggregate Graph Statistics
+
+- **RTL_Module**: ~6,400 temporal module versions across all repos
+- **GitCommit**: ~3,800 commits
+- **DesignEpoch**: 381 named design phases
+- **DesignSituation**: 721 cross-referenceable structural patterns
+- **RTL_Port**, **RTL_Signal**, **RTL_LogicChunk**: shared collections with per-repo data
+- **RESOLVED_TO**: 193 semantic bridges (code ↔ specifications)
+- **CROSS_REPO_SIMILAR_TO**: 61 structural similarity edges across repos
+- **CROSS_REPO_EVOLVED_FROM**: 8 architectural lineage edges
+- **SNAPSHOT_OF**: temporal snapshot edges linking module versions to commits
 
 ### Key Technical Achievements:
+- **Multi-Repo Temporal Ingestion**: Processes four processor repositories commit-by-commit, assigning `valid_from`/`valid_to` epochs to every module version.
+- **Design Epoch Detection**: Automatically classifies commits into named epochs (`initial_commit`, `milestone_tag`, `period_YYYY_MM`, `major_refactor`) via `etl_epoch_detector.py`.
+- **Design Situation Index**: Auto-generates `DesignSituation` nodes (subsystem additions, major refactors, release preps) for cross-repo Déjà Vu detection.
+- **Cross-Repo Structural Bridging**: Computes `CROSS_REPO_SIMILAR_TO` (structural similarity ≥ 0.7) and `CROSS_REPO_EVOLVED_FROM` (architectural lineage) edges across repositories.
 - **Pin-to-Pin Connectivity**: Extracts structural wiring across module boundaries while filtering high-fanout nets (CLK, RST).
 - **Granular Behavioral Modeling**: Decomposes `always` blocks and `assign` statements into logical units with cross-domain crossing (CDC) detection.
-- **Hierarchical Bus Grouping**: Automatically groups individual ports into logical `BusInterface` nodes using prefix-based lexical grouping.
-- **Memory & Resource Analysis**: Identifies RAM/ROM arrays, their access patterns (index expressions), and maps arithmetic operators to logic blocks.
 - **Context-Aware Entity Resolution**: Uses parent module summaries and header comments to disambiguate signals (e.g., linking `esr` to "Exception Status Register").
-- **Acronym Expansion Integration**: Automatically expands hardware acronyms (`spr` -> "Special Purpose Register") to improve matching recall.
 
 ## 2. Advanced Semantic Architecture
 We have implemented a hierarchical consolidation layer to address GraphRAG fragmentation.
 
 ### Canonical Golden Entity Layer
-- **Golden Entities**: 4,045 canonical nodes representing unified concepts (Configuration, Architecture, Registers).
-- **Consolidation**: Unified 5,793 raw document fragments using a high-performance strictly lexical AQL-based strategy.
-- **Relationship Sweeping**: Remapped **17,717 relations** from original fragments to Golden Entities, preserving full **Provenance Breadcrumbs** for auditability.
+- **Golden Entities**: Per-repo canonical nodes representing unified concepts (Configuration, Architecture, Registers). Collections use per-repo prefixes: `OR1200_`, `IBEX_`, `MOR1KX_`, `MAROCCHINO_`.
+- **Consolidation**: Unified raw document fragments using a high-performance strictly lexical AQL-based strategy.
+- **Relationship Sweeping**: Remapped relations from original fragments to Golden Entities, preserving full **Provenance Breadcrumbs** for auditability.
 
 ### Type-Safe Resolution
 - **Structural Constraints**: Implemented a type-compatibility matrix that prevents architectural "role" mismatches (e.g., preventing an RTL Signal from linking to a Documentation Instruction).
 - **High-Precision Scoring**: Combines lexical similarity, parent context overlap, and role-based weighting to achieve a high-confidence semantic bridge.
 
-### 3. Knowledge Graph Metrics (Validated Jan 2026)
+### 3. Knowledge Graph Metrics (March 2026)
 
-| Metric | Count | Improvement |
+| Metric | Count | Notes |
 | :--- | :--- | :--- |
-| **Semantic Bridges** | 2,202 | 🔥 **87.6% Increase** (vs 27% expected) |
-| **Port Coverage** | 75.4% | 🔥 **+37 pts** (Coverage nearly doubled) |
-| **Signal Coverage** | 66.1% | 🔥 **+33 pts** (Coverage nearly doubled) |
-| **Relational Depth** | 17,717 | Clean, deduplicated relation Hubs |
-
-**Quality Validation:**
-- **High Confidence**: 53.9% of bridges score ≥0.7
-- **Graph-Aware Boost**: Bridges using parent module context score **10.4% higher** on average
-- **Precision**: 52 bridges achieved perfect 0.9-1.0 scores (verified correct)
+| **Processors Ingested** | 4 | OR1200, IBEX, MOR1KX, Marocchino |
+| **RTL Module Versions** | ~6,400 | Temporal versions across all repos |
+| **Git Commits** | ~3,800 | Full commit history per repo |
+| **Design Epochs** | 381 | Named phases (milestones, refactors, periods) |
+| **Design Situations** | 721 | Auto-detected structural patterns |
+| **Semantic Bridges** | 193 | RESOLVED_TO (code ↔ specifications) |
+| **Cross-Repo Similarity** | 61 | CROSS_REPO_SIMILAR_TO edges |
+| **Architectural Lineage** | 8 | CROSS_REPO_EVOLVED_FROM edges |
+| **Unit Tests** | 198 | CI on Python 3.10 and 3.11 |
 
 ## 4. Verification & Exploration
 Run this AQL query in ArangoDB to explore the top architectural links:
@@ -71,11 +82,9 @@ FOR edge IN RESOLVED_TO
 ## 5. Visualizing the Graph
 - **Database**: ArangoDB (`ic-knowledge-graph-temporal`)
 - **Graph Name**: `IC_Temporal_Knowledge_Graph`
-- **Naming Convention**: RTL nodes use dot-notation keys (e.g., `or1200_alu.clk`) for uniqueness across the hierarchy.
+- **Naming Convention**: RTL nodes use dot-notation keys (e.g., `or1200_alu.clk`) for uniqueness across the hierarchy. Multi-repo collections use per-repo prefixes (`OR1200_`, `IBEX_`, `MOR1KX_`, `MAROCCHINO_`) for Golden Entities and Relations.
 - **Analyzers**: The `harmonized_search_view` uses `text_en` and `identity` analyzers to support both fuzzy semantic search and exact technical identifier matching.
-
-> [!NOTE]
-> Database manually migrated to `ic-knowledge-graph-temporal` on 2026-01-26. Visualizer system collections were mirrored to preserve the demo environment.
+- **Deployment**: OneShard database on ArangoDB AMP cluster; 28 edge definitions in the named graph.
 
 ---
-*Status: Production-Ready with Enhanced Bridging & Consolidation | Last Updated: 2026-01-20*
+*Status: Production — Multi-Repo Temporal Knowledge Graph | Last Updated: 2026-03-31*

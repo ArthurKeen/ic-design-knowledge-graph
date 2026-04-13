@@ -1,5 +1,7 @@
 # Product Requirements Document: Integrated Circuit (IC) Design Knowledge Graph Demo
 
+> **Scope Note (March 2026):** The original POC scope (§1–4) targeted OR1200 only. The Temporal Knowledge Graph Extension (below) expanded to four processors (OR1200, IBEX, MOR1KX, Marocchino) and is the current production scope. The `feature/temporal-kg` branch has been merged to `main`.
+
 ## Context
 
 The source contains both structured and unstructured data. This PRD outlines an approach to ETL structured data into a Knowledge Graph and GraphRAG import unstructured data, harmonizing them in the same graph using Entity Resolution for cross-referencing. The project realizes the functional requirements of the **Design Knowledge Management System (DKMS)** research co-authored for the Air Force Materiel Command (see [docs/research/DKMS_Foundations.md](../research/DKMS_Foundations.md)).
@@ -108,8 +110,8 @@ This POC demonstrates how to unify code and specifications into a single queryab
 
 ## Temporal Knowledge Graph Extension
 
-**Branch:** `feature/temporal-kg`  
-**Status:** Phases 1–4 complete; Phase 5 (agentic swarm) defined but not yet implemented.
+**Branch:** merged to `main`  
+**Status:** Phases 1–4 complete and in production; Phase 5 (agentic swarm) defined but not yet implemented.
 
 ### Background and Motivation
 
@@ -126,7 +128,7 @@ The primary new capability is **cross-repo Déjà Vu detection**: an agentic sys
 | G3 | Cross-Repo Semantic Bridge — `CROSS_REPO_SIMILAR_TO` / `CROSS_REPO_EVOLVED_FROM` edges | ✅ Structural bridges live |
 | G4 | Local GraphRAG Pipeline — no AMP dependency, offline-capable | ✅ Pipeline built (`src/local_graphrag/`) |
 | G5 | Design Situation Index — named `DesignSituation` nodes auto-generated from graph | ✅ 722 situations across 4 repos |
-| G6 | Branch-safe — `main` demo unaffected | ✅ All work on `feature/temporal-kg` |
+| G6 | Merged to `main` — temporal graph is the production scope | ✅ `feature/temporal-kg` merged to `main` |
 
 ### Ingested Repositories
 
@@ -171,17 +173,19 @@ Each commit is assigned to a named epoch by `etl_epoch_detector.py` using four r
 | Metric | Target | Status |
 |---|---|---|
 | OR1200 temporal coverage | 100% commits + `valid_from_commit` on all RTL nodes | ✅ |
-| Multi-repo ingestion | ≥3 repos | ✅ (4 repos, 3,805 commits total) |
-| Cross-repo bridges | `CROSS_REPO_SIMILAR_TO` edges (≥0.7 similarity) | ✅ 17 structural bridges |
-| Design situation index | Auto-generated `DesignSituation` nodes | ✅ 722 situations |
+| Multi-repo ingestion | ≥3 repos | ✅ (4 repos, ~3,800 commits total) |
+| Cross-repo bridges | `CROSS_REPO_SIMILAR_TO` edges (≥0.7 similarity) | ✅ 61 structural bridges |
+| Architectural lineage | `CROSS_REPO_EVOLVED_FROM` edges | ✅ 8 lineage edges |
+| Semantic bridges | `RESOLVED_TO` edges | ✅ 193 bridges |
+| Design situation index | Auto-generated `DesignSituation` nodes | ✅ 721 situations across 381 epochs |
 | Local GraphRAG | Full pipeline without AMP | ✅ `src/local_graphrag/` |
 | Temporal query correctness | State-as-of-commit AQL templates | ✅ Validated (see `docs/project/TEMPORAL_IMPLEMENTATION.md §7`) |
-| Branch safety | `main` demo passes existing tests | ✅ |
+| Test suite | Comprehensive unit tests | ✅ 198 tests, CI on Python 3.10 and 3.11 |
+| Merged to main | `feature/temporal-kg` merged | ✅ |
 
 ### Next Steps
 
-1. **GraphRAG on doc directories** — run `src/local_graphrag/` on OR1200/mor1kx/ibex docs to populate `{PREFIX}Entities`, `{PREFIX}Communities`, and enable `CROSS_REPO_EVOLVED_FROM` lineage edges
-2. **Merge `feature/temporal-kg` → `main`** after acceptance testing
-3. **Phase 5 (optional)** — agentic blackboard architecture (CommitWatcher, PatternMatcher, DocDrift, AlertPublisher agents) — see `docs/project/TEMPORAL_IMPLEMENTATION.md §9`
+1. **GraphRAG on doc directories** — run `src/local_graphrag/` on OR1200/mor1kx/ibex docs to populate `{PREFIX}Entities`, `{PREFIX}Communities`, and expand `CROSS_REPO_EVOLVED_FROM` lineage edges
+2. **Phase 5 (optional)** — agentic blackboard architecture (CommitWatcher, PatternMatcher, DocDrift, AlertPublisher agents) — see `docs/project/TEMPORAL_IMPLEMENTATION.md §9`
 
 *Full technical reference: [`docs/project/TEMPORAL_IMPLEMENTATION.md`](TEMPORAL_IMPLEMENTATION.md)*

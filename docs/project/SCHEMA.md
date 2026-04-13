@@ -13,35 +13,45 @@ This document defines the structure of the **Integrated Circuit (IC) Design Know
 graph TB
     %% Node Definitions
     subgraph hardware ["Hardware (RTL) - Structured"]
-        Module["RTL_Module<br/>(Green/Blue)<br/>104 nodes"]
-        Port["RTL_Port<br/>(Pink)<br/>1,491 nodes"]
-        Signal["RTL_Signal<br/>(Green)<br/>1,441 nodes"]
-        Logic["RTL_LogicChunk<br/>(Purple)<br/>1,513 nodes"]
-        FSM["FSM_StateMachine<br/>(Teal)<br/>4 state machines"]
-        State["FSM_State<br/>(Light Teal)<br/>23 states"]
-        Parameter["RTL_Parameter<br/>(Orange)<br/>221 nodes"]
-        Memory["RTL_Memory<br/>(Red)<br/>8 nodes"]
-        Clock["ClockDomain<br/>(Blue)<br/>6 nodes"]
-        Bus["BusInterface<br/>(Gold)<br/>22 nodes"]
-        MPort["MemoryPort<br/>(Red)<br/>8 nodes"]
-        Op["Operator<br/>(Orange)<br/>200 nodes"]
-        Gen["GenerateBlock<br/>(Purple)<br/>0 nodes"]
+        Module["RTL_Module<br/>(Green/Blue)<br/>~6,400 versions"]
+        Port["RTL_Port<br/>(Pink)"]
+        Signal["RTL_Signal<br/>(Green)"]
+        Logic["RTL_LogicChunk<br/>(Purple)"]
+        FSM["FSM_StateMachine<br/>(Teal)"]
+        State["FSM_State<br/>(Light Teal)"]
+        Parameter["RTL_Parameter<br/>(Orange)"]
+        Memory["RTL_Memory<br/>(Red)"]
+        Clock["ClockDomain<br/>(Blue)"]
+        Bus["BusInterface<br/>(Gold)"]
+        MPort["MemoryPort<br/>(Red)"]
+        Op["Operator<br/>(Orange)"]
+        Gen["GenerateBlock<br/>(Purple)"]
     end
 
-    subgraph history ["History (Git) - Temporal"]
-        Commit["GitCommit<br/>(Purple)<br/>48 nodes"]
-        Author["Author<br/>(Orange)<br/>8 contributors"]
+    subgraph history ["History & Temporal"]
+        Commit["GitCommit<br/>(Purple)<br/>~3,800 commits"]
+        Author["Author<br/>(Orange)"]
+        Epoch["DesignEpoch<br/>(Cyan)<br/>381 epochs"]
+        Situation["DesignSituation<br/>(Magenta)<br/>721 situations"]
     end
     
     %% Author relationships
     Author -->|AUTHORED| Commit
 
-    subgraph documentation ["Documentation (GraphRAG) - Unstructured"]
-        Entities["OR1200_Entities<br/>(Light Green)<br/>5,793 raw entities"]
-        Golden["OR1200_Golden_Entities<br/>(Gold)<br/>4,045 canonical entities"]
-        Communities["OR1200_Communities<br/>(Light Blue)<br/>478 clusters"]
-        Chunk["OR1200_Chunks<br/>(Green)<br/>187 chunks"]
-        Doc["OR1200_Documents<br/>(Green)<br/>7 documents"]
+    %% Temporal relationships
+    Module -->|BELONGS_TO_EPOCH| Epoch
+    Commit -->|MODIFIED| Module
+    Commit -.->|SNAPSHOT_OF| Module
+    Author -->|MAINTAINS| Module
+    Module -.->|CROSS_REPO_SIMILAR_TO| Module
+    Module -.->|CROSS_REPO_EVOLVED_FROM| Module
+
+    subgraph documentation ["Documentation (GraphRAG) - Per-Repo Prefixed"]
+        Entities["Entities<br/>(Light Green)<br/>per-repo prefixed"]
+        Golden["Golden_Entities<br/>(Gold)<br/>per-repo prefixed"]
+        Communities["Communities<br/>(Light Blue)<br/>per-repo prefixed"]
+        Chunk["Chunks<br/>(Green)<br/>per-repo prefixed"]
+        Doc["Documents<br/>(Green)"]
     end
     
     %% Entity Resolution (deduplication)
@@ -78,10 +88,6 @@ graph TB
     FSM -.->|STATE_REGISTER| Signal
     FSM -.->|IMPLEMENTED_BY| Logic
     
-    %% Temporal Relationships
-    Commit -->|MODIFIED| Module
-    Author -->|MAINTAINS| Module
-    
     %% Semantic Bridges (dashed to emphasize special relationship)
     Module -.->|RESOLVED_TO<br/>Semantic Bridge| Golden
     Port -.->|RESOLVED_TO| Golden
@@ -91,10 +97,10 @@ graph TB
     Logic -->|REFERENCES| Chunk
     
     %% Documentation Internal Relationships
-    Entities -->|OR1200_Relations| Entities
-    Entities -->|OR1200_Relations| Chunk
-    Entities -->|OR1200_Relations| Communities
-    Golden -->|OR1200_Relations| Golden
+    Entities -->|Relations| Entities
+    Entities -->|Relations| Chunk
+    Entities -->|Relations| Communities
+    Golden -->|Golden_Relations| Golden
     Chunk -->|PART_OF| Doc
     
     %% Styling
@@ -118,6 +124,8 @@ graph TB
     style Doc fill:#90ee90,stroke:#6db36d,stroke-width:2px
     style Commit fill:#9f7aea,stroke:#7c5ac7,stroke-width:2px
     style Author fill:#ff9f40,stroke:#e67e22,stroke-width:2px
+    style Epoch fill:#00bcd4,stroke:#00838f,stroke-width:2px
+    style Situation fill:#e91e63,stroke:#c2185b,stroke-width:2px
     
     style hardware fill:#f0f9ff
     style history fill:#faf5ff
@@ -131,7 +139,7 @@ graph TB
 
 | Collection Name | Description | Key Properties |
 | :--- | :--- | :--- |
-| **`RTL_Module`** | High-level Verilog modules. | `label`, `metadata.file`, `metadata.code_content`, `metadata.summary` |
+| **`RTL_Module`** | High-level Verilog modules (~6,400 temporal versions across 4 repos). | `label`, `metadata.file`, `metadata.code_content`, `metadata.summary`, `repo`, `valid_from_commit`, `valid_from_ts`, `valid_to_commit`, `valid_to_ts`, `design_epoch`, `file_hash` |
 | **`RTL_Port`** | Module interface pins (I/O). | `label`, `metadata.direction` (input/output) |
 | **`RTL_Signal`** | Internal wires and registers. | `label`, `metadata.signal_type` (wire/reg) |
 | **`RTL_LogicChunk`** | Behavioral units (always/assign). | `label`, `metadata.code`, `metadata.chunk_type` |
@@ -144,13 +152,15 @@ graph TB
 | **`MemoryPort`** | Structured memory interfaces (addr, data, we). | `name`, `parent_module`, `metadata.memory` |
 | **`Operator`** | Arithmetic and logical operators (Adder, etc.). | `name`, `operator_type`, `parent_module` |
 | **`GenerateBlock`** | Parameterized generate blocks and loops. | `name`, `parent_module`, `loop_count`, `loops` |
-| **`GitCommit`** | Temporal history nodes. | `hash`, `author`, `timestamp`, `message` |
+| **`GitCommit`** | Temporal history nodes (~3,800 across all repos). | `hash`, `author`, `timestamp`, `message`, `repo`, `valid_from_ts`, `valid_to_ts`, `design_epoch` |
 | **`Author`** | Hardware engineers/contributors. | `name`, `email`, `email_variations`, `metadata.total_commits`, `metadata.active`, `metadata.team`, `metadata.role` |
-| **`OR1200_Entities`** | Raw entities from GraphRAG extraction. | `entity_name`, `entity_type`, `description` |
-| **`OR1200_Golden_Entities`** | Canonical entities (deduplicated). | `entity_name`, `entity_type`, `description`, `aliases` |
-| **`OR1200_Communities`** | Community clusters of related entities. | `community_id`, `entities`, `summary` |
-| **`OR1200_Chunks`** | Text blocks from specifications. | `content`, `metadata.page_number` |
-| **`OR1200_Documents`** | Source PDF file references. | `file_name`, `metadata.source_url` |
+| **`DesignEpoch`** | Named design phase for a repo (381 total). | `label`, `repo`, `epoch_type`, `git_tag`, `start_commit`, `start_ts`, `end_ts` |
+| **`DesignSituation`** | Cross-referenceable structural pattern (721 total). | `label`, `repo`, `epoch`, `situation_class`, `commit_range_start`, `commit_range_end`, `tags`, `outcome` |
+| **`{PREFIX}_Entities`** | Raw entities from GraphRAG extraction. Per-repo prefixed (`OR1200_`, `IBEX_`, `MOR1KX_`, `MAROCCHINO_`). | `entity_name`, `entity_type`, `description` |
+| **`{PREFIX}_Golden_Entities`** | Canonical entities (deduplicated). Per-repo prefixed. | `entity_name`, `entity_type`, `description`, `aliases` |
+| **`{PREFIX}_Communities`** | Community clusters of related entities. Per-repo prefixed. | `community_id`, `entities`, `summary` |
+| **`{PREFIX}_Chunks`** | Text blocks from specifications. Per-repo prefixed. | `content`, `metadata.page_number` |
+| **`{PREFIX}_Documents`** | Source PDF file references. Per-repo prefixed. | `file_name`, `metadata.source_url` |
 
 ### Edge Collections
 
@@ -182,17 +192,21 @@ graph TB
 | **`MODIFIED`** | `GitCommit` | `RTL_Module` | Tracks which modules were changed in a commit. |
 | **`AUTHORED`** | `Author` | `GitCommit` | Links authors to their commits. |
 | **`MAINTAINS`** | `Author` | `RTL_Module` | Derived relationship showing module expertise (≥3 commits or ≥20% of commits). |
-| **`RESOLVED_TO`** | `RTL_*` | `OR1200_Golden_Entities` | **Semantic Bridge**: Type-safe links between code and spec (2,202 total, 87.6% increase from enhancements). |
-| **`REFERENCES`** | `RTL_LogicChunk` | `OR1200_Chunks` | **Evidence Link**: Direct reference to a spec paragraph. |
-| **`OR1200_Relations`** | `OR1200_Entities` | `OR1200_Entities` | Relationships between raw entities. |
-| **`OR1200_Relations`** | `OR1200_Entities` | `OR1200_Chunks` | Entity references to source text chunks. |
-| **`OR1200_Relations`** | `OR1200_Entities" | `OR1200_Communities` | Entity membership in communities. |
-| **`OR1200_Relations`** | `OR1200_Golden_Entities" | `OR1200_Golden_Entities` | Relationships between canonical entities. |
+| **`RESOLVED_TO`** | `RTL_*` | `{PREFIX}_Golden_Entities` | **Semantic Bridge**: Type-safe links between code and spec (193 total across repos). |
+| **`REFERENCES`** | `RTL_LogicChunk` | `{PREFIX}_Chunks` | **Evidence Link**: Direct reference to a spec paragraph. |
+| **`BELONGS_TO_EPOCH`** | `RTL_Module` | `DesignEpoch` | Links a module version to its design epoch. |
+| **`SNAPSHOT_OF`** | `GitCommit` | `RTL_Module` | Temporal snapshot linking commits to module versions. |
+| **`CROSS_REPO_SIMILAR_TO`** | `RTL_Module` | `RTL_Module` | Structural similarity across repos (score ≥ 0.7). 61 edges. |
+| **`CROSS_REPO_EVOLVED_FROM`** | `RTL_Module` | `RTL_Module` | Architectural lineage across repos. 8 edges. |
+| **`{PREFIX}_Relations`** | `{PREFIX}_Entities` | `{PREFIX}_Entities` | Relationships between raw entities (per-repo prefixed). |
+| **`{PREFIX}_Relations`** | `{PREFIX}_Entities` | `{PREFIX}_Chunks` | Entity references to source text chunks. |
+| **`{PREFIX}_Relations`** | `{PREFIX}_Entities` | `{PREFIX}_Communities` | Entity membership in communities. |
+| **`{PREFIX}_Golden_Relations`** | `{PREFIX}_Golden_Entities` | `{PREFIX}_Golden_Entities` | Relationships between canonical entities. |
 | **`WIRED_TO`** | `RTL_Port` | `RTL_Port` | Structural connectivity between module ports. |
 
 ## 3. Collection Statistics
 
-The following table provides the current counts and average document sizes for all collections in the `ic-knowledge-graph-temporal` database (as of Jan 8, 2026).
+The following table provides counts and average document sizes for collections in the `ic-knowledge-graph-temporal` database. Counts reflect multi-repo temporal state as of March 2026. RTL and temporal collections contain data from all four processors (OR1200, IBEX, MOR1KX, Marocchino); GraphRAG collections use per-repo prefixes.
 
 | Collection Name | Type | Count | Avg Doc Size (Bytes) |
 | :--- | :--- | :--- | :--- |
@@ -215,7 +229,9 @@ The following table provides the current counts and average document sizes for a
 | **FSM_State** | Vertex | 23 | 155.2 |
 | **FUNCTION_INPUT** | Edge | 6 | 26.0 |
 | **FUNCTION_OUTPUT** | Edge | 15 | 27.0 |
-| **GitCommit** | Vertex | 48 | 107.7 |
+| **DesignEpoch** | Vertex | 381 | — |
+| **DesignSituation** | Vertex | 721 | — |
+| **GitCommit** | Vertex | ~3,800 | 107.7 |
 | **GenerateBlock** | Vertex | 0 | 0.0 |
 | **HAS_ALWAYS** | Edge | 373 | 22.0 |
 | **HAS_ASSERTION** | Edge | 50 | 25.0 |
@@ -247,17 +263,21 @@ The following table provides the current counts and average document sizes for a
 | **READS_FROM** | Edge | 2,416 | 51.7 |
 | **REFERENCES** | Edge | 98 | 66.0 |
 | **RESET_BY** | Edge | 144 | 65.0 |
-| **RESOLVED_TO** | Edge | 2,202 | 47.7 |
+| **RESOLVED_TO** | Edge | 193 | 47.7 |
+| **SNAPSHOT_OF** | Edge | — | — |
+| **BELONGS_TO_EPOCH** | Edge | — | — |
+| **CROSS_REPO_SIMILAR_TO** | Edge | 61 | — |
+| **CROSS_REPO_EVOLVED_FROM** | Edge | 8 | — |
 
 ---
 
 ## GraphRAG Collections (Documentation Entities)
 
-GraphRAG collections are created by the ArangoDB GraphRAG importer service and contain structured entities extracted from unstructured documentation (PDFs).
+GraphRAG collections are created by the ArangoDB GraphRAG importer service and contain structured entities extracted from unstructured documentation (PDFs). Each processor repo uses a per-repo prefix for its GraphRAG collections: `OR1200_`, `IBEX_`, `MOR1KX_`, `MAROCCHINO_`.
 
-### Collections
+### Collections (per-repo, shown with OR1200 prefix as example)
 
-| Collection | Type | Count | Description |
+| Collection | Type | Count (OR1200) | Description |
 |------------|------|-------|-------------|
 | `OR1200_Documents` | Vertex | 3 | Source PDF documents (spec, supplementary, Japanese spec) |
 | `OR1200_Chunks` | Vertex | ~200 | Text chunks from documents (1200 tokens each) |
@@ -267,9 +287,11 @@ GraphRAG collections are created by the ArangoDB GraphRAG importer service and c
 | `OR1200_Golden_Relations` | Edge | ~17,700 | Consolidated relationships |
 | `OR1200_Communities` | Vertex | ~50 | Entity clusters identified by Leiden algorithm |
 
+Other repos follow the same pattern (e.g., `IBEX_Entities`, `IBEX_Golden_Entities`, `MOR1KX_Chunks`, `MAROCCHINO_Documents`).
+
 ### Entity Types
 
-Custom entity types defined for OR1200 hardware documentation:
+Custom entity types defined for hardware documentation:
 
 - **PROCESSOR_COMPONENT**: Modules, units, functional blocks (e.g., ALU, cache, MMU)
 - **REGISTER**: Special purpose registers, control registers
@@ -320,20 +342,20 @@ This will create collections like `MyProject_Entities`, `MyProject_Chunks`, etc.
 
 ### Usage with Bridging
 
-GraphRAG entities are used for semantic bridging with RTL code:
+GraphRAG entities are used for semantic bridging with RTL code. Each repo's RTL elements link to that repo's Golden Entities:
 
-- `RTL_Module` → `OR1200_Golden_Entities` (via `RESOLVED_TO` edges)
-- `RTL_Port` → `OR1200_Golden_Entities` (via `RESOLVED_TO` edges)
-- `RTL_Signal` → `OR1200_Golden_Entities` (via `RESOLVED_TO` edges)
+- `RTL_Module` → `{PREFIX}_Golden_Entities` (via `RESOLVED_TO` edges)
+- `RTL_Port` → `{PREFIX}_Golden_Entities` (via `RESOLVED_TO` edges)
+- `RTL_Signal` → `{PREFIX}_Golden_Entities` (via `RESOLVED_TO` edges)
 
-The consolidation process (in `src/consolidator.py`) creates unified "Golden Entities" that merge duplicate raw entities, and the bridging process (in `src/bridger.py`) creates semantic links between RTL code and these documentation entities.
+The consolidation process (in `src/consolidator.py`) creates unified "Golden Entities" that merge duplicate raw entities, and the bridging process (in `src/bridger.py`) creates semantic links between RTL code and these documentation entities. Cross-repo analysis uses `CROSS_REPO_SIMILAR_TO` and `CROSS_REPO_EVOLVED_FROM` edges to link structurally similar modules across different repositories.
 | **RTL_Always** | Vertex | 373 | 410.9 |
 | **RTL_Assertion** | Vertex | 50 | 362.6 |
 | **RTL_Assign** | Vertex | 1,278 | 489.3 |
 | **RTL_Function** | Vertex | 15 | 629.7 |
 | **RTL_LogicChunk** | Vertex | 1,513 | 313.0 |
 | **RTL_Memory** | Vertex | 8 | 239.5 |
-| **RTL_Module** | Vertex | 104 | 7,492.8 |
+| **RTL_Module** | Vertex | ~6,400 | 7,492.8 |
 | **RTL_Parameter** | Vertex | 221 | 200.3 |
 | **RTL_Port** | Vertex | 1,491 | 154.5 |
 | **RTL_Signal** | Vertex | 1,441 | 161.0 |
@@ -365,7 +387,7 @@ The Author expertise mapping feature adds first-class contributor vertices to en
 
 ### Collections
 
-**Author Collection** (8 contributors in OR1200)
+**Author Collection** (contributors across all repos; 8 in OR1200 alone)
 - Extracted from GitCommit metadata
 - Normalized email addresses as keys
 - Tracks activity (first_seen, last_seen, total_commits, active status)
@@ -726,9 +748,9 @@ The Author and FSM ETLs are idempotent and safe to re-run.
 
 ---
 
-## 8. Temporal Graph Extension (`feature/temporal-kg`)
+## 8. Temporal Graph Extension
 
-This section documents schema additions for the temporal multi-repo knowledge graph. All changes live in database `ic-knowledge-graph-temporal` on branch `feature/temporal-kg`.
+This section documents schema additions for the temporal multi-repo knowledge graph. All temporal data lives in database `ic-knowledge-graph-temporal` on `main`.
 
 ### 8.1 Temporal Fields Added to Existing Node Types
 
@@ -850,16 +872,16 @@ FOR v, e IN 1..1 OUTBOUND @module_id CROSS_REPO_SIMILAR_TO
   RETURN {module: v.label, repo: v.repo, score: e.similarity_score}
 ```
 
-### 8.6 Temporal Database Statistics (2026-03-10)
+### 8.6 Temporal Database Statistics (March 2026)
 
 | Collection | Type | Count |
 |---|---|---|
-| `GitCommit` | Vertex | 3,808 |
-| `RTL_Module` | Vertex | 6,594 |
-| `DesignEpoch` | Vertex | 385 |
-| `DesignSituation` | Vertex | 722 |
-| `MODIFIED` | Edge | 6,594 |
-| `BELONGS_TO_EPOCH` | Edge | 6,794 |
-| `CROSS_REPO_SIMILAR_TO` | Edge | 17 |
+| `GitCommit` | Vertex | ~3,800 |
+| `RTL_Module` | Vertex | ~6,400 |
+| `DesignEpoch` | Vertex | 381 |
+| `DesignSituation` | Vertex | 721 |
+| `RESOLVED_TO` | Edge | 193 |
+| `CROSS_REPO_SIMILAR_TO` | Edge | 61 |
+| `CROSS_REPO_EVOLVED_FROM` | Edge | 8 |
 
-*Database: `ic-knowledge-graph-temporal` · Graph: `IC_Temporal_Knowledge_Graph` · Branch: `feature/temporal-kg`*
+*Database: `ic-knowledge-graph-temporal` (OneShard) · Graph: `IC_Temporal_Knowledge_Graph` (28 edge definitions) · Branch: `main`*

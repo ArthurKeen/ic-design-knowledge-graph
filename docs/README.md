@@ -1,6 +1,6 @@
-# Integrated Circuit (IC) Design Knowledge Graph Documentation
+# IC Temporal Knowledge Graph Documentation
 
-Welcome to the Integrated Circuit (IC) Design Knowledge Graph demo documentation. This directory contains all project documentation organized by topic.
+Welcome to the IC Temporal Knowledge Graph demo documentation. This project builds a multi-repo temporal knowledge graph spanning four open-source RISC processors (OR1200, IBEX, MOR1KX, Marocchino). This directory contains all project documentation organized by topic.
 
 ---
 
@@ -8,24 +8,21 @@ Welcome to the Integrated Circuit (IC) Design Knowledge Graph demo documentation
 
 ### 📘 Getting Started
 - **[Project Overview](../README.md)** - Main project README
+- **[Temporal Demo Script](TEMPORAL_DEMO_SCRIPT.md)** - Primary walkthrough for the temporal knowledge graph
 - **[Technical Presentation](TECHNICAL_PRESENTATION.md)** - Comprehensive technical presentation
 - **[Walkthrough](project/WALKTHROUGH.md)** - Project walkthrough and examples
 - **[Schema](project/SCHEMA.md)** - Database schema and structure
 - **[PRD](project/PRD.md)** - Product Requirements Document
 
 ### 🚀 Improvements & Quality
-- **[Bridging Technical Details](project/BRIDGING_TECHNICAL_DETAILS.md)** - Technical implementation of the bridging logic
-
-### 🔧 Testing
-- **[Test Report](testing/COMPREHENSIVE_TEST_REPORT.md)** - Complete test results
+- **[Bridging Technical Details](project/BRIDGING_TECHNICAL_DETAILS.md)** - Legacy OR1200 bridging/consolidation implementation details
+- **[Customer Exercise Workflow](CUSTOMER_EXERCISE_WORKFLOW.md)** - Numbered sandbox database workflow
 
 ### 📚 Reference
 - **[AQL Reference](reference/aql_ref.md)** - AQL query examples
 - **[Optimization Guide](reference/optimization.md)** - Query optimization and VCI
 - **[Integration Guide](reference/arangographrag-integration.md)** - ArangoGraphRAG integration
-
-### 📦 Archive
-- **[Old Docs](archive/)** - Superseded and historical documents
+- **[GraphRAG Orchestration](reference/graphrag-orchestration.md)** - GraphRAG service orchestration guide
 
 ---
 
@@ -34,22 +31,23 @@ Welcome to the Integrated Circuit (IC) Design Knowledge Graph demo documentation
 ```
 docs/
 ├── README.md (this file)
+├── TEMPORAL_DEMO_SCRIPT.md
+├── CUSTOMER_EXERCISE_WORKFLOW.md
 ├── project/ # Core project documentation
-├── testing/ # Test reports
-├── reference/ # Reference materials
-└── archive/ # Obsolete documents
+└── reference/ # Reference materials
 ```
 
 ---
 
 ## Project Status
 
-**Current Phase:** Production - Enhanced Bridging & Consolidation with Graph-Aware Context  
-**Entity Resolution:** Production-grade Fuzzy Consolidation + Graph-Aware Bridging  
-**Bridge Count:** 2,202 semantic links (87.6% increase from enhancements)  
-**Coverage:** 75% ports, 66% signals documented  
-**Documentation:** Organized and up-to-date  
-**Last Updated:** January 20, 2026
+**Current Phase:** Production — Multi-repo Temporal Knowledge Graph  
+**Processors:** OR1200, IBEX, MOR1KX, Marocchino  
+**Database:** `ic-knowledge-graph-temporal` (OneShard) / Graph: `IC_Temporal_Knowledge_Graph`  
+**Semantic Bridges:** 193 `RESOLVED_TO` + 61 `CROSS_REPO_SIMILAR_TO`  
+**Entity Resolution:** Alias-aware exact match + gated embeddings  
+**Full Rebuild:** `scripts/rebuild_database.sh`  
+**Last Updated:** March 2026
 
 ---
 
@@ -73,5 +71,5 @@ When adding new major documentation, update this README with links.
 
 ## Contact
 
-**Project:** Cadence - OR1200 RISC Processor Documentation System 
-**Repository:** github.com:ArthurKeen/ic-knowledge-graph.git 
+**Project:** IC Temporal Knowledge Graph — Multi-repo RISC Processor Demo  
+**Repository:** github.com:ArthurKeen/ic-knowledge-graph.git

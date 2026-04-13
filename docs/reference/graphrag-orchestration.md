@@ -112,7 +112,7 @@ ARANGO_MODE=REMOTE
 ARANGO_ENDPOINT=https://your-instance.arango.ai
 ARANGO_USERNAME=root
 ARANGO_PASSWORD=your_password
-ARANGO_DATABASE=ic-knowledge-graph
+ARANGO_DATABASE=ic-knowledge-graph-temporal
 
 # GraphRAG Service Configuration
 GRAPHRAG_CHAT_MODEL=gpt-4o
@@ -263,7 +263,7 @@ client.authenticate()
 
 # Start importer
 importer_id = client.start_service("arangodb-graphrag-importer", {
-    "db_name": "ic-knowledge-graph",
+    "db_name": "ic-knowledge-graph-temporal",
     "username": "root",
     "password": "password",
     "chat_model": "gpt-4o",
@@ -542,20 +542,27 @@ orchestrator.cleanup()
 
 ### Integration with Bridging
 
-After GraphRAG import, run semantic bridging:
+After GraphRAG import, run semantic bridging. The recommended path is the
+full temporal rebuild:
+
+```bash
+./scripts/rebuild_database.sh
+```
+
+Or run individual steps:
 
 ```bash
 # 1. Import GraphRAG
 python src/etl_graphrag.py --import --cleanup
 
-# 2. Run consolidation
-python src/consolidator.py
+# 2. Semantic bridging (multi-repo, alias-aware)
+python src/rtl_semantic_bridge.py --all --truncate
 
-# 3. Run bridging
-python src/bridger.py
+# 3. Cross-repo bridging
+python src/cross_repo_bridge.py --all
 ```
 
-This creates `RESOLVED_TO` edges linking RTL code to documentation entities.
+This creates `RESOLVED_TO` and `CROSS_REPO_SIMILAR_TO` edges linking RTL code to documentation entities.
 
 ---
 
@@ -659,6 +666,6 @@ For issues or questions:
 
 ---
 
-**Last Updated**: January 2026  
+**Last Updated**: March 2026  
 **Version**: 1.0.0  
 **Status**: Production Ready

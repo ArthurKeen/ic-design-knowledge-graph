@@ -1,6 +1,14 @@
 # Consolidation & Bridging Improvements
+
+> **Legacy note:** This document describes the original single-repo OR1200
+> bridging and consolidation approach (`src/bridger.py`, `src/consolidator.py`,
+> `src/bridger_bulk.py`). The current multi-repo semantic bridge is
+> `src/rtl_semantic_bridge.py` with cross-repo bridging in
+> `src/cross_repo_bridge.py`. For a full rebuild, use
+> `./scripts/rebuild_database.sh`.
+
 **Date:** January 12, 2026  
-**Status:** ✅ Implementation Complete
+**Status:** ✅ Implementation Complete (legacy — superseded by multi-repo pipeline)
 
 ## Overview
 

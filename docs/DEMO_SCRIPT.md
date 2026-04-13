@@ -1,4 +1,10 @@
-## DEPRECATED — This script targets the legacy single-repo OR1200 demo. For the current multi-repo temporal demo, see [TEMPORAL_DEMO_SCRIPT.md](TEMPORAL_DEMO_SCRIPT.md).
+> **DEPRECATED** — This document describes the legacy single-repo OR1200 demo.
+> For the current multi-repo temporal demo, see [TEMPORAL_DEMO_SCRIPT.md](TEMPORAL_DEMO_SCRIPT.md).
+>
+> All references to `IC_Knowledge_Graph`, database `ic-knowledge-graph`, and
+> single-repo OR1200 statistics below are **outdated**. The current database is
+> `ic-knowledge-graph-temporal` with graph `IC_Temporal_Knowledge_Graph` covering
+> four processors (OR1200, IBEX, MOR1KX, Marocchino).
 
 # Integrated Circuit (IC) Design Knowledge Graph Demo Script
 ## Interactive Demonstration

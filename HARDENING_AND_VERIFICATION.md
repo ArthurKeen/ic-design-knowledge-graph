@@ -75,16 +75,28 @@ python scripts/smoke_test.py --check-graphrag
 
 ## End-to-end core pipeline (build the KG)
 
-This path builds the core knowledge graph from RTL and Git history.
+The primary path builds the full multi-repo temporal knowledge graph:
+
+```bash
+./scripts/rebuild_database.sh
+```
+
+This runs RTL extraction for all four repos (OR1200, IBEX, MOR1KX, Marocchino), semantic bridging, cross-repo bridging, temporal graph creation, theme install, and demo query install.
+
+After completion:
+- Database: `ic-knowledge-graph-temporal`
+- Graph: `IC_Temporal_Knowledge_Graph`
+- Collections include `RTL_Module`, `RTL_Port`, `RTL_Signal`, `GitCommit`, `Author`, `RESOLVED_TO`, `CROSS_REPO_SIMILAR_TO`, etc.
+
+<details>
+<summary>Legacy alternative (single-repo OR1200 only)</summary>
 
 ```bash
 python scripts/master_etl.py
 python src/create_graph.py
 ```
 
-After completion:
-- Graph exists: `IC_Temporal_Knowledge_Graph`
-- Collections include `RTL_Module`, `RTL_Port`, `RTL_Signal`, `GitCommit`, `Author`, etc.
+</details>
 
 ---
 

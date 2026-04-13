@@ -1,5 +1,5 @@
 # IC Knowledge Graph — Cursor Handoff Notes
-_Branch: `feature/temporal-kg` — Last updated: 2026-03-18 (Session 3)_
+_Branch: `main` (merged from `feature/temporal-kg`) — Last updated: March 2026_
 
 ---
 

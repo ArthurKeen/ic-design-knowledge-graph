@@ -10,7 +10,7 @@ The core knowledge graph demo — RTL parsing, Git ingestion, semantic bridging 
 
 ## What GraphRAG Does in This Project
 
-The GraphRAG pipeline processes OR1200 PDF documentation through three stages:
+The GraphRAG pipeline processes IC-design PDF documentation through three stages. Collections are namespaced per repo with prefixes (`OR1200_`, `IBEX_`, `MOR1KX_`, `MAROCCHINO_`); the examples below use the `OR1200_` prefix:
 
 1. **Document Conversion** (`src/document_converter.py`): PDFs are converted to Markdown using `pymupdf4llm` (fast) or `docling` (high accuracy).
 2. **Entity Extraction** (`src/etl_graphrag.py`): Markdown chunks are submitted to the ArangoDB AMP GenAI Importer service, which uses an LLM to extract hardware-specific entities (18 custom types: `PROCESSOR_COMPONENT`, `REGISTER`, `INSTRUCTION`, etc.) and their relationships.
@@ -27,6 +27,18 @@ The collections created by this pipeline are:
 | `OR1200_Relations` | Edge | Raw entity relationships |
 | `OR1200_Golden_Relations` | Edge | Consolidated relationships |
 | `OR1200_Communities` | Vertex | Entity clusters (Leiden algorithm) |
+
+Each supported repo (OR1200, IBEX, MOR1KX, MAROCCHINO) gets an identical set of
+collections with its own prefix. All reside in the shared `ic-knowledge-graph-temporal` database.
+
+---
+
+## Offline Alternative: `src/local_graphrag/`
+
+For environments without ArangoDB AMP / GenAI API access, the `src/local_graphrag/`
+module provides a fully offline GraphRAG pipeline that runs entity extraction and
+community detection locally using an LLM API (e.g. OpenRouter) without requiring AMP
+services. See `src/local_graphrag/README.md` for usage.
 
 ---
 
@@ -84,7 +96,7 @@ ARANGO_MODE=REMOTE
 ARANGO_ENDPOINT=https://your-instance.arango.ai
 ARANGO_USERNAME=root
 ARANGO_PASSWORD=your_password
-ARANGO_DATABASE=ic-knowledge-graph
+ARANGO_DATABASE=ic-knowledge-graph-temporal
 SERVER_URL=https://your-instance.arango.ai
 OPENAI_API_KEY=your_openai_api_key
 GRAPHRAG_PROJECT_NAME=OR1200
